@@ -345,13 +345,31 @@ read_file :: proc(c: ^Context, d: ^Directive, file_path: string) -> (string, Fai
 			.SEVERE, "Problems with \"", d.name, "\" directive path:\n", detail, ".",
 		)
 	}
-	encoding := options_string(&d.options, "encoding")
-	if encoding == "" do encoding = c.doc.settings.input_encoding
-	text, detail := decode(c, data, encoding)
+	text, detail := decode_file(c, d, data)
 	if detail != "" {
 		return "", directive_error(.SEVERE, "Problem with \"", d.name, "\" directive:\n", detail)
 	}
 	return universal_newlines(c, text), nil
+}
+
+// ``Input.decode`` of a file's ``data`` with the directive's "encoding"
+// option or ``input_encoding``, and ``input_encoding_error_handler``.  The
+// native reader decodes UTF-8, Latin-1 and ASCII strictly: other codecs and
+// the error handlers are Python needs.
+@(private = "file")
+decode_file :: proc(c: ^Context, d: ^Directive, data: []u8) -> (text: string, err: string) {
+	encoding := options_string(&d.options, "encoding")
+	if encoding == "" do encoding = c.doc.settings.input_encoding
+	if normalize_encoding(encoding) == "" {
+		note_directive_need(c, d, .Codec, encoding)
+		return "", ""
+	}
+	text, err = decode(c, data, encoding)
+	handler := c.doc.settings.input_encoding_error_handler
+	if err != "" && handler != "strict" && handler != "" {
+		note_directive_need(c, d, .Codec, handler)
+	}
+	return
 }
 
 // Decode ``data`` (``str(data, encoding)``): the text, or the text of the
@@ -458,8 +476,8 @@ expandtabs :: proc(s: string, tabsize: int) -> string {
 }
 
 // ``urlopen(url).read()`` decoded (``io.StringInput``) for ``file:`` URLs;
-// the native reader fetches no other URLs.  On failure: the exception
-// class and ``str(error)``.
+// other URLs are Python needs.  On failure: the exception class and
+// ``str(error)``.
 read_url :: proc(c: ^Context, d: ^Directive, url: string) -> (text: string, class, err: string) {
 	// ``urllib.request.Request``: a URL without a scheme is a ``ValueError``
 	colon := strings.index_byte(url, ':')
@@ -467,7 +485,10 @@ read_url :: proc(c: ^Context, d: ^Directive, url: string) -> (text: string, clas
 		return "", "ValueError", concat("unknown url type: ", py_repr(url))
 	}
 	file_path, local := file_url_path(c, url)
-	if !local do return "", "URLError", "<urlopen error the native reader fetches file: URLs only>"
+	if !local {
+		note_directive_need(c, d, .Url, url)
+		return "", "URLError", "<urlopen error the native reader fetches file: URLs only>"
+	}
 	switch {
 	case !os.exists(file_path):
 		return "", "URLError", concat(
@@ -480,9 +501,7 @@ read_url :: proc(c: ^Context, d: ^Directive, url: string) -> (text: string, clas
 	if read_err != nil {
 		return "", "PermissionError", concat("[Errno 13] Permission denied: ", py_repr(file_path))
 	}
-	encoding := options_string(&d.options, "encoding")
-	if encoding == "" do encoding = c.doc.settings.input_encoding
-	decoded, detail := decode(c, data, encoding)
+	decoded, detail := decode_file(c, d, data)
 	if detail != "" do return "", "UnicodeError", detail
 	return decoded, "", ""
 }

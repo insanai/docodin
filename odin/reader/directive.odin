@@ -498,6 +498,7 @@ extract_extension_options :: proc(c: ^Context, d: ^Directive, fields: []Option_F
 			return concat("invalid option data: duplicate option \"", name, "\"")
 		}
 		value, err := conv(c, values[i])
+		note_option_needs(c, d, conv, values[i])
 		if err != "" {
 			return concat(
 				"invalid option value: (option: \"", name, "\"; value: ",
@@ -508,6 +509,22 @@ extract_extension_options :: proc(c: ^Context, d: ^Directive, fields: []Option_F
 	}
 	for o in options do options_set(&d.options, o.name, o.value)
 	return ""
+}
+
+// Option conversions that use Python: ``codecs.lookup`` of a codec the
+// native reader lacks, and ``parsers.get_parser_class``, which imports a
+// parser module (even for "rst", the native reader parses no separate
+// document).
+@(private = "file")
+note_option_needs :: proc(c: ^Context, d: ^Directive, conv: Converter, value: Maybe(string)) {
+	a, given := value.?
+	switch {
+	case !given || a == "":
+	case conv == encoding && normalize_encoding(a) == "":
+		note_directive_need(c, d, .Codec, a)
+	case conv == parser_name:
+		note_directive_need(c, d, .Parser, a)
+	}
 }
 
 @(private = "file")
@@ -544,6 +561,30 @@ d_set_source_line :: proc(c: ^Context, d: ^Directive, n: dt.Node, lineno: Maybe(
 	src, ln, _ := get_source_and_line(c, d.sm, lineno)
 	dt.set_source(c.doc, n, src)
 	dt.set_line(c.doc, n, ln)
+}
+
+// Record that docutils would use a Python library for the directive.
+note_directive_need :: proc(
+	c: ^Context,
+	d: ^Directive,
+	feature: dt.Python_Feature,
+	detail: string,
+) {
+	note_need(c, d.sm if d.sm != nil else c.top, d.lineno, feature, detail)
+}
+
+// Record that docutils would use a Python library at ``lineno`` of the
+// state machine ``m``.
+note_need :: proc(
+	c: ^Context,
+	m: ^Machine,
+	lineno: int,
+	feature: dt.Python_Feature,
+	detail: string,
+) {
+	src, ln, _ := get_source_and_line(c, m, lineno)
+	need := dt.Python_Need{feature, detail, src.? or_else "", ln.? or_else 0}
+	dt.note_python_need(c.doc, need)
 }
 
 // ``Directive.add_name(node)``.

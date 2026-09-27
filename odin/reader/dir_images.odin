@@ -1,12 +1,14 @@
 package reader
 
+import "core:os"
 import "core:strings"
 
 import dt "../doctree"
 import rst "../rst"
 
 // The image and figure directives (``directives.images``), without PIL:
-// ``:figwidth: image`` sets no width, as in docutils without PIL.
+// ``:figwidth: image`` sets no width, as in docutils without PIL, and is a
+// Python need when docutils would read the image's width with PIL.
 
 @(private = "file")
 ALIGN_H_VALUES := [?]string{"left", "center", "right"}
@@ -163,6 +165,8 @@ run_figure :: proc(c: ^Context, d: ^Directive) -> (Nodes, Failure) {
 	d_set_source_line(c, d, figure, d.lineno)
 	if w, is_str := figwidth.(string); is_str && w != "image" {
 		dt.set_attr(doc, figure, "width", w)
+	} else if is_str && doc.settings.file_insertion_enabled {
+		note_figure_width_need(c, d)
 	}
 	for cl in figclasses.([]string) or_else nil do dt.list_append(doc, figure, dt.K_CLASSES, cl)
 	if name, is_str := figname.(string); is_str && name != "" {
@@ -173,6 +177,16 @@ run_figure :: proc(c: ^Context, d: ^Directive) -> (Nodes, Failure) {
 	if sl_len(d.content) == 0 do return result_of(c, figure), nil
 	if msg := figure_caption(c, d, figure); msg != 0 do return result_of(c, figure, msg), nil
 	return result_of(c, figure), nil
+}
+
+// ``Figure._set_width`` reads the width of the image with
+// ``PIL.Image.open(url2pathname(uri))``; a file that does not exist gives
+// the figure no width, as without PIL.
+@(private = "file")
+note_figure_width_need :: proc(c: ^Context, d: ^Directive) {
+	uri := options_string(&d.options, "uri")
+	if !os.exists(uri) && strings.index_byte(uri, '%') < 0 do return
+	note_directive_need(c, d, .Pil, uri)
 }
 
 // The caption and legend of a figure; the error message, if any.

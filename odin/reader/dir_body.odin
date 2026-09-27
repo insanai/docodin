@@ -305,11 +305,13 @@ run_parsed_literal :: proc(c: ^Context, d: ^Directive) -> (Nodes, Failure) {
 	return out, nil
 }
 
-// ``CodeBlock.run`` without Pygments (``syntax_highlight`` "none").
+// ``CodeBlock.run`` without Pygments (``syntax_highlight`` "none"); a
+// language to highlight is a Python need.
 run_code_block :: proc(c: ^Context, d: ^Directive) -> (Nodes, Failure) {
 	doc := c.doc
 	if err := assert_has_content(d); err != nil do return nil, err
 	language := d.arguments[0] if len(d.arguments) > 0 else ""
+	if uses_pygments(c, language) do note_directive_need(c, d, .Pygments, language)
 	options := normalize_options(c, &d.options)
 	classes := make([dynamic]string, c.allocator)
 	append(&classes, "code")

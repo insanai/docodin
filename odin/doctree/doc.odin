@@ -198,6 +198,8 @@ Doc :: struct {
 	transform_serial:     int, // ``Transformer.serialno``
 	internals:            map[Node]Node_Internals,
 	interchange:          Interchange, // what a JSON dump carries besides the document
+	// where docutils would use a Python library (see python_needs.odin)
+	python_needs:         [dynamic]Python_Need,
 }
 
 // Interned at fixed ids by ``make_doc``.
@@ -262,6 +264,7 @@ make_doc :: proc(settings: Settings, allocator := context.allocator) -> ^Doc {
 	doc.pendings = make([dynamic]Pending, 1, 4, a)
 	doc.strings = make([dynamic]string, 0, 256, a)
 	doc.string_ids = make(map[string]Str, 256, a)
+	doc.python_needs = make([dynamic]Python_Need, a)
 	for s in WELL_KNOWN do intern(doc, s)
 	doc.settings = settings
 	doc.autofootnote_start = 1

@@ -10,7 +10,8 @@ import texmath "../math"
 // HTML5 visitors of images and mathematics
 // (``_html_base_media.MediaTranslatorMixin``).  Image sizes are never read
 // from the image file: docutils needs PIL for that, and without it warns as
-// the native writer does.
+// the native writer does.  Where docutils would read the size, the writer
+// records a Python need.
 
 VIDEO_TYPES :: [?]string{"video/mp4", "video/webm", "video/ogg"}
 
@@ -126,7 +127,11 @@ image_size :: proc(t: ^Html, n: dt.Node, atts: ^[dynamic]Att) -> bool {
 	}
 	scale := 100.0
 	if v, ok := dt.get_attr(doc, n, "scale"); ok {
-		if len(measures) < 2 do warn_cannot_scale(t, n)
+		if len(measures) < 2 {
+			// ``read_size_with_PIL``: its result (and the warning's text) depends on PIL
+			dt.note_python_need_at(doc, n, .Pil, attr(doc, n, "uri"))
+			warn_cannot_scale(t, n)
+		}
 		scale = attr_float(v)
 	}
 	factor := scale / 100

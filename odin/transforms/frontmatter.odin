@@ -328,6 +328,7 @@ reparse_author :: proc(st: ^Docinfo_State, body: dt.Node, raw: string) -> bool {
 		written := dt.Written_Message{m.level, 0, dt.clone(doc, m.text)}
 		append(&doc.reporter.written, written)
 	}
+	for need in sub.python_needs do dt.note_python_need(doc, need)
 	para := dt.first_child(sub, sub.root)
 	if length(sub, sub.root) != 1 || dt.tag(sub, para) != .paragraph do return false
 	st.reparsed = import_subtree(doc, sub, para)

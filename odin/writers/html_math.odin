@@ -7,7 +7,7 @@ import texmath "../math"
 
 // The math conversions of the HTML5 writer: ``math_output`` "HTML"
 // (``math2html``) and "MathML" (``latex2mathml``).  The converters are those
-// of odin/math.
+// of odin/math; the external MathML converters are Python needs.
 
 // ``_math2html``: HTML of LaTeX math, with the math stylesheets set up.
 math_to_html :: proc(t: ^Html, code: string, is_block: bool) -> string {
@@ -28,6 +28,7 @@ math_to_html :: proc(t: ^Html, code: string, is_block: bool) -> string {
 // error the encoded source with the fallback format and a warning.
 math_to_mathml :: proc(t: ^Html, n: dt.Node, code: string, is_block: bool) -> (string, string) {
 	if t.math_options != "" {
+		dt.note_python_need_at(t.doc, n, .Mathml_Converter, t.math_options)
 		t.err = strings.concatenate(
 			{"NotImplementedError: external MathML converter ", t.math_options},
 			context.temp_allocator,

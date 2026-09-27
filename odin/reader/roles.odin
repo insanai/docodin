@@ -157,7 +157,7 @@ call_role :: proc(
 	case .Raw:
 		raw_role(c, role_name, rawtext, text, lineno, &opts, out, msgs)
 	case .Code:
-		code_role(c, rawtext, text, &opts, out, msgs)
+		code_role(c, rawtext, text, lineno, &opts, out, msgs)
 	case .Math:
 		n := dt.new_element(c.doc, .math, rawtext, dt.unescape(text, true))
 		apply_options(c, n, &opts)
@@ -334,10 +334,17 @@ raw_role :: proc(
 }
 
 @(private = "file")
-code_role :: proc(c: ^Context, rawtext, text: string, opts: ^Options, out, msgs: Node_Out) {
+code_role :: proc(
+	c: ^Context,
+	rawtext, text: string,
+	lineno: int,
+	opts: ^Options,
+	out, msgs: Node_Out,
+) {
 	doc := c.doc
 	language := ""
 	if v, ok := options_get(opts, "language"); ok do language, _ = v.(string)
+	if uses_pygments(c, language) do note_need(c, c.top, lineno, .Pygments, language)
 	classes := make([dynamic]string, c.allocator)
 	append(&classes, "code")
 	if v, ok := options_get(opts, "classes"); ok {
@@ -356,11 +363,17 @@ code_role :: proc(c: ^Context, rawtext, text: string, opts: ^Options, out, msgs:
 	append(out, n)
 }
 
+// ``code_analyzer.Lexer(code, language, syntax_highlight)`` analyzes the
+// code with Pygments.
+uses_pygments :: proc(c: ^Context, language: string) -> bool {
+	if language == "" || language == "text" do return false
+	return c.doc.settings.syntax_highlight != "none"
+}
+
 // ``code_analyzer.Lexer(code, language, syntax_highlight)`` without
 // Pygments: the ``LexerError`` text, "" when the code is not analyzed.
 lexer_error :: proc(c: ^Context, language: string) -> string {
-	if language == "" || language == "text" do return ""
-	if c.doc.settings.syntax_highlight == "none" do return ""
+	if !uses_pygments(c, language) do return ""
 	return "Cannot analyze code. Pygments package not found."
 }
 

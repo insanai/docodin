@@ -31,6 +31,7 @@ Settings :: struct {
 	auto_id_prefix:                 string, // --auto-id-prefix
 	language_code:                  string, // --language
 	input_encoding:                 string,
+	input_encoding_error_handler:   string,
 	output_encoding:                string,
 	output_encoding_error_handler:  string,
 	error_encoding:                 string,
@@ -147,6 +148,7 @@ default_settings :: proc(writer := Writer_Kind.Pseudoxml) -> Settings {
 		auto_id_prefix                = "%",
 		language_code                 = "en",
 		input_encoding                = "utf-8",
+		input_encoding_error_handler  = "strict",
 		output_encoding               = "utf-8",
 		output_encoding_error_handler = "strict",
 		error_encoding                = "utf-8",
