@@ -42,7 +42,7 @@ other docutils user, with a native reStructuredText engine written in Odin.
 - `docodin-sphinx-build` and the `docodin.sphinx` extension tune Python's
   garbage collector: moderately raised thresholds, and the long-lived objects
   are frozen after the extensions are loaded and after reading. This saves
-  about 18 % on the CPython documentation, for about 4 % more peak memory.
+  about 18 % on the CPython documentation, for about 17 % more peak memory.
   Set `DOCODIN_GC=default` or `docodin_gc_tuning = False` to turn it off.
 
 ### Performance

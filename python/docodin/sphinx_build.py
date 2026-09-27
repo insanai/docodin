@@ -12,7 +12,10 @@ build therefore runs with a tuned collector:
   live objects are collected once and then frozen (`gc.freeze`): later
   collections skip them.
 
-The output is unchanged; peak memory grows by a few percent.
+The output is unchanged.  On CPython's documentation the build is about 18 %
+faster and its peak memory about 17 % higher (garbage collected later during
+reading); ``DOCODIN_GC=default`` keeps Python's default collector for
+memory-constrained builds.
 """
 
 from __future__ import annotations
