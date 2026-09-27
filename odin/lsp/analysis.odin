@@ -19,6 +19,7 @@ import "core:strings"
 
 import check "../check"
 import dt "../doctree"
+import rd "../reader"
 import rst "../rst"
 
 Item_Kind :: enum u8 {
@@ -80,26 +81,46 @@ Fold :: struct {
 	kind:       Fold_Kind,
 }
 
-Analysis :: struct {
-	items:  [dynamic]Item,
-	tokens: [dynamic]Token,
-	folds:  [dynamic]Fold,
+// Inline markup the parser reports (a ``problematic`` node): the message's
+// line (as the parse tree numbers it) and text, and the offending markup.
+Problem :: struct {
+	line:    i32,
+	message: string,
+	span:    Span,
 }
 
-// Analyse the document of ``ix``.
-analyze :: proc(ix: ^Line_Index, allocator: runtime.Allocator) -> Analysis {
+Analysis :: struct {
+	items:    [dynamic]Item,
+	tokens:   [dynamic]Token,
+	folds:    [dynamic]Fold,
+	problems: [dynamic]Problem,
+}
+
+// Analyse the document of ``ix``, from the reader's parse ``tree`` if it
+// kept one (else the document is parsed here).  The tree grows: the content
+// of directives is parsed into it.
+analyze :: proc(
+	ix: ^Line_Index,
+	allocator: runtime.Allocator,
+	tree := rd.Parse_Tree{},
+) -> Analysis {
 	context.allocator = allocator
 	context.temp_allocator = allocator
 	a := Analysis {
-		items  = make([dynamic]Item, 0, 64),
-		tokens = make([dynamic]Token, 0, 256),
-		folds  = make([dynamic]Fold, 0, 32),
+		items    = make([dynamic]Item, 0, 64),
+		tokens   = make([dynamic]Token, 0, 256),
+		folds    = make([dynamic]Fold, 0, 32),
+		problems = make([dynamic]Problem, 0, 8),
 	}
-	p := rst.Parser {
-		allocator = allocator,
-		settings  = rst.settings_from_flags({.Match_Titles}, ix.tab_width, 0),
+	p := tree.parser
+	doc := tree.root
+	if doc == rst.NO_NODE {
+		p = rst.Parser {
+			allocator = allocator,
+			settings  = rst.settings_from_flags({.Match_Titles}, ix.tab_width, 0),
+		}
+		doc, _, _ = rst.parse_text(&p, ix.text, 0, true)
 	}
-	doc, _, _ := rst.parse_text(&p, ix.text, 0, true)
 	b := Builder {
 		ix       = ix,
 		p        = &p,
@@ -666,6 +687,8 @@ inline_item :: proc(
 		add_token(b, span, .Enum_Member)
 	case .Reference:
 		reference(b, d, n, span)
+	case .Problematic:
+		append(&b.a.problems, Problem{d.line, d.name, span})
 	}
 }
 

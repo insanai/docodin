@@ -33,6 +33,7 @@ Snapshot :: struct {
 	path:        string,
 	text:        string,
 	ix:          Line_Index,
+	reading:     Reading, // docutils' messages
 	analysis:    Analysis,
 	diagnostics: [dynamic]Diagnostic,
 	diagnosed:   bool,
@@ -69,7 +70,9 @@ snapshot :: proc(d: ^Document) -> ^Snapshot {
 	s.path = strings.clone(d.path, s.allocator)
 	s.text = strings.clone(d.text, s.allocator)
 	s.ix = line_index_make(s.text, TAB_WIDTH, s.allocator)
-	s.analysis = analyze(&s.ix, s.allocator)
+	// one parse: the reader's tree is analysed
+	s.reading = read_with_docutils(s.text, s.path, s.allocator)
+	s.analysis = analyze(&s.ix, s.allocator, s.reading.tree)
 	d.snapshot = s
 	return s
 }

@@ -2,11 +2,12 @@ package lsp
 
 // Diagnostics: the system messages docutils reports for the document,
 // with their texts, levels and lines, from the native pipeline (reader,
-// directives, roles and the standard transforms: odin/reader and
-// odin/transforms, as ``publish`` runs them).  The checker (odin/check)
-// adds what docutils' messages lack: the column of inline markup errors,
-// and the Elm title and hint of each message.  Mechanical hints come with
-// a quick fix (see code_actions.odin).
+// directives, roles and the standard transforms, as ``publish`` runs them:
+// ``publish.read_document``).  The analysis adds what docutils' messages
+// lack: the columns of inline markup errors (the parse tree's problematic
+// nodes) and of the names they report; the checker (odin/check) the Elm
+// title and hint of each message.  Mechanical hints come with a quick fix
+// (see code_actions.odin).
 
 import "base:runtime"
 import "core:strings"
@@ -16,7 +17,6 @@ import dt "../doctree"
 import pb "../publish"
 import rd "../reader"
 import rst "../rst"
-import tf "../transforms"
 
 Diagnostic :: struct {
 	span:    Span,
@@ -58,89 +58,47 @@ Docutils_Message :: struct {
 	detail: string, // the second paragraph (the source excerpt of some messages)
 }
 
-// The messages docutils reports for ``text`` (``publish_string`` with
-// ``report_level=1`` and ``halt_level=5``), and the exception it raises,
-// if any.  Allocated with ``allocator``.
-docutils_messages :: proc(
-	text, source_path: string,
-	allocator: runtime.Allocator,
-) -> (
-	msgs: []Docutils_Message,
-	exception: string,
-) {
+// What docutils' pipeline gives the server for one version of a document.
+Reading :: struct {
+	messages:  []Docutils_Message,
+	exception: string, // the exception docutils raises ("" for none)
+	tree:      rd.Parse_Tree, // the parse tree of the reader
+}
+
+// Read ``text`` as ``publish_string`` does, with ``report_level=1`` and
+// ``halt_level=5``: the messages, the exception docutils raises, if any, and
+// the parse tree.  Allocated with ``allocator`` (an arena).
+read_with_docutils :: proc(text, source_path: string, allocator: runtime.Allocator) -> Reading {
 	context.allocator = allocator
 	context.temp_allocator = allocator
-	settings := pb.default_settings(.Pseudoxml)
 	overrides := [?]pb.Override{{"report_level", 1}, {"halt_level", 5}}
-	if err, _ := pb.apply_overrides(&settings, .Pseudoxml, overrides[:]); err != "" do return
-	dts := pb.to_doctree(settings)
-	doc, info := rd.parse_document(text, dts, source_path, allocator)
-	defer dt.destroy(doc)
-	doc.settings = dts
-	exception = strings.clone(info.exception)
-	if exception == "" do run_transforms(doc, settings, source_path)
-	out := make([dynamic]Docutils_Message, 0, len(doc.reporter.written))
-	for w in doc.reporter.written {
-		m := read_message(doc, w)
-		if !library_missing(doc, m) do append(&out, m)
+	options := pb.Read_Options {
+		keep_tree = true,
 	}
-	return out[:], exception
+	r := pb.read_document(text, source_path, "pseudoxml", overrides[:], options, allocator)
+	defer dt.destroy(r.doc)
+	out := make([dynamic]Docutils_Message, 0, len(r.messages))
+	for dm in r.messages {
+		first, _, rest := strings.partition(dm.text, "\n\n")
+		detail, _, _ := strings.partition(rest, "\n\n")
+		m := Docutils_Message{dm.level, dm.line, dm.source, dm.text, first, detail}
+		if !library_missing(r.needs, m) do append(&out, m)
+	}
+	reading := Reading {
+		messages = out[:],
+		tree     = r.tree,
+	}
+	if e, raised := r.err.(pb.Exception); raised do reading.exception = e.text
+	return reading
 }
 
 // The native pipeline reports what docutils reports without Pygments;
 // docutils installations for editing (Sphinx) have it.
 @(private = "file")
-library_missing :: proc(doc: ^dt.Doc, m: Docutils_Message) -> bool {
+library_missing :: proc(needs: []pb.Python_Need, m: Docutils_Message) -> bool {
 	if m.first != "Cannot analyze code. Pygments package not found." do return false
-	for need in doc.python_needs do if need.feature == .Pygments do return true
+	for need in needs do if need.feature == .Pygments do return true
 	return false
-}
-
-// ``Transformer.populate_from_components`` and ``apply_transforms`` for
-// the standalone reader and the pseudo-XML writer.
-@(private = "file")
-run_transforms :: proc(doc: ^dt.Doc, settings: pb.Settings, source_path: string) {
-	doc.current_source = nil
-	doc.current_line = nil
-	doc.interchange.settings = pb.to_json(settings)
-	contents := tf.TRANSFORMS[.Contents].name
-	cached := false
-	for q in doc.pending_queue do if q.node != 0 && q.transform == contents do cached = true
-	options := tf.Options {
-		reader          = .Standalone,
-		writer          = .Pseudoxml,
-		language_cached = cached,
-		docutils_dir    = pb.DEFAULT_DOCUTILS_DIR,
-		source_path     = source_path,
-		parse_rst       = rd.parse,
-	}
-	tf.populate_from_components(doc, .Standalone, .Pseudoxml)
-	_, _ = tf.apply_all(doc, options)
-}
-
-@(private = "file")
-read_message :: proc(doc: ^dt.Doc, w: dt.Written_Message) -> Docutils_Message {
-	m := Docutils_Message {
-		level = int(w.level),
-	}
-	if w.node != 0 {
-		m.line = dt.get_int(doc, w.node, dt.K_LINE)
-		m.source = strings.clone(dt.get_string(doc, w.node, dt.K_SOURCE))
-	}
-	text := strings.trim_right(w.text, "\n")
-	marker := strings.concatenate({"(", dt.LEVEL_NAMES[w.level], "/", level_digit(m.level), ") "})
-	if at := strings.index(text, marker); at >= 0 do text = text[at + len(marker):]
-	m.body = strings.clone(text)
-	first, _, rest := strings.partition(m.body, "\n\n")
-	m.first = first
-	m.detail, _, _ = strings.partition(rest, "\n\n")
-	return m
-}
-
-@(private = "file")
-level_digit :: proc(level: int) -> string {
-	digits := [5]string{"0", "1", "2", "3", "4"}
-	return digits[clamp(level, 0, 4)]
 }
 
 // The diagnostics of snapshot ``s`` with the settings ``cfg``.
@@ -148,24 +106,15 @@ build_diagnostics :: proc(s: ^Snapshot, cfg: ^Config) -> [dynamic]Diagnostic {
 	context.allocator = s.allocator
 	context.temp_allocator = s.allocator
 	out := make([dynamic]Diagnostic, 0, 8)
-	msgs, exception := docutils_messages(s.text, s.path, s.allocator)
-	reported := make([dynamic]Docutils_Message, 0, len(msgs))
-	for m in msgs {
-		if m.level >= cfg.report_level && !known_elsewhere(cfg, m.first) do append(&reported, m)
-	}
-	// the checker parses again: only for documents with messages
-	checks: []check.Message
-	if len(reported) > 0 do checks = check.check_text(s.text, check.DEFAULT_OPTIONS)
-	used := make([]bool, len(checks))
-	for m in reported {
-		ck := match_check(checks, used, m)
+	used := make([]bool, len(s.analysis.problems))
+	for m in s.reading.messages {
+		if m.level < cfg.report_level || known_elsewhere(cfg, m.first) do continue
 		cm := check.Message {
 			line    = m.line,
 			level   = m.level,
 			text    = m.first,
 			literal = m.detail,
 		}
-		if ck >= 0 do cm = checks[ck]
 		d := Diagnostic {
 			level   = m.level,
 			line    = m.line,
@@ -176,12 +125,13 @@ build_diagnostics :: proc(s: ^Snapshot, cfg: ^Config) -> [dynamic]Diagnostic {
 		if hint := check.hint_text(info, cm); hint != "" {
 			d.message = strings.concatenate({m.body, "\n\nHint: ", hint})
 		}
-		d.span = message_span(s, m, cm)
-		d.fix = fix_for(s, d, m, cm)
+		problem := match_problem(s.analysis.problems[:], used, m)
+		d.span = message_span(s, m, problem)
+		d.fix = fix_for(s, d, m, problem != nil)
 		append(&out, d)
 	}
-	if exception != "" {
-		text := strings.concatenate({"docutils stops with an exception: ", exception})
+	if s.reading.exception != "" {
+		text := strings.concatenate({"docutils stops with an exception: ", s.reading.exception})
 		d := Diagnostic {
 			span    = line_content_span(&s.ix, 0),
 			level   = rst.SEVERE,
@@ -192,22 +142,21 @@ build_diagnostics :: proc(s: ^Snapshot, cfg: ^Config) -> [dynamic]Diagnostic {
 	return out
 }
 
-// The checker's message for a docutils message (same line, level and
-// text), or -1.
+// The inline markup problem of a message (same line and text).
 @(private = "file")
-match_check :: proc(checks: []check.Message, used: []bool, m: Docutils_Message) -> int {
-	for c, i in checks {
-		if used[i] || c.line != m.line || c.level != m.level || c.text != m.first do continue
+match_problem :: proc(problems: []Problem, used: []bool, m: Docutils_Message) -> ^Problem {
+	for &pr, i in problems {
+		if used[i] || int(pr.line) != m.line || pr.message != m.first do continue
 		used[i] = true
-		return i
+		return &pr
 	}
-	return -1
+	return nil
 }
 
 // Where a message points: the offending inline text, the construct it
 // names, or its line.
 @(private = "file")
-message_span :: proc(s: ^Snapshot, m: Docutils_Message, cm: check.Message) -> Span {
+message_span :: proc(s: ^Snapshot, m: Docutils_Message, problem: ^Problem) -> Span {
 	ix := &s.ix
 	if m.source != "" && m.source != s.path {
 		// a message of an included file: the include directive
@@ -216,27 +165,10 @@ message_span :: proc(s: ^Snapshot, m: Docutils_Message, cm: check.Message) -> Sp
 		}
 		return line_content_span(ix, 0)
 	}
-	if cm.span.text != "" {
-		if span, ok := inline_span(ix, cm); ok do return span
-	}
+	if problem != nil do return problem.span
 	if span, ok := named_span(s, m); ok do return span
 	line := clamp(m.line - 1, 0, max(line_count(ix) - 1, 0))
 	return line_content_span(ix, line)
-}
-
-// The offending inline text of a checker message (as ``format_elm``
-// finds it).
-@(private = "file")
-inline_span :: proc(ix: ^Line_Index, cm: check.Message) -> (Span, bool) {
-	line := cm.line + cm.span.row - 1
-	text := expanded(ix, line)
-	start := len(text) - cm.span.from_line_end
-	if start < 0 || !strings.has_prefix(text[start:], cm.span.text) {
-		start = strings.index(text, cm.span.text)
-		if start < 0 do return {}, false
-	}
-	l := i32(line)
-	return {{l, i32(start)}, {l, i32(start + len(cm.span.text))}}, true
 }
 
 // Messages about a name ("Unknown target name: "x".", "Duplicate explicit
@@ -279,7 +211,7 @@ named_kinds :: proc(text: string) -> Item_Kinds {
 // --- quick fixes -----------------------------------------------------------------------
 
 @(private = "file")
-fix_for :: proc(s: ^Snapshot, d: Diagnostic, m: Docutils_Message, cm: check.Message) -> Fix {
+fix_for :: proc(s: ^Snapshot, d: Diagnostic, m: Docutils_Message, inline: bool) -> Fix {
 	switch d.code {
 	case "TITLE UNDERLINE TOO SHORT", "TITLE OVERLINE TOO SHORT":
 		return extend_adornment(&s.ix, m.line - 1)
@@ -291,7 +223,7 @@ fix_for :: proc(s: ^Snapshot, d: Diagnostic, m: Docutils_Message, cm: check.Mess
 		return insert_blank_line(&s.ix, m.line - 1)
 	case "UNCLOSED EMPHASIS", "UNCLOSED STRONG EMPHASIS", "UNCLOSED INLINE LITERAL",
 	     "UNCLOSED INTERPRETED TEXT", "UNCLOSED SUBSTITUTION REFERENCE", "UNCLOSED INLINE TARGET":
-		if cm.span.text != "" do return escape_start_string(&s.ix, d.span)
+		if inline do return escape_start_string(&s.ix, d.span)
 	case "MISSING LITERAL BLOCK":
 		return single_colon(&s.ix, m.line - 1)
 	}
