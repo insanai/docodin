@@ -19,7 +19,9 @@ from docutils.statemachine import StringList
 if TYPE_CHECKING:
     from docodin.builder import DocumentContext
 
-_SIMPLE_OPTION_NAME = re.compile(r"[A-Za-z0-9_.+-]+\Z")
+# Option names that are plain text when inline-parsed (docutils extracts
+# ``field_name.astext()``); an underscore may end a reference (``alt_``).
+_SIMPLE_OPTION_NAME = re.compile(r"[A-Za-z0-9.+-]+\Z")
 
 
 
