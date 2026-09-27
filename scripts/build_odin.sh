@@ -42,7 +42,10 @@ case "$(uname -s)" in
         ;;
 esac
 
-cp "${BUILD_DIR}/${LIB_NAME}" "${PKG_DIR}/${LIB_NAME}"
+# Replace the library atomically: overwriting a loaded (and on macOS
+# code-signed) library in place makes the kernel kill processes using it.
+cp "${BUILD_DIR}/${LIB_NAME}" "${PKG_DIR}/.${LIB_NAME}.tmp"
+mv -f "${PKG_DIR}/.${LIB_NAME}.tmp" "${PKG_DIR}/${LIB_NAME}"
 echo "Built ${PKG_DIR}/${LIB_NAME}"
 
 echo "=== Building docodin native checker ==="
