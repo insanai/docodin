@@ -3,6 +3,7 @@ package docodin
 import "base:runtime"
 
 import rst "../rst"
+import text "../text"
 
 // C ABI of the shared library.
 //
@@ -205,4 +206,94 @@ docodin_free :: proc "c" (ptr: rawptr) {
 	if ptr == nil do return
 	context = runtime.default_context()
 	free(ptr, runtime.heap_allocator())
+}
+
+// ``docutils.utils.smartquotes.educate_tokens`` over the tokens of one text
+// block: (WIRE_VERSION, [educated token, ...]), or nil for a malformed
+// request.  The request is length-prefixed (N: a native-endian ``int``):
+//   N attr_len, attr, N language_len, language,
+//   N has_quotes (0: the language's quotes; 1: followed by 4 x (N len, mark):
+//                 open/close primary, open/close secondary),
+//   N count, count x N token length in code points,
+//   count x u8 text.Token_Kind (0 text, 1 literal, 2 tag),
+//   the tokens' text, concatenated (UTF-8).
+@(export)
+docodin_educate :: proc "c" (request: [^]u8, request_len: int, out_len: ^int) -> [^]u8 {
+	context = call_context()
+	defer bump_reset(&tl_arena)
+	r := Request {
+		buf = string(request[:max(request_len, 0)]),
+		ok  = true,
+	}
+	attr, lang := read_bytes(&r), read_bytes(&r)
+	marks := text.quotes_for(lang)
+	if read_int(&r) != 0 {
+		marks = {read_bytes(&r), read_bytes(&r), read_bytes(&r), read_bytes(&r)}
+	}
+	count := read_int(&r)
+	lengths := read_raw(&r, count * size_of(int) if count <= len(r.buf) else -1)
+	kinds := read_raw(&r, count)
+	if !r.ok do return nil
+	src := r.buf[r.pos:]
+	e := text.educator_make(attr, lang, marks)
+	w := writer_make(len(src) + len(src) / 4 + count * 5 + 16)
+	w_tuple(&w, 2)
+	w_int(&w, WIRE_VERSION)
+	w_list(&w, count)
+	pos := 0
+	for i in 0 ..< count {
+		end := advance_chars(src, pos, load_int(lengths[i * size_of(int):]))
+		kind := text.Token_Kind(min(kinds[i], u8(text.Token_Kind.Tag)))
+		w_str(&w, text.educate_token(&e, kind, src[pos:end]))
+		pos = end
+	}
+	return finish(w, out_len)
+}
+
+// Reader of a length-prefixed request; `ok` turns false on reading past the end.
+@(private = "file")
+Request :: struct {
+	buf: string,
+	pos: int,
+	ok:  bool,
+}
+
+@(private = "file")
+read_raw :: proc(r: ^Request, n: int) -> string {
+	if n < 0 || n > len(r.buf) - r.pos {
+		r.ok = false
+		r.pos = len(r.buf)
+		return ""
+	}
+	r.pos += n
+	return r.buf[r.pos - n:r.pos]
+}
+
+@(private = "file")
+load_int :: #force_inline proc(b: string) -> (v: int) {
+	runtime.mem_copy_non_overlapping(&v, raw_data(b), size_of(int))
+	return
+}
+
+@(private = "file")
+read_int :: proc(r: ^Request) -> int {
+	b := read_raw(r, size_of(int))
+	return load_int(b) if r.ok else 0
+}
+
+@(private = "file")
+read_bytes :: proc(r: ^Request) -> string {
+	return read_raw(r, read_int(r))
+}
+
+// Byte offset `chars` code points after `pos`.
+@(private = "file")
+advance_chars :: proc(s: string, pos: int, chars: int) -> int {
+	i, left := pos, chars
+	for i < len(s) && left > 0 {
+		i += 1
+		for i < len(s) && s[i] & 0xC0 == 0x80 do i += 1
+		left -= 1
+	}
+	return i
 }

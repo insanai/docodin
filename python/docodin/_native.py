@@ -2,11 +2,15 @@
 
 from __future__ import annotations
 
+import array
 import ctypes
+import itertools
 import marshal
 import os
+import struct
 import sys
 import threading
+from collections.abc import Sequence
 from typing import Any
 
 ABI_VERSION = 2
@@ -94,6 +98,11 @@ class NativeLibrary:
             ctypes.c_bool,
             ctypes.POINTER(ssize),
         ]
+        self._educate = getattr(lib, "docodin_educate", None)
+        if self._educate is not None:
+            self._educate.restype = ctypes.c_void_p
+            self._educate.argtypes = [ctypes.c_char_p, ssize, ctypes.POINTER(ssize)]
+        self._educate_headers: dict[tuple[str, str, tuple[str, ...] | None], bytes] = {}
         lib.docodin_free.restype = None
         lib.docodin_free.argtypes = [ctypes.c_void_p]
         self._lib = lib
@@ -277,6 +286,71 @@ class NativeLibrary:
         )
         return self._take_str(ptr, size.value)
 
+    @property
+    def has_educate(self) -> bool:
+        """Whether the library exports ``docodin_educate`` (smart quotes)."""
+        return self._educate is not None
+
+    def educate(
+        self,
+        kinds: Sequence[str],
+        texts: Sequence[str],
+        attr: str,
+        language: str,
+        quotes: tuple[str, ...] | None = None,
+    ) -> list[str]:
+        """``smartquotes.educate_tokens`` natively, for one block of tokens.
+
+        Args:
+            kinds: The token types: "tag", "literal" or other (text).
+            texts: The token texts.
+            attr: The ``educate_tokens`` action string ("1", "2", "3", "-1", letters).
+            language: The language tag (its quotes come from the native table).
+            quotes: Quotation marks overriding the table's (open/close primary,
+                open/close secondary).
+
+        Returns:
+            The educated text of every token.
+
+        Raises:
+            UnicodeEncodeError: If a text is not encodable (lone surrogates).
+            MemoryError: If the native call fails.
+        """
+        header = self._educate_headers.get((attr, language, quotes))
+        if header is None:
+            header = self._educate_header(attr, language, quotes)
+        request = b"".join((
+            header, _pack_int(len(texts)), array.array(_SSIZE_CODE, map(len, texts)).tobytes(),
+            bytes(map(_TOKEN_KINDS.get, kinds, itertools.repeat(0))),
+            "".join(texts).encode("utf-8"),
+        ))
+        size = ctypes.c_ssize_t()
+        ptr = self._educate(request, len(request), ctypes.byref(size))
+        return self._take(ptr, size.value)[1]
+
+    def _educate_header(self, attr: str, language: str,
+                        quotes: tuple[str, ...] | None) -> bytes:
+        """The settings part of an educate request (see ``docodin_educate``)."""
+        marks = () if quotes is None else quotes
+        header = b"".join((
+            _field(attr), _field(language), _pack_int(quotes is not None), *map(_field, marks),
+        ))
+        if len(self._educate_headers) < 64:
+            self._educate_headers[(attr, language, quotes)] = header
+        return header
+
+
+# Token_Kind of odin/text/smartquotes.odin
+_TOKEN_KINDS = {"literal": 1, "tag": 2}
+# array and struct code of ``ctypes.c_ssize_t`` (Odin ``int``)
+_SSIZE_CODE = "q" if ctypes.sizeof(ctypes.c_ssize_t) == 8 else "i"
+_pack_int = struct.Struct("=" + _SSIZE_CODE).pack
+
+
+def _field(text: str) -> bytes:
+    """A length-prefixed UTF-8 field of a request."""
+    data = text.encode("utf-8")
+    return _pack_int(len(data)) + data
 
 _lock = threading.Lock()
 _instance: NativeLibrary | None = None
