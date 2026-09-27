@@ -139,6 +139,64 @@ def version() -> str:
     return native().version
 
 
+def render_html(
+    source: str,
+    *,
+    title: str = "",
+    author: str = "",
+    standalone: bool = True,
+    embed_css: bool = True,
+) -> str:
+    """Render reStructuredText directly to HTML5 using the native Odin engine.
+
+    Args:
+        source: Input reStructuredText markup string.
+        title: Document title to embed in the HTML head and header.
+        author: Document author metadata.
+        standalone: Whether to emit a complete HTML5 document or just body fragment.
+        embed_css: Whether to embed default responsive styling.
+
+    Returns:
+        The rendered HTML5 string.
+    """
+    return native().render_html(
+        source,
+        title=title,
+        author=author,
+        standalone=standalone,
+        embed_css=embed_css,
+    )
+
+
+def render_latex(
+    source: str,
+    *,
+    title: str = "",
+    author: str = "",
+    date: str = "",
+    standalone: bool = True,
+) -> str:
+    """Render reStructuredText directly to LaTeX 2e using the native Odin engine.
+
+    Args:
+        source: Input reStructuredText markup string.
+        title: Document title for the LaTeX preamble and \\maketitle.
+        author: Document author metadata.
+        date: Document date metadata.
+        standalone: Whether to emit a complete LaTeX document or fragment.
+
+    Returns:
+        The rendered LaTeX string.
+    """
+    return native().render_latex(
+        source,
+        title=title,
+        author=author,
+        date=date,
+        standalone=standalone,
+    )
+
+
 __all__ = [
     "OdinRSTParser",
     "Parser",
@@ -151,6 +209,8 @@ __all__ = [
     "publish_file",
     "publish_parts",
     "publish_string",
+    "render_html",
+    "render_latex",
     "uninstall_shim",
     "unpatch_docutils",
     "version",

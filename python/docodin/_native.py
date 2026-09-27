@@ -77,12 +77,31 @@ class NativeLibrary:
         ]
         lib.docodin_split_lines.restype = ctypes.c_void_p
         lib.docodin_split_lines.argtypes = [ctypes.c_char_p, ssize, ctypes.c_int32, ctypes.POINTER(ssize)]
+        lib.docodin_render_html.restype = ctypes.c_void_p
+        lib.docodin_render_html.argtypes = [
+            ctypes.c_char_p, ssize,
+            ctypes.c_char_p, ssize,
+            ctypes.c_char_p, ssize,
+            ctypes.c_bool, ctypes.c_bool,
+            ctypes.POINTER(ssize),
+        ]
+        lib.docodin_render_latex.restype = ctypes.c_void_p
+        lib.docodin_render_latex.argtypes = [
+            ctypes.c_char_p, ssize,
+            ctypes.c_char_p, ssize,
+            ctypes.c_char_p, ssize,
+            ctypes.c_char_p, ssize,
+            ctypes.c_bool,
+            ctypes.POINTER(ssize),
+        ]
         lib.docodin_free.restype = None
         lib.docodin_free.argtypes = [ctypes.c_void_p]
         self._lib = lib
         self._parse = lib.docodin_parse
         self._parse_inline = lib.docodin_parse_inline
         self._split_lines = lib.docodin_split_lines
+        self._render_html = lib.docodin_render_html
+        self._render_latex = lib.docodin_render_latex
         self._free = lib.docodin_free
         self.version = lib.docodin_version().decode()
 
@@ -98,6 +117,15 @@ class NativeLibrary:
             raise RuntimeError(f"docodin: unexpected wire format version {result[0]}")
         return result
 
+    def _take_str(self, ptr: int | None, size: int) -> str:
+        if not ptr:
+            raise MemoryError("docodin: native renderer returned no result")
+        try:
+            data = ctypes.string_at(ptr, size)
+        finally:
+            self._free(ptr)
+        return data.decode("utf-8")
+
     def parse(
         self,
         text: str,
@@ -109,11 +137,24 @@ class NativeLibrary:
         line_length_limit: int = 10_000,
         root_line: int = 0,
     ) -> tuple[list, int, int, int]:
-        """Parse reST; ``line_count >= 0`` means ``text`` is ``'\\n'``-joined lines.
+        """Parse reStructuredText markup into an intermediate wire-format tree.
 
-        Returns (items, number_of_lines, final_line_offset, current_line):
-        ``current_line`` is docutils' ``document.current_line`` after the parse
-        (a line number, 0 for None, -1 for None without a current source)."""
+        Args:
+            text: The reStructuredText markup string to parse.
+            input_offset: Offset in lines of this block within parent source. Defaults to 0.
+            line_count: Number of pre-split lines if text is '\\n'-joined; -1 if raw text.
+            flags: Bitmask flags controlling parse behavior (e.g. MATCH_TITLES, RFC2822).
+            tab_width: Number of spaces per tab expansion. Defaults to 8.
+            line_length_limit: Maximum allowed characters per line before error. Defaults to 10,000.
+            root_line: Line number offset from top-level state machine. Defaults to 0.
+
+        Returns:
+            Tuple of (items, number_of_lines, final_line_offset, current_line).
+
+        Raises:
+            MemoryError: If the native parser fails to allocate a result buffer.
+            RuntimeError: If the returned wire format version is unexpected.
+        """
         data = text.encode("utf-8", "surrogatepass")
         size = ctypes.c_ssize_t()
         ptr = self._parse(
@@ -124,17 +165,117 @@ class NativeLibrary:
         return items, count, final_offset, current_line
 
     def split_lines(self, text: str, tab_width: int = 8) -> list[str]:
-        """``docutils.statemachine.string2lines(text, tab_width, convert_whitespace=True)``."""
+        """Split string into normalized lines with tab expansion via native Odin engine.
+
+        Args:
+            text: The input text to split into lines.
+            tab_width: Number of spaces for tab expansion. Defaults to 8.
+
+        Returns:
+            List of normalized string lines with expanded tabs.
+
+        Raises:
+            MemoryError: If the native splitter fails to allocate a buffer.
+        """
         data = text.encode("utf-8", "surrogatepass")
         size = ctypes.c_ssize_t()
         ptr = self._split_lines(data, len(data), tab_width, ctypes.byref(size))
         return self._take(ptr, size.value)[1]
 
     def parse_inline(self, text: str, lineno: int = 0, flags: int = 0) -> list:
+        """Parse inline reStructuredText markup into node tuples via native Odin engine.
+
+        Args:
+            text: The inline reStructuredText markup string to parse.
+            lineno: Source line number for error reporting. Defaults to 0.
+            flags: Parser flags bitmask. Defaults to 0.
+
+        Returns:
+            List of parsed inline node tuples in wire format.
+
+        Raises:
+            MemoryError: If the native inline parser fails to allocate a buffer.
+        """
         data = text.encode("utf-8", "surrogatepass")
         size = ctypes.c_ssize_t()
         ptr = self._parse_inline(data, len(data), lineno, flags, ctypes.byref(size))
         return self._take(ptr, size.value)[1]
+
+    def render_html(
+        self,
+        text: str,
+        *,
+        title: str = "",
+        author: str = "",
+        standalone: bool = True,
+        embed_css: bool = True,
+    ) -> str:
+        """Render reStructuredText directly to HTML5 using the native Odin engine.
+
+        Args:
+            text: The reStructuredText markup string to render.
+            title: Document title to embed in the HTML head and header.
+            author: Document author metadata.
+            standalone: Whether to emit a complete HTML5 document or just body fragment.
+            embed_css: Whether to embed default responsive styling.
+
+        Returns:
+            The rendered HTML5 string.
+
+        Raises:
+            MemoryError: If the native renderer fails to allocate or return a buffer.
+        """
+        data = text.encode("utf-8", "surrogatepass")
+        title_bytes = title.encode("utf-8", "surrogatepass") if title else b""
+        author_bytes = author.encode("utf-8", "surrogatepass") if author else b""
+        size = ctypes.c_ssize_t()
+        ptr = self._render_html(
+            data, len(data),
+            title_bytes, len(title_bytes),
+            author_bytes, len(author_bytes),
+            standalone, embed_css,
+            ctypes.byref(size),
+        )
+        return self._take_str(ptr, size.value)
+
+    def render_latex(
+        self,
+        text: str,
+        *,
+        title: str = "",
+        author: str = "",
+        date: str = "",
+        standalone: bool = True,
+    ) -> str:
+        """Render reStructuredText directly to LaTeX 2e using the native Odin engine.
+
+        Args:
+            text: The reStructuredText markup string to render.
+            title: Document title for the LaTeX preamble and \\maketitle.
+            author: Document author metadata.
+            date: Document date metadata.
+            standalone: Whether to emit a complete LaTeX document or fragment.
+
+        Returns:
+            The rendered LaTeX string.
+
+        Raises:
+            MemoryError: If the native renderer fails to allocate or return a buffer.
+        """
+        data = text.encode("utf-8", "surrogatepass")
+        title_bytes = title.encode("utf-8", "surrogatepass") if title else b""
+        author_bytes = author.encode("utf-8", "surrogatepass") if author else b""
+        date_bytes = date.encode("utf-8", "surrogatepass") if date else b""
+        size = ctypes.c_ssize_t()
+        ptr = self._render_latex(
+            data, len(data),
+            title_bytes, len(title_bytes),
+            author_bytes, len(author_bytes),
+            date_bytes, len(date_bytes),
+            standalone,
+            ctypes.byref(size),
+        )
+        return self._take_str(ptr, size.value)
 
 
 _lock = threading.Lock()
