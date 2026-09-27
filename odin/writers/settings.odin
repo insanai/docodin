@@ -147,7 +147,8 @@ settings_from_doctree :: proc(s: ^dt.Settings, writer: Writer_Name) -> Settings 
 
 @(private = "file")
 html_from_doctree :: proc(out: ^Settings, s: ^dt.Settings) {
-	out.initial_header_level = int_str(s.initial_header_level)
+	out.initial_header_level =
+		"auto" if s.initial_header_level == 0 else int_str(s.initial_header_level)
 	out.math_output = s.math_output
 	out.compact_lists = s.compact_lists
 	out.compact_field_lists = s.compact_field_lists

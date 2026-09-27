@@ -82,7 +82,7 @@ Settings :: struct {
 	template:                       string,
 	// html5
 	math_output:                    string,
-	initial_header_level:           int,
+	initial_header_level:           int, // 0: "auto"
 	xml_declaration:                bool,
 	compact_lists:                  bool,
 	compact_field_lists:            bool,

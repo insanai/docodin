@@ -696,6 +696,8 @@ setting_int :: proc(l: ^Loader, v: json.Value, name: string) -> int {
 		return 0
 	case json.String:
 		if i, ok := strconv.parse_int(x, 10); ok do return i
+		// ``initial_header_level`` "auto": 0 (see ``Settings``)
+		if x == "auto" && name == "initial_header_level" do return 0
 	}
 	fail(l, "settings: %s is not an integer: %v", name, v)
 	return 0
@@ -710,6 +712,11 @@ setting_string :: proc(l: ^Loader, v: json.Value, name: string) -> string {
 		return ""
 	case json.Boolean:
 		if !x do return ""
+	case json.Array:
+		// a comma-separated list setting given as a list (``use_bibtex``)
+		items := make([]string, len(x), context.temp_allocator)
+		for e, i in x do items[i] = as_string(l, e, name)
+		return strings.join(items, ",", l.doc.allocator)
 	}
 	fail(l, "settings: %s is not a string: %v", name, v)
 	return ""
