@@ -94,3 +94,19 @@ def test_sphinx_with_patch(tmp_path):
         docodin.unpatch_docutils()
     for name in stock:
         assert ours[name].replace(os.sep + "patched" + os.sep, os.sep) == stock[name], name
+
+
+@pytest.mark.parametrize("enabled", [True, False])
+def test_extension_tunes_the_collector(tmp_path, enabled):
+    import subprocess
+    import sys
+
+    (tmp_path / "conf.py").write_text(
+        f"extensions = ['docodin.sphinx']\ndocodin_gc_tuning = {enabled}\n", encoding="utf-8")
+    (tmp_path / "index.rst").write_text("Title\n=====\n\nText.\n", encoding="utf-8")
+    code = ("import gc\nfrom sphinx.cmd.build import build_main\n"
+            "from docodin.sphinx_build import GC_THRESHOLDS\n"
+            f"rc = build_main(['-q', '-b', 'html', {str(tmp_path)!r}, {str(tmp_path / 'o')!r}])\n"
+            "print(rc, gc.get_threshold() == GC_THRESHOLDS)")
+    proc = subprocess.run([sys.executable, "-c", code], capture_output=True, text=True, check=False)
+    assert proc.stdout.split() == ["0", str(enabled)], proc.stderr

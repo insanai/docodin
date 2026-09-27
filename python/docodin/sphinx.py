@@ -55,6 +55,17 @@ class OdinSphinxRSTParser(RSTParser):
         return None
 
 
+def _tune_garbage_collection(app: Any) -> None:
+    if app.config.docodin_gc_tuning:
+        import gc
+
+        from docodin.sphinx_build import GC_THRESHOLDS, _collect_and_freeze
+
+        gc.set_threshold(*GC_THRESHOLDS)
+        _collect_and_freeze()
+        app.connect("env-updated", _collect_and_freeze)
+
+
 def setup(app: Any) -> dict[str, Any]:
     """Register docodin as the accelerated reStructuredText parser in Sphinx.
 
@@ -65,6 +76,9 @@ def setup(app: Any) -> dict[str, Any]:
         Extension metadata dictionary including version and parallel safety flags.
     """
     app.add_source_parser(OdinSphinxRSTParser, override=True)
+    # the collector tuning of docodin-sphinx-build (``docodin_gc_tuning = False`` disables it)
+    app.add_config_value("docodin_gc_tuning", True, "")
+    app.connect("builder-inited", _tune_garbage_collection)
     from docodin import __version__
 
     return {
