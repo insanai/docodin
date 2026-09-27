@@ -3,6 +3,9 @@ package rst
 import "core:fmt"
 import "core:strings"
 
+// Native LaTeX 2e emitter (``docodin_render_latex``, ``docodin latex``,
+// ``docodin pdf``).
+
 Latex_Config :: struct {
 	title:      string,
 	author:     string,
@@ -14,379 +17,315 @@ Latex_Config :: struct {
 }
 
 Latex_Writer :: struct {
-	p:             ^Parser,
-	buf:           strings.Builder,
-	config:        Latex_Config,
-	title_styles:  [dynamic]Title_Style,
-	section_depth: int,
-	in_table:      bool,
+	using ctx:    Render_Context,
+	buf:          strings.Builder,
+	config:       Latex_Config,
+	title_styles: [dynamic]Title_Style,
+	// The section title shown by ``\maketitle`` (standalone documents without
+	// a configured title): it gets no ``\section`` of its own, and the
+	// sections below it move up a level.
+	promoted:     Node,
 }
 
+@(private = "file")
+LATEX_PREAMBLE :: `\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{amsmath,amssymb}
+\usepackage{alltt}
+\usepackage{graphicx}
+\usepackage[export]{adjustbox}
+\usepackage{booktabs}
+\usepackage{longtable}
+\usepackage{xcolor}
+\usepackage{geometry}
+\geometry{margin=1in}
+\usepackage[colorlinks=true,linkcolor=blue,urlcolor=blue]{hyperref}
+
+`
+
+// Text: every character with a meaning in LaTeX is escaped.
 escape_latex_text :: proc(b: ^strings.Builder, s: string) {
 	for i := 0; i < len(s); i += 1 {
-		b_byte := s[i]
-		switch b_byte {
-		case '\\':
-			strings.write_string(b, "\\textbackslash{}")
-		case '&':
-			strings.write_string(b, "\\&")
-		case '%':
-			strings.write_string(b, "\\%")
-		case '$':
-			strings.write_string(b, "\\$")
-		case '#':
-			strings.write_string(b, "\\#")
-		case '_':
-			strings.write_string(b, "\\_")
-		case '{':
-			strings.write_string(b, "\\{")
-		case '}':
-			strings.write_string(b, "\\}")
-		case '~':
-			strings.write_string(b, "\\textasciitilde{}")
-		case '^':
-			strings.write_string(b, "\\textasciicircum{}")
-		case:
-			strings.write_byte(b, b_byte)
+		switch c := s[i]; c {
+		case '\\': strings.write_string(b, "\\textbackslash{}")
+		case '&':  strings.write_string(b, "\\&")
+		case '%':  strings.write_string(b, "\\%")
+		case '$':  strings.write_string(b, "\\$")
+		case '#':  strings.write_string(b, "\\#")
+		case '_':  strings.write_string(b, "\\_")
+		case '{':  strings.write_string(b, "\\{")
+		case '}':  strings.write_string(b, "\\}")
+		case '~':  strings.write_string(b, "\\textasciitilde{}")
+		case '^':  strings.write_string(b, "\\textasciicircum{}")
+		case 0:    // NUL bytes cannot be typeset
+		case:      strings.write_byte(b, c)
+		}
+	}
+}
+
+// URLs and file names (``\href``, ``\includegraphics``), escaped for hyperref.
+escape_latex_url :: proc(b: ^strings.Builder, s: string) {
+	for i := 0; i < len(s); i += 1 {
+		switch c := s[i]; c {
+		case '\\': strings.write_string(b, "\\\\")
+		case '#':  strings.write_string(b, "\\#")
+		case '%':  strings.write_string(b, "\\%")
+		case '{':  strings.write_string(b, "\\{")
+		case '}':  strings.write_string(b, "\\}")
+		case '~':  strings.write_string(b, "\\textasciitilde{}")
+		case 0:
+		case:      strings.write_byte(b, c)
 		}
 	}
 }
 
 write_latex :: proc(doc: Node, p: ^Parser, config: Latex_Config) -> string {
-	t := &p.tree
-	w := Latex_Writer{
-		p            = p,
+	w := Latex_Writer {
+		ctx          = render_context_make(p, doc),
+		buf          = strings.builder_make(p.allocator),
 		config       = config,
 		title_styles = make([dynamic]Title_Style, p.allocator),
 	}
-	w.buf = strings.builder_make(p.allocator)
-
-	title := config.title
-	if len(title) == 0 {
-		for n := t.nodes[doc].first; n != NO_NODE; n = t.nodes[n].next {
-			if t.nodes[n].kind == .Section_Title && t.nodes[n].first != NO_NODE {
-				title = t.nodes[t.nodes[n].first].raw if len(t.nodes[t.nodes[n].first].raw) > 0 else t.nodes[t.nodes[n].first].text
-				break
-			}
-		}
-	}
-	if len(title) == 0 do title = "Document"
-
-	doc_class := config.doc_class if len(config.doc_class) > 0 else "article"
-	papersize := config.papersize if len(config.papersize) > 0 else "a4paper"
-	fontsize := config.fontsize if len(config.fontsize) > 0 else "11pt"
-
 	if config.standalone {
-		fmt.sbprintf(&w.buf, "\\documentclass[%s,%s]{{%s}}\n", fontsize, papersize, doc_class)
-		strings.write_string(&w.buf, "\\usepackage[utf8]{inputenc}\n")
-		strings.write_string(&w.buf, "\\usepackage[T1]{fontenc}\n")
-		strings.write_string(&w.buf, "\\usepackage{lmodern}\n")
-		strings.write_string(&w.buf, "\\usepackage{amsmath,amssymb}\n")
-		strings.write_string(&w.buf, "\\usepackage{graphicx}\n")
-		strings.write_string(&w.buf, "\\usepackage{booktabs}\n")
-		strings.write_string(&w.buf, "\\usepackage{longtable}\n")
-		strings.write_string(&w.buf, "\\usepackage{xcolor}\n")
-		strings.write_string(&w.buf, "\\usepackage{geometry}\n")
-		strings.write_string(&w.buf, "\\geometry{margin=1in}\n")
-		strings.write_string(&w.buf, "\\usepackage[colorlinks=true,linkcolor=blue,urlcolor=blue]{hyperref}\n\n")
-
-		strings.write_string(&w.buf, "\\title{")
-		escape_latex_text(&w.buf, title)
-		strings.write_string(&w.buf, "}\n")
-
-		if len(config.author) > 0 {
-			strings.write_string(&w.buf, "\\author{")
-			escape_latex_text(&w.buf, config.author)
-			strings.write_string(&w.buf, "}\n")
-		}
-		if len(config.date) > 0 {
-			strings.write_string(&w.buf, "\\date{")
-			escape_latex_text(&w.buf, config.date)
-			strings.write_string(&w.buf, "}\n")
-		} else {
-			strings.write_string(&w.buf, "\\date{\\today}\n")
-		}
-
-		strings.write_string(&w.buf, "\n\\begin{document}\n\\maketitle\n\n")
+		if config.title == "" do w.promoted = first_section_title(w.t, doc)
+		latex_preamble(&w, document_title(&w.ctx, doc, config.title))
 	}
-
-	for n := t.nodes[doc].first; n != NO_NODE; n = t.nodes[n].next {
-		latex_render_block(&w, n)
-	}
-
-	if config.standalone {
-		strings.write_string(&w.buf, "\n\\end{document}\n")
-	}
-
+	it := children(w.t, doc)
+	for n in iterate(&it) do latex_block(&w, n)
+	if config.standalone do strings.write_string(&w.buf, "\n\\end{document}\n")
 	return strings.to_string(w.buf)
 }
 
 @(private = "file")
-latex_render_block :: proc(w: ^Latex_Writer, n: Node) {
-	t := &w.p.tree
-	#partial switch t.nodes[n].kind {
-	case .Section_Title:
-		latex_section_title(w, n)
+latex_preamble :: proc(w: ^Latex_Writer, title: string) {
+	b := &w.buf
+	c := w.config
+	doc_class := c.doc_class if c.doc_class != "" else "article"
+	papersize := c.papersize if c.papersize != "" else "a4paper"
+	fontsize := c.fontsize if c.fontsize != "" else "11pt"
+	strings.write_string(b, "\\documentclass[")
+	escape_latex_text(b, fontsize)
+	strings.write_byte(b, ',')
+	escape_latex_text(b, papersize)
+	strings.write_string(b, "]{")
+	escape_latex_text(b, doc_class)
+	strings.write_string(b, "}\n")
+	strings.write_string(b, LATEX_PREAMBLE)
+	latex_command(w, "\\title{", title, "}\n")
+	if c.author != "" do latex_command(w, "\\author{", c.author, "}\n")
+	if c.date != "" {
+		latex_command(w, "\\date{", c.date, "}\n")
+	} else {
+		strings.write_string(b, "\\date{\\today}\n")
+	}
+	strings.write_string(b, "\n\\begin{document}\n\\maketitle\n\n")
+}
 
-	case .Paragraph:
-		for ch := t.nodes[n].first; ch != NO_NODE; ch = t.nodes[ch].next {
-			latex_render_inline(w, ch)
-		}
-		strings.write_string(&w.buf, "\n\n")
+// ``open`` + escaped ``text`` + ``close``.
+@(private = "file")
+latex_command :: proc(w: ^Latex_Writer, open, text, close: string) {
+	strings.write_string(&w.buf, open)
+	escape_latex_text(&w.buf, text)
+	strings.write_string(&w.buf, close)
+}
 
-	case .Bullet_List:
-		strings.write_string(&w.buf, "\\begin{itemize}\n")
-		for ch := t.nodes[n].first; ch != NO_NODE; ch = t.nodes[ch].next {
-			if t.nodes[ch].kind == .List_Item {
-				strings.write_string(&w.buf, "  \\item ")
-				for item_ch := t.nodes[ch].first; item_ch != NO_NODE; item_ch = t.nodes[item_ch].next {
-					if t.nodes[item_ch].kind == .Paragraph {
-						for p_ch := t.nodes[item_ch].first; p_ch != NO_NODE; p_ch = t.nodes[p_ch].next {
-							latex_render_inline(w, p_ch)
-						}
-						strings.write_byte(&w.buf, '\n')
-					} else {
-						latex_render_block(w, item_ch)
-					}
-				}
-			}
-		}
-		strings.write_string(&w.buf, "\\end{itemize}\n\n")
-
-	case .Enumerated_List:
-		strings.write_string(&w.buf, "\\begin{enumerate}\n")
-		for ch := t.nodes[n].first; ch != NO_NODE; ch = t.nodes[ch].next {
-			if t.nodes[ch].kind == .List_Item {
-				strings.write_string(&w.buf, "  \\item ")
-				for item_ch := t.nodes[ch].first; item_ch != NO_NODE; item_ch = t.nodes[item_ch].next {
-					if t.nodes[item_ch].kind == .Paragraph {
-						for p_ch := t.nodes[item_ch].first; p_ch != NO_NODE; p_ch = t.nodes[p_ch].next {
-							latex_render_inline(w, p_ch)
-						}
-						strings.write_byte(&w.buf, '\n')
-					} else {
-						latex_render_block(w, item_ch)
-					}
-				}
-			}
-		}
-		strings.write_string(&w.buf, "\\end{enumerate}\n\n")
-
-	case .Definition_List:
-		strings.write_string(&w.buf, "\\begin{description}\n")
-		for ch := t.nodes[n].first; ch != NO_NODE; ch = t.nodes[ch].next {
-			if t.nodes[ch].kind == .Definition_List_Item {
-				term := ""
-				for item_ch := t.nodes[ch].first; item_ch != NO_NODE; item_ch = t.nodes[item_ch].next {
-					if t.nodes[item_ch].kind == .Term {
-						term = t.nodes[item_ch].raw if len(t.nodes[item_ch].raw) > 0 else t.nodes[item_ch].text
-						break
-					}
-				}
-				strings.write_string(&w.buf, "  \\item[")
-				escape_latex_text(&w.buf, term)
-				strings.write_string(&w.buf, "] ")
-				for item_ch := t.nodes[ch].first; item_ch != NO_NODE; item_ch = t.nodes[item_ch].next {
-					if t.nodes[item_ch].kind == .Definition {
-						for d_ch := t.nodes[item_ch].first; d_ch != NO_NODE; d_ch = t.nodes[d_ch].next {
-							if t.nodes[d_ch].kind == .Paragraph {
-								for p_ch := t.nodes[d_ch].first; p_ch != NO_NODE; p_ch = t.nodes[p_ch].next {
-									latex_render_inline(w, p_ch)
-								}
-								strings.write_byte(&w.buf, '\n')
-							} else {
-								latex_render_block(w, d_ch)
-							}
-						}
-					}
-				}
-			}
-		}
-		strings.write_string(&w.buf, "\\end{description}\n\n")
-
-	case .Field_List:
-		strings.write_string(&w.buf, "\\begin{description}\n")
-		for ch := t.nodes[n].first; ch != NO_NODE; ch = t.nodes[ch].next {
-			if t.nodes[ch].kind == .Field {
-				name := ""
-				for item_ch := t.nodes[ch].first; item_ch != NO_NODE; item_ch = t.nodes[item_ch].next {
-					if t.nodes[item_ch].kind == .Field_Name {
-						name = t.nodes[item_ch].raw if len(t.nodes[item_ch].raw) > 0 else t.nodes[item_ch].text
-						break
-					}
-				}
-				strings.write_string(&w.buf, "  \\item[")
-				escape_latex_text(&w.buf, name)
-				strings.write_string(&w.buf, ":] ")
-				for item_ch := t.nodes[ch].first; item_ch != NO_NODE; item_ch = t.nodes[item_ch].next {
-					if t.nodes[item_ch].kind == .Field_Body {
-						for d_ch := t.nodes[item_ch].first; d_ch != NO_NODE; d_ch = t.nodes[d_ch].next {
-							if t.nodes[d_ch].kind == .Paragraph {
-								for p_ch := t.nodes[d_ch].first; p_ch != NO_NODE; p_ch = t.nodes[p_ch].next {
-									latex_render_inline(w, p_ch)
-								}
-								strings.write_byte(&w.buf, '\n')
-							} else {
-								latex_render_block(w, d_ch)
-							}
-						}
-					}
-				}
-			}
-		}
-		strings.write_string(&w.buf, "\\end{description}\n\n")
-
-	case .Literal_Block, .Doctest_Block:
-		strings.write_string(&w.buf, "\\begin{quote}\n\\begin{verbatim}\n")
-		strings.write_string(&w.buf, t.nodes[n].text)
-		strings.write_string(&w.buf, "\n\\end{verbatim}\n\\end{quote}\n\n")
-
-	case .Line_Block:
-		strings.write_string(&w.buf, "\\begin{quote}\n")
-		for ch := t.nodes[n].first; ch != NO_NODE; ch = t.nodes[ch].next {
-			if t.nodes[ch].kind == .Line {
-				for l_ch := t.nodes[ch].first; l_ch != NO_NODE; l_ch = t.nodes[l_ch].next do latex_render_inline(w, l_ch)
-				strings.write_string(&w.buf, "\\\\\n")
-			}
-		}
-		strings.write_string(&w.buf, "\\end{quote}\n\n")
-
-	case .Block_Quote:
-		strings.write_string(&w.buf, "\\begin{quote}\n")
-		for ch := t.nodes[n].first; ch != NO_NODE; ch = t.nodes[ch].next {
-			latex_render_block(w, ch)
-		}
-		strings.write_string(&w.buf, "\\end{quote}\n\n")
-
-	case .Attribution:
-		strings.write_string(&w.buf, "\\begin{flushright}\n--- \\emph{")
-		escape_latex_text(&w.buf, t.nodes[n].text)
-		strings.write_string(&w.buf, "}\n\\end{flushright}\n\n")
-
-	case .Transition:
-		strings.write_string(&w.buf, "\\bigskip\\hrule\\bigskip\n\n")
-
-	case .Table:
-		latex_render_table(w, n)
-
-	case .Directive:
-		latex_render_directive(w, n)
-
-	case .Comment:
-		// Comments are omitted from LaTeX output
-
-	case:
-		for ch := t.nodes[n].first; ch != NO_NODE; ch = t.nodes[ch].next {
-			latex_render_block(w, ch)
+@(private = "file")
+latex_children :: proc(w: ^Latex_Writer, n: Node, inline := false) {
+	it := children(w.t, n)
+	for c in iterate(&it) {
+		if inline {
+			latex_inline(w, c)
+		} else {
+			latex_block(w, c)
 		}
 	}
+}
+
+// Block children, paragraphs written compactly (list items, definitions).
+@(private = "file")
+latex_compact :: proc(w: ^Latex_Writer, n: Node) {
+	it := children(w.t, n)
+	for c in iterate(&it) {
+		if w.t.nodes[c].kind == .Paragraph {
+			latex_children(w, c, inline = true)
+			strings.write_byte(&w.buf, '\n')
+		} else {
+			latex_block(w, c)
+		}
+	}
+}
+
+// A block element whose children are written between ``open`` and
+// ``close`` (as inline markup when ``inline``).
+@(private = "file")
+Latex_Wrap :: struct {
+	open, close: string,
+	inline:      bool,
+}
+
+@(private = "file")
+LATEX_WRAPS := #partial [Node_Kind]Latex_Wrap {
+	.Paragraph       = {"", "\n\n", true},
+	.Bullet_List     = {"\\begin{itemize}\n", "\\end{itemize}\n\n", false},
+	.Enumerated_List = {"\\begin{enumerate}\n", "\\end{enumerate}\n\n", false},
+	.Definition_List = {"\\begin{description}\n", "\\end{description}\n\n", false},
+	.Field_List      = {"\\begin{description}\n", "\\end{description}\n\n", false},
+	.Block_Quote     = {"\\begin{quote}\n", "\\end{quote}\n\n", false},
+	.Attribution     = {"\\begin{flushright}\n--- \\emph{", "}\n\\end{flushright}\n\n", true},
+	.Transition      = {"\\bigskip\\hrule\\bigskip\n\n", "", false},
+}
+
+@(private = "file")
+latex_block :: proc(w: ^Latex_Writer, n: Node) {
+	d := node_data(w.t, n)
+	#partial switch d.kind {
+	case .Section_Title:
+		latex_section_title(w, n)
+	case .List_Item:
+		strings.write_string(&w.buf, "  \\item ")
+		latex_compact(w, n)
+	case .Definition_List_Item, .Field:
+		latex_labelled_item(w, n)
+	case .Literal_Block, .Doctest_Block:
+		latex_verbatim(w, d.text)
+	case .Line_Block:
+		latex_line_block(w, n)
+	case .Table:
+		latex_table(w, n)
+	case .Directive:
+		latex_directive(w, n)
+	case .Footnote, .Citation:
+		latex_note(w, n, d)
+	case .Target:
+		if id, ok := target_anchor(&w.ctx, d); ok do latex_anchor(w, id)
+	case .Label, .Comment, .Substitution_Definition:
+	case:
+		wrap := LATEX_WRAPS[d.kind]
+		strings.write_string(&w.buf, wrap.open)
+		latex_children(w, n, wrap.inline)
+		strings.write_string(&w.buf, wrap.close)
+	}
+}
+
+// ``\phantomsection\label{id}``: a hyperlink target here (``id`` is
+// [a-z0-9-] only, see ``anchor_id``).
+@(private = "file")
+latex_anchor :: proc(w: ^Latex_Writer, id: string) {
+	fmt.sbprintf(&w.buf, "\\phantomsection\\label{{%s}}", id)
+}
+
+// A definition list item or field: ``\item[term] definition``.
+@(private = "file")
+latex_labelled_item :: proc(w: ^Latex_Writer, n: Node) {
+	t := w.t
+	term, body := NO_NODE, NO_NODE
+	it := children(t, n)
+	for c in iterate(&it) {
+		#partial switch t.nodes[c].kind {
+		case .Term, .Field_Name:
+			if term == NO_NODE do term = c
+		case .Definition, .Field_Body:
+			body = c
+		}
+	}
+	strings.write_string(&w.buf, "  \\item[")
+	if term != NO_NODE do escape_latex_text(&w.buf, node_astext(&w.ctx, term))
+	if t.nodes[n].kind == .Field do strings.write_byte(&w.buf, ':')
+	strings.write_string(&w.buf, "] ")
+	if body != NO_NODE do latex_compact(w, body)
+}
+
+// Literal text: ``alltt`` keeps spaces and line breaks while the escapes
+// keep every character literal.
+@(private = "file")
+latex_verbatim :: proc(w: ^Latex_Writer, text: string) {
+	strings.write_string(&w.buf, "\\begin{quote}\n\\begin{alltt}\n")
+	escape_latex_text(&w.buf, text)
+	strings.write_string(&w.buf, "\n\\end{alltt}\n\\end{quote}\n\n")
+}
+
+@(private = "file")
+latex_line_block :: proc(w: ^Latex_Writer, n: Node) {
+	strings.write_string(&w.buf, "\\begin{quote}\n")
+	it := children(w.t, n)
+	for c in iterate(&it) {
+		if w.t.nodes[c].kind != .Line do continue
+		latex_children(w, c, inline = true)
+		strings.write_string(&w.buf, "\\mbox{}\\\\\n")
+	}
+	strings.write_string(&w.buf, "\\end{quote}\n\n")
+}
+
+@(private = "file")
+latex_note :: proc(w: ^Latex_Writer, n: Node, d: Node_Data) {
+	prefix := "footnote" if d.kind == .Footnote else "citation"
+	latex_anchor(w, note_id(w.ctx.a, prefix, d.name))
+	latex_command(w, "\\textsuperscript{", d.name, "} ")
+	latex_children(w, n)
+}
+
+@(private = "file")
+LATEX_SECTIONS := [?]string {
+	"\\section", "\\subsection", "\\subsubsection", "\\paragraph", "\\subparagraph",
 }
 
 @(private = "file")
 latex_section_title :: proc(w: ^Latex_Writer, n: Node) {
-	t := &w.p.tree
-	style := Title_Style{n = len(t.nodes[n].name)}
-	for i in 0 ..< min(len(t.nodes[n].name), 2) do style.chars[i] = t.nodes[n].name[i]
-
-	level := len(w.title_styles) + 1
-	for s, i in w.title_styles {
-		if s == style {
-			level = i + 1
-			break
-		}
+	level := section_level(&w.title_styles, w.t.nodes[n].name)
+	title := w.t.nodes[n].first
+	if title == NO_NODE do return
+	name := fully_normalize_name(node_astext(&w.ctx, title), w.ctx.a)
+	id := anchor_id(name, w.ctx.a)
+	if n == w.promoted {
+		// shown by \maketitle
+		latex_anchor(w, id)
+		strings.write_string(&w.buf, "\n\n")
+		return
 	}
-	if level > len(w.title_styles) do append(&w.title_styles, style)
-	w.section_depth = level
-
-	cmd := "\\section"
-	switch level {
-	case 1: cmd = "\\section"
-	case 2: cmd = "\\subsection"
-	case 3: cmd = "\\subsubsection"
-	case 4: cmd = "\\paragraph"
-	case:   cmd = "\\subparagraph"
-	}
-
-	title_node := t.nodes[n].first
-	title_text := ""
-	if title_node != NO_NODE {
-		title_text = t.nodes[title_node].raw if len(t.nodes[title_node].raw) > 0 else t.nodes[title_node].text
-	}
-
-	strings.write_string(&w.buf, cmd)
+	if w.promoted != NO_NODE && level > 1 do level -= 1
+	strings.write_string(&w.buf, LATEX_SECTIONS[clamp(level, 1, len(LATEX_SECTIONS)) - 1])
 	strings.write_byte(&w.buf, '{')
-	if title_node != NO_NODE {
-		for ch := t.nodes[title_node].first; ch != NO_NODE; ch = t.nodes[ch].next {
-			latex_render_inline(w, ch)
-		}
-	} else {
-		escape_latex_text(&w.buf, title_text)
-	}
-	strings.write_string(&w.buf, "}\n")
-
-	slug := slugify(title_text, context.temp_allocator)
-	if len(slug) > 0 {
-		fmt.sbprintf(&w.buf, "\\label{{%s}}\n", slug)
-	}
-	strings.write_byte(&w.buf, '\n')
+	latex_children(w, title, inline = true)
+	fmt.sbprintf(&w.buf, "}}\n\\label{{%s}}\n\n", id)
 }
 
 @(private = "file")
-latex_render_table :: proc(w: ^Latex_Writer, n: Node) {
-	t := &w.p.tree
-	cols := 1
-	for ch := t.nodes[n].first; ch != NO_NODE; ch = t.nodes[ch].next {
-		if t.nodes[ch].kind == .TGroup {
-			c_count := 0
-			for tg := t.nodes[ch].first; tg != NO_NODE; tg = t.nodes[tg].next {
-				if t.nodes[tg].kind == .Colspec do c_count += 1
-			}
-			if c_count > 0 do cols = c_count
-			break
-		}
-	}
-
+latex_table :: proc(w: ^Latex_Writer, n: Node) {
+	t := w.t
+	tgroup := t.nodes[n].first
+	if tgroup == NO_NODE || t.nodes[tgroup].kind != .TGroup do return
+	cols := max(int(t.nodes[tgroup].num[0]), 1)
 	strings.write_string(&w.buf, "\\begin{longtable}{")
-	for i := 0; i < cols; i += 1 {
+	for i in 0 ..< cols {
 		if i > 0 do strings.write_byte(&w.buf, ' ')
-		strings.write_string(&w.buf, "l")
+		strings.write_byte(&w.buf, 'l')
 	}
 	strings.write_string(&w.buf, "}\n\\toprule\n")
-
-	for ch := t.nodes[n].first; ch != NO_NODE; ch = t.nodes[ch].next {
-		if t.nodes[ch].kind == .TGroup {
-			for tg := t.nodes[ch].first; tg != NO_NODE; tg = t.nodes[tg].next {
-				if t.nodes[tg].kind == .THead {
-					for row := t.nodes[tg].first; row != NO_NODE; row = t.nodes[row].next {
-						if t.nodes[row].kind == .Row do latex_render_table_row(w, row)
-					}
-					strings.write_string(&w.buf, "\\midrule\n")
-				} else if t.nodes[tg].kind == .TBody {
-					for row := t.nodes[tg].first; row != NO_NODE; row = t.nodes[row].next {
-						if t.nodes[row].kind == .Row do latex_render_table_row(w, row)
-					}
-				}
-			}
-		}
+	it := children(t, tgroup)
+	for part in iterate(&it) {
+		kind := t.nodes[part].kind
+		if kind != .THead && kind != .TBody do continue
+		rows := children(t, part)
+		for row in iterate(&rows) do latex_table_row(w, row)
+		if kind == .THead do strings.write_string(&w.buf, "\\midrule\n")
 	}
-
 	strings.write_string(&w.buf, "\\bottomrule\n\\end{longtable}\n\n")
 }
 
 @(private = "file")
-latex_render_table_row :: proc(w: ^Latex_Writer, row: Node) {
-	t := &w.p.tree
+latex_table_row :: proc(w: ^Latex_Writer, row: Node) {
+	it := children(w.t, row)
 	first := true
-	for entry := t.nodes[row].first; entry != NO_NODE; entry = t.nodes[entry].next {
-		if t.nodes[entry].kind == .Entry {
-			if !first do strings.write_string(&w.buf, " & ")
-			first = false
-			for ech := t.nodes[entry].first; ech != NO_NODE; ech = t.nodes[ech].next {
-				if t.nodes[ech].kind == .Paragraph {
-					for pch := t.nodes[ech].first; pch != NO_NODE; pch = t.nodes[pch].next do latex_render_inline(w, pch)
-				} else {
-					latex_render_block(w, ech)
-				}
+	for entry in iterate(&it) {
+		if !first do strings.write_string(&w.buf, " & ")
+		first = false
+		cells := children(w.t, entry)
+		for c in iterate(&cells) {
+			if w.t.nodes[c].kind == .Paragraph {
+				latex_children(w, c, inline = true)
+			} else {
+				latex_block(w, c)
 			}
 		}
 	}
@@ -394,133 +333,93 @@ latex_render_table_row :: proc(w: ^Latex_Writer, row: Node) {
 }
 
 @(private = "file")
-latex_render_directive :: proc(w: ^Latex_Writer, n: Node) {
-	t := &w.p.tree
-	name := strings.to_lower(t.nodes[n].name, context.temp_allocator)
-	info, has_info := directive_info(t, n)
-	if !has_info do return
-
-	switch name {
-	case "attention", "caution", "danger", "error", "hint", "important", "note", "tip", "warning", "admonition":
-		fmt.sbprintf(&w.buf, "\\begin{{quote}}\n\\textbf{{%s:}}\\newline\n", strings.to_upper(name, context.temp_allocator))
-		if len(info.lines) > 0 {
-			nested := new_node(t, .Block_Quote, 0)
-			sm := make_state_machine(w.p, nil, 0, nested)
-			nested_parse(&sm, info.lines, info.line_offset, nested)
-			for ch := t.nodes[nested].first; ch != NO_NODE; ch = t.nodes[ch].next {
-				latex_render_block(w, ch)
-			}
+latex_directive :: proc(w: ^Latex_Writer, n: Node) {
+	b := w.blocks[n]
+	name := strings.to_lower(w.t.nodes[n].name, w.ctx.a)
+	switch directive_kind(name) {
+	case .Admonition, .Generic_Admonition:
+		latex_admonition(w, name, b)
+	case .Code:
+		latex_verbatim(w, join_lines(b.content, w.ctx.a))
+	case .Image, .Figure:
+		strings.write_string(&w.buf, "\\begin{figure}[htbp]\n\\centering\n")
+		strings.write_string(&w.buf, "\\includegraphics[max width=\\textwidth]{")
+		escape_latex_url(&w.buf, directive_uri(b, w.ctx.a))
+		strings.write_string(&w.buf, "}\n")
+		if b.body != NO_NODE do latex_children(w, b.body)
+		strings.write_string(&w.buf, "\\end{figure}\n\n")
+	case .Raw:
+		if strings.to_lower(directive_argument(b, w.ctx.a), w.ctx.a) != "latex" do return
+		for line in b.content {
+			strings.write_string(&w.buf, line)
+			strings.write_byte(&w.buf, '\n')
 		}
-		strings.write_string(&w.buf, "\\end{quote}\n\n")
-
-	case "code", "code-block", "sourcecode":
-		start_line := 0
-		if len(info.lines) > 0 && len(strings.trim_space(info.lines[0])) > 0 {
-			start_line = 1
-		}
-		code_text := ""
-		if start_line < len(info.lines) {
-			code_text = strings.join(info.lines[start_line:], "\n", context.temp_allocator)
-		}
-		strings.write_string(&w.buf, "\\begin{quote}\n\\begin{verbatim}\n")
-		strings.write_string(&w.buf, code_text)
-		strings.write_string(&w.buf, "\n\\end{verbatim}\n\\end{quote}\n\n")
-
-	case "image", "figure":
-		uri := ""
-		if len(info.lines) > 0 do uri = strings.trim_space(info.lines[0])
-		fmt.sbprintf(&w.buf, "\\begin{{figure}}[htbp]\n\\centering\n\\includegraphics[max width=\\textwidth]{{%s}}\n\\end{{figure}}\n\n", uri)
-
-	case "raw":
-		if len(info.lines) > 0 && strings.trim_space(info.lines[0]) == "latex" {
-			if len(info.lines) > 1 {
-				for line in info.lines[1:] {
-					strings.write_string(&w.buf, line)
-					strings.write_byte(&w.buf, '\n')
-				}
-			}
-		}
-
-	case:
-		if len(info.lines) > 0 {
-			nested := new_node(t, .Block_Quote, 0)
-			sm := make_state_machine(w.p, nil, 0, nested)
-			nested_parse(&sm, info.lines, info.line_offset, nested)
-			for ch := t.nodes[nested].first; ch != NO_NODE; ch = t.nodes[ch].next {
-				latex_render_block(w, ch)
-			}
-		}
+	case .Other:
+		if b.body != NO_NODE do latex_children(w, b.body)
 	}
 }
 
 @(private = "file")
-latex_render_inline :: proc(w: ^Latex_Writer, n: Node) {
-	t := &w.p.tree
-	#partial switch t.nodes[n].kind {
-	case .Text:
-		escape_latex_text(&w.buf, t.nodes[n].text)
+latex_admonition :: proc(w: ^Latex_Writer, name: string, b: Directive_Block) {
+	strings.write_string(&w.buf, "\\begin{quote}\n\\textbf{")
+	if label, named := admonition_label(name); named {
+		escape_latex_text(&w.buf, label)
+	} else {
+		title := parse_inline(w.p, directive_argument(b, w.ctx.a), 0)
+		it := chain(w.t, title.first)
+		for c in iterate(&it) do latex_inline(w, c)
+	}
+	strings.write_string(&w.buf, ":}\\newline\n")
+	if b.body != NO_NODE do latex_children(w, b.body)
+	strings.write_string(&w.buf, "\\end{quote}\n\n")
+}
 
-	case .Emphasis:
-		strings.write_string(&w.buf, "\\emph{")
-		if t.nodes[n].first != NO_NODE {
-			for ch := t.nodes[n].first; ch != NO_NODE; ch = t.nodes[ch].next do latex_render_inline(w, ch)
-		} else {
-			escape_latex_text(&w.buf, t.nodes[n].text)
-		}
-		strings.write_string(&w.buf, "}")
-
-	case .Strong:
-		strings.write_string(&w.buf, "\\textbf{")
-		if t.nodes[n].first != NO_NODE {
-			for ch := t.nodes[n].first; ch != NO_NODE; ch = t.nodes[ch].next do latex_render_inline(w, ch)
-		} else {
-			escape_latex_text(&w.buf, t.nodes[n].text)
-		}
-		strings.write_string(&w.buf, "}")
-
-	case .Literal:
-		strings.write_string(&w.buf, "\\texttt{")
-		escape_latex_text(&w.buf, t.nodes[n].text)
-		strings.write_string(&w.buf, "}")
-
+@(private = "file")
+latex_inline :: proc(w: ^Latex_Writer, n: Node) {
+	d := node_data(w.t, n)
+	a := w.ctx.a
+	#partial switch d.kind {
+	case .Emphasis: latex_command(w, "\\emph{", unescape(d.text, a), "}")
+	case .Strong:   latex_command(w, "\\textbf{", unescape(d.text, a), "}")
+	case .Literal:  latex_command(w, "\\texttt{", d.text, "}")
 	case .Reference:
-		url := ""
-		ref_kind := Ref_Kind(t.nodes[n].num[0])
-		switch ref_kind {
-		case .Uri:
-			url = t.nodes[n].name
-		case .Pep:
-			url = fmt.tprintf("https://peps.python.org/pep-%04s", t.nodes[n].name)
-		case .Rfc:
-			url = fmt.tprintf("https://datatracker.ietf.org/doc/html/rfc%s", t.nodes[n].name)
-		case .Phrase:
-			if info, ok := phrase_info(t, n); ok {
-				url = info.alias
-			}
-			if len(url) == 0 do url = fmt.tprintf("#%s", slugify(t.nodes[n].name, context.temp_allocator))
-		case .Simple:
-			url = fmt.tprintf("#%s", slugify(t.nodes[n].name, context.temp_allocator))
-		}
-		fmt.sbprintf(&w.buf, "\\href{{%s}}{{", url)
-		if t.nodes[n].first != NO_NODE {
-			for ch := t.nodes[n].first; ch != NO_NODE; ch = t.nodes[ch].next do latex_render_inline(w, ch)
-		} else {
-			escape_latex_text(&w.buf, t.nodes[n].text if len(t.nodes[n].text) > 0 else t.nodes[n].name)
-		}
-		strings.write_string(&w.buf, "}")
-
-	case .Footnote_Reference:
-		fmt.sbprintf(&w.buf, "\\footnote{{%s}}", t.nodes[n].name)
-
-	case .Citation_Reference:
-		fmt.sbprintf(&w.buf, "\\cite{{%s}}", t.nodes[n].name)
-
+		latex_reference(w, n)
+	case .Footnote_Reference, .Citation_Reference:
+		latex_note_reference(w, d)
 	case .Inline_Target:
-		fmt.sbprintf(&w.buf, "\\label{{%s}}", slugify(t.nodes[n].name, context.temp_allocator))
-		for ch := t.nodes[n].first; ch != NO_NODE; ch = t.nodes[ch].next do latex_render_inline(w, ch)
-
+		latex_anchor(w, anchor_id(fully_normalize_name(unescape(d.text, a), a), a))
+		escape_latex_text(&w.buf, unescape(d.text, a))
+	case .Problematic:
+		escape_latex_text(&w.buf, d.text)
 	case:
-		if len(t.nodes[n].text) > 0 do escape_latex_text(&w.buf, t.nodes[n].text)
-		for ch := t.nodes[n].first; ch != NO_NODE; ch = t.nodes[ch].next do latex_render_inline(w, ch)
+		escape_latex_text(&w.buf, unescape(d.text, a))
+		latex_children(w, n, inline = true)
+	}
+}
+
+// ``\href{URL}{text}`` or, for targets in the document, ``\hyperref[id]{text}``.
+@(private = "file")
+latex_reference :: proc(w: ^Latex_Writer, n: Node) {
+	link := resolve_reference(&w.ctx, n)
+	if link.kind == .External {
+		strings.write_string(&w.buf, "\\href{")
+		escape_latex_url(&w.buf, link.value)
+		strings.write_string(&w.buf, "}{")
+	} else {
+		fmt.sbprintf(&w.buf, "\\hyperref[%s]{{", link.value)
+	}
+	latex_command(w, "", reference_text(&w.ctx, n), "}")
+}
+
+// A link to the footnote (superscript label) or citation (``[label]``).
+@(private = "file")
+latex_note_reference :: proc(w: ^Latex_Writer, d: Node_Data) {
+	is_footnote := d.kind == .Footnote_Reference
+	id := note_id(w.ctx.a, "footnote" if is_footnote else "citation", d.text)
+	fmt.sbprintf(&w.buf, "\\hyperref[%s]{{", id)
+	if is_footnote {
+		latex_command(w, "\\textsuperscript{", d.text, "}}")
+	} else {
+		latex_command(w, "[", d.text, "]}")
 	}
 }

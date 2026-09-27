@@ -206,10 +206,11 @@ latex_writer_produces_valid_latex :: proc(t: ^testing.T) {
 	doc, p := parse(source)
 	latex := rst.write_latex(doc, &p, rst.Latex_Config{standalone = true})
 	testing.expect(t, strings.contains(latex, "\\documentclass[11pt,a4paper]{article}"))
-	testing.expect(t, strings.contains(latex, "\\section{"))
+	testing.expect(t, strings.contains(latex, "\\title{LaTeX Title}"))
+	testing.expect(t, !strings.contains(latex, "\\section{LaTeX Title}")) // shown by \maketitle
 	testing.expect(t, strings.contains(latex, "\\$100 \\& 50\\% discount."))
 	testing.expect(t, strings.contains(latex, "\\begin{quote}"))
-	testing.expect(t, strings.contains(latex, "\\textbf{NOTE:}\\newline"))
+	testing.expect(t, strings.contains(latex, "\\textbf{Note:}\\newline"))
 	testing.expect(t, strings.contains(latex, "\\end{document}"))
 }
 

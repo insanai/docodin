@@ -1,8 +1,9 @@
 package rst
 
-import "base:runtime"
 import "core:fmt"
 import "core:strings"
+
+// Native semantic HTML5 emitter (``docodin_render_html``, ``docodin html``).
 
 Html_Config :: struct {
 	title:      string,
@@ -11,18 +12,42 @@ Html_Config :: struct {
 	embed_css:  bool,
 }
 
-Title_Style :: struct {
-	chars: [2]u8,
-	n:     int,
+Html_Writer :: struct {
+	using ctx:    Render_Context,
+	buf:          strings.Builder,
+	config:       Html_Config,
+	title_styles: [dynamic]Title_Style,
+	in_thead:     bool,
 }
 
-Html_Writer :: struct {
-	p:             ^Parser,
-	buf:           strings.Builder,
-	config:        Html_Config,
-	title_styles:  [dynamic]Title_Style,
-	section_depth: int,
-	in_thead:      bool,
+// A block element whose children are written between ``open`` and
+// ``close`` (as inline markup when ``inline``).
+@(private = "file")
+Html_Wrap :: struct {
+	open, close: string,
+	inline:      bool,
+}
+
+@(private = "file")
+HTML_WRAPS := #partial [Node_Kind]Html_Wrap {
+	.Paragraph       = {"<p>", "</p>\n", true},
+	.Bullet_List     = {"<ul>\n", "</ul>\n", false},
+	.Enumerated_List = {"<ol>\n", "</ol>\n", false},
+	.Definition_List = {"<dl class=\"docutils\">\n", "</dl>\n", false},
+	.Term            = {"<dt>", "</dt>\n", true},
+	.Classifier      = {" <span class=\"classifier\">", "</span>", true},
+	.Definition      = {"<dd>\n", "</dd>\n", false},
+	.Field_List      = {"<dl class=\"docutils field-list\">\n", "</dl>\n", false},
+	.Field_Name      = {"<dt class=\"field-name\">", "</dt>\n", true},
+	.Field_Body      = {"<dd class=\"field-body\">\n", "</dd>\n", false},
+	.Line_Block      = {"<div class=\"line-block\">\n", "</div>\n", false},
+	.Line            = {"<div class=\"line\">", "</div>\n", true},
+	.Block_Quote     = {"<blockquote>\n", "</blockquote>\n", false},
+	.Attribution     = {"<p class=\"attribution\">— <cite>", "</cite></p>\n", true},
+	.Transition      = {"<hr class=\"docutils\" />\n", "", false},
+	.Table           = {"<table class=\"docutils align-default\">\n", "</table>\n", false},
+	.TBody           = {"<tbody>\n", "</tbody>\n", false},
+	.Row             = {"<tr>\n", "</tr>\n", false},
 }
 
 DEFAULT_HTML_CSS :: `
@@ -35,7 +60,8 @@ DEFAULT_HTML_CSS :: `
 }
 * { box-sizing: border-box; }
 body {
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+    "Helvetica Neue", Arial, sans-serif;
   color: var(--text);
   background: var(--bg);
   line-height: 1.6;
@@ -123,458 +149,299 @@ hr { border: none; border-top: 1px solid var(--border); margin: 2em 0; }
 }
 `
 
+// Text content: ``& < > "`` escaped.
 escape_html_text :: proc(b: ^strings.Builder, s: string) {
 	for i := 0; i < len(s); i += 1 {
-		b_byte := s[i]
-		switch b_byte {
-		case '&':
-			strings.write_string(b, "&amp;")
-		case '<':
-			strings.write_string(b, "&lt;")
-		case '>':
-			strings.write_string(b, "&gt;")
-		case '"':
-			strings.write_string(b, "&quot;")
-		case:
-			strings.write_byte(b, b_byte)
+		switch c := s[i]; c {
+		case '&': strings.write_string(b, "&amp;")
+		case '<': strings.write_string(b, "&lt;")
+		case '>': strings.write_string(b, "&gt;")
+		case '"': strings.write_string(b, "&quot;")
+		case:     strings.write_byte(b, c)
+		}
+	}
+}
+
+// Attribute values (always double-quoted): ``& < > " '`` escaped.
+escape_html_attr :: proc(b: ^strings.Builder, s: string) {
+	for i := 0; i < len(s); i += 1 {
+		switch c := s[i]; c {
+		case '&':  strings.write_string(b, "&amp;")
+		case '<':  strings.write_string(b, "&lt;")
+		case '>':  strings.write_string(b, "&gt;")
+		case '"':  strings.write_string(b, "&quot;")
+		case '\'': strings.write_string(b, "&#x27;")
+		case:      strings.write_byte(b, c)
 		}
 	}
 }
 
 write_html :: proc(doc: Node, p: ^Parser, config: Html_Config) -> string {
-	t := &p.tree
-	w := Html_Writer{
-		p            = p,
+	w := Html_Writer {
+		ctx          = render_context_make(p, doc),
+		buf          = strings.builder_make(p.allocator),
 		config       = config,
 		title_styles = make([dynamic]Title_Style, p.allocator),
 	}
-	w.buf = strings.builder_make(p.allocator)
-
-	title := config.title
-	if len(title) == 0 {
-		// look for first Title in doc
-		for n := t.nodes[doc].first; n != NO_NODE; n = t.nodes[n].next {
-			if t.nodes[n].kind == .Section_Title && t.nodes[n].first != NO_NODE {
-				title = t.nodes[t.nodes[n].first].raw if len(t.nodes[t.nodes[n].first].raw) > 0 else t.nodes[t.nodes[n].first].text
-				break
-			}
-		}
-	}
-	if len(title) == 0 do title = "Document"
-
-	if config.standalone {
-		strings.write_string(&w.buf, "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n<meta charset=\"utf-8\">\n")
-		strings.write_string(&w.buf, "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n")
-		strings.write_string(&w.buf, "<title>")
-		escape_html_text(&w.buf, title)
-		strings.write_string(&w.buf, "</title>\n")
-		if config.embed_css {
-			strings.write_string(&w.buf, "<style>\n")
-			strings.write_string(&w.buf, DEFAULT_HTML_CSS)
-			strings.write_string(&w.buf, "</style>\n")
-		}
-		strings.write_string(&w.buf, "</head>\n<body>\n<main class=\"document\">\n")
-	}
-
-	for n := t.nodes[doc].first; n != NO_NODE; n = t.nodes[n].next {
-		html_render_block(&w, n)
-	}
-
-	if config.standalone {
-		strings.write_string(&w.buf, "</main>\n</body>\n</html>\n")
-	}
-
+	if config.standalone do html_head(&w, document_title(&w.ctx, doc, config.title))
+	it := children(w.t, doc)
+	for n in iterate(&it) do html_block(&w, n)
+	if config.standalone do strings.write_string(&w.buf, "</main>\n</body>\n</html>\n")
 	return strings.to_string(w.buf)
 }
 
 @(private = "file")
-html_render_block :: proc(w: ^Html_Writer, n: Node) {
-	t := &w.p.tree
-	#partial switch t.nodes[n].kind {
+html_head :: proc(w: ^Html_Writer, title: string) {
+	b := &w.buf
+	strings.write_string(b, "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n")
+	strings.write_string(b, "<meta charset=\"utf-8\">\n")
+	strings.write_string(b, "<meta name=\"viewport\" ")
+	strings.write_string(b, "content=\"width=device-width, initial-scale=1.0\">\n")
+	if w.config.author != "" {
+		strings.write_string(b, "<meta name=\"author\" content=\"")
+		escape_html_attr(b, w.config.author)
+		strings.write_string(b, "\">\n")
+	}
+	strings.write_string(b, "<title>")
+	escape_html_text(b, title)
+	strings.write_string(b, "</title>\n")
+	if w.config.embed_css {
+		strings.write_string(b, "<style>\n")
+		strings.write_string(b, DEFAULT_HTML_CSS)
+		strings.write_string(b, "</style>\n")
+	}
+	strings.write_string(b, "</head>\n<body>\n<main class=\"document\">\n")
+}
+
+// `` attr="value"`` with the value escaped.
+@(private = "file")
+html_attr :: proc(w: ^Html_Writer, attr, value: string) {
+	fmt.sbprintf(&w.buf, " %s=\"", attr)
+	escape_html_attr(&w.buf, value)
+	strings.write_byte(&w.buf, '"')
+}
+
+@(private = "file")
+html_children :: proc(w: ^Html_Writer, n: Node, inline := false) {
+	it := children(w.t, n)
+	for c in iterate(&it) {
+		if inline {
+			html_inline(w, c)
+		} else {
+			html_block(w, c)
+		}
+	}
+}
+
+@(private = "file")
+html_block :: proc(w: ^Html_Writer, n: Node) {
+	d := node_data(w.t, n)
+	#partial switch d.kind {
 	case .Section_Title:
 		html_section_title(w, n)
-
-	case .Paragraph:
-		strings.write_string(&w.buf, "<p>")
-		for ch := t.nodes[n].first; ch != NO_NODE; ch = t.nodes[ch].next {
-			html_render_inline(w, ch)
-		}
-		strings.write_string(&w.buf, "</p>\n")
-
-	case .Bullet_List:
-		strings.write_string(&w.buf, "<ul>\n")
-		for ch := t.nodes[n].first; ch != NO_NODE; ch = t.nodes[ch].next {
-			html_render_block(w, ch)
-		}
-		strings.write_string(&w.buf, "</ul>\n")
-
-	case .Enumerated_List:
-		strings.write_string(&w.buf, "<ol>\n")
-		for ch := t.nodes[n].first; ch != NO_NODE; ch = t.nodes[ch].next {
-			html_render_block(w, ch)
-		}
-		strings.write_string(&w.buf, "</ol>\n")
-
 	case .List_Item:
-		strings.write_string(&w.buf, "<li>")
-		for ch := t.nodes[n].first; ch != NO_NODE; ch = t.nodes[ch].next {
-			if t.nodes[ch].kind == .Paragraph && t.nodes[n].first == t.nodes[n].last {
-				for p_ch := t.nodes[ch].first; p_ch != NO_NODE; p_ch = t.nodes[p_ch].next {
-					html_render_inline(w, p_ch)
-				}
-			} else {
-				html_render_block(w, ch)
-			}
-		}
-		strings.write_string(&w.buf, "</li>\n")
-
-	case .Definition_List:
-		strings.write_string(&w.buf, "<dl class=\"docutils\">\n")
-		for ch := t.nodes[n].first; ch != NO_NODE; ch = t.nodes[ch].next {
-			html_render_block(w, ch)
-		}
-		strings.write_string(&w.buf, "</dl>\n")
-
-	case .Definition_List_Item:
-		for ch := t.nodes[n].first; ch != NO_NODE; ch = t.nodes[ch].next {
-			#partial switch t.nodes[ch].kind {
-			case .Term:
-				strings.write_string(&w.buf, "<dt>")
-				for tc := t.nodes[ch].first; tc != NO_NODE; tc = t.nodes[tc].next do html_render_inline(w, tc)
-				strings.write_string(&w.buf, "</dt>\n")
-			case .Classifier:
-				strings.write_string(&w.buf, " <span class=\"classifier\">")
-				for tc := t.nodes[ch].first; tc != NO_NODE; tc = t.nodes[tc].next do html_render_inline(w, tc)
-				strings.write_string(&w.buf, "</span>")
-			case .Definition:
-				strings.write_string(&w.buf, "<dd>\n")
-				for d := t.nodes[ch].first; d != NO_NODE; d = t.nodes[d].next do html_render_block(w, d)
-				strings.write_string(&w.buf, "</dd>\n")
-			case:
-				html_render_block(w, ch)
-			}
-		}
-
-	case .Field_List:
-		strings.write_string(&w.buf, "<dl class=\"docutils field-list\">\n")
-		for ch := t.nodes[n].first; ch != NO_NODE; ch = t.nodes[ch].next {
-			html_render_block(w, ch)
-		}
-		strings.write_string(&w.buf, "</dl>\n")
-
-	case .Field:
-		for ch := t.nodes[n].first; ch != NO_NODE; ch = t.nodes[ch].next {
-			if t.nodes[ch].kind == .Field_Name {
-				strings.write_string(&w.buf, "<dt class=\"field-name\">")
-				for tc := t.nodes[ch].first; tc != NO_NODE; tc = t.nodes[tc].next do html_render_inline(w, tc)
-				strings.write_string(&w.buf, "</dt>\n")
-			} else if t.nodes[ch].kind == .Field_Body {
-				strings.write_string(&w.buf, "<dd class=\"field-body\">\n")
-				for d := t.nodes[ch].first; d != NO_NODE; d = t.nodes[d].next do html_render_block(w, d)
-				strings.write_string(&w.buf, "</dd>\n")
-			}
-		}
-
+		html_list_item(w, n)
 	case .Literal_Block, .Doctest_Block:
-		strings.write_string(&w.buf, "<pre class=\"literal-block\"><code>")
-		escape_html_text(&w.buf, t.nodes[n].text)
-		strings.write_string(&w.buf, "</code></pre>\n")
-
-	case .Line_Block:
-		strings.write_string(&w.buf, "<div class=\"line-block\">\n")
-		for ch := t.nodes[n].first; ch != NO_NODE; ch = t.nodes[ch].next {
-			html_render_block(w, ch)
-		}
-		strings.write_string(&w.buf, "</div>\n")
-
-	case .Line:
-		strings.write_string(&w.buf, "<div class=\"line\">")
-		for ch := t.nodes[n].first; ch != NO_NODE; ch = t.nodes[ch].next {
-			html_render_inline(w, ch)
-		}
-		strings.write_string(&w.buf, "</div>\n")
-
-	case .Block_Quote:
-		strings.write_string(&w.buf, "<blockquote>\n")
-		for ch := t.nodes[n].first; ch != NO_NODE; ch = t.nodes[ch].next {
-			html_render_block(w, ch)
-		}
-		strings.write_string(&w.buf, "</blockquote>\n")
-
-	case .Attribution:
-		strings.write_string(&w.buf, "<p class=\"attribution\">— <cite>")
-		escape_html_text(&w.buf, t.nodes[n].text)
-		strings.write_string(&w.buf, "</cite></p>\n")
-
-	case .Transition:
-		strings.write_string(&w.buf, "<hr class=\"docutils\" />\n")
-
-	case .Table:
-		strings.write_string(&w.buf, "<table class=\"docutils align-default\">\n")
-		for ch := t.nodes[n].first; ch != NO_NODE; ch = t.nodes[ch].next {
-			html_render_block(w, ch)
-		}
-		strings.write_string(&w.buf, "</table>\n")
-
-	case .TGroup:
-		for ch := t.nodes[n].first; ch != NO_NODE; ch = t.nodes[ch].next {
-			html_render_block(w, ch)
-		}
-
+		html_pre(w, "<pre class=\"literal-block\"><code>", d.text)
 	case .THead:
 		w.in_thead = true
 		strings.write_string(&w.buf, "<thead>\n")
-		for ch := t.nodes[n].first; ch != NO_NODE; ch = t.nodes[ch].next {
-			html_render_block(w, ch)
-		}
+		html_children(w, n)
 		strings.write_string(&w.buf, "</thead>\n")
 		w.in_thead = false
-
-	case .TBody:
-		strings.write_string(&w.buf, "<tbody>\n")
-		for ch := t.nodes[n].first; ch != NO_NODE; ch = t.nodes[ch].next {
-			html_render_block(w, ch)
-		}
-		strings.write_string(&w.buf, "</tbody>\n")
-
-	case .Row:
-		strings.write_string(&w.buf, "<tr>\n")
-		for ch := t.nodes[n].first; ch != NO_NODE; ch = t.nodes[ch].next {
-			html_render_block(w, ch)
-		}
-		strings.write_string(&w.buf, "</tr>\n")
-
 	case .Entry:
-		tag := "th" if w.in_thead else "td"
-		fmt.sbprintf(&w.buf, "<%s", tag)
-		if t.nodes[n].num[0] > 1 do fmt.sbprintf(&w.buf, " colspan=\"%d\"", t.nodes[n].num[0])
-		if t.nodes[n].num[1] > 1 do fmt.sbprintf(&w.buf, " rowspan=\"%d\"", t.nodes[n].num[1])
-		strings.write_byte(&w.buf, '>')
-		for ch := t.nodes[n].first; ch != NO_NODE; ch = t.nodes[ch].next {
-			html_render_block(w, ch)
-		}
-		fmt.sbprintf(&w.buf, "</%s>\n", tag)
-
+		html_entry(w, n, d)
 	case .Directive:
-		html_render_directive(w, n)
-
+		html_directive(w, n)
 	case .Footnote, .Citation:
-		fmt.sbprintf(&w.buf, "<aside class=\"%s\" id=\"%s\">\n", "footnote" if t.nodes[n].kind == .Footnote else "citation", t.nodes[n].name)
-		for ch := t.nodes[n].first; ch != NO_NODE; ch = t.nodes[ch].next {
-			html_render_block(w, ch)
-		}
+		prefix := "footnote" if d.kind == .Footnote else "citation"
+		strings.write_string(&w.buf, "<aside")
+		html_attr(w, "class", prefix)
+		html_attr(w, "id", note_id(w.ctx.a, prefix, d.name))
+		strings.write_string(&w.buf, ">\n")
+		html_children(w, n)
 		strings.write_string(&w.buf, "</aside>\n")
-
 	case .Label:
 		strings.write_string(&w.buf, "<span class=\"label\">")
-		escape_html_text(&w.buf, t.nodes[n].text)
+		escape_html_text(&w.buf, d.text)
 		strings.write_string(&w.buf, "</span> ")
-
-	case .Comment:
-		// Comments are omitted from HTML output
-
-	case:
-		// Fallback: render children
-		for ch := t.nodes[n].first; ch != NO_NODE; ch = t.nodes[ch].next {
-			html_render_block(w, ch)
+	case .Target:
+		if id, ok := target_anchor(&w.ctx, d); ok {
+			strings.write_string(&w.buf, "<span")
+			html_attr(w, "id", id)
+			strings.write_string(&w.buf, "></span>\n")
 		}
+	case .Comment, .Substitution_Definition:
+	case:
+		wrap := HTML_WRAPS[d.kind]
+		strings.write_string(&w.buf, wrap.open)
+		html_children(w, n, wrap.inline)
+		strings.write_string(&w.buf, wrap.close)
 	}
+}
+
+// A list item whose only child is a paragraph is written compactly.
+@(private = "file")
+html_list_item :: proc(w: ^Html_Writer, n: Node) {
+	t := w.t
+	strings.write_string(&w.buf, "<li>")
+	first := t.nodes[n].first
+	if first != NO_NODE && first == t.nodes[n].last && t.nodes[first].kind == .Paragraph {
+		html_children(w, first, inline = true)
+	} else {
+		html_children(w, n)
+	}
+	strings.write_string(&w.buf, "</li>\n")
+}
+
+@(private = "file")
+html_pre :: proc(w: ^Html_Writer, open: string, text: string) {
+	strings.write_string(&w.buf, open)
+	escape_html_text(&w.buf, text)
+	strings.write_string(&w.buf, "</code></pre>\n")
+}
+
+// A table cell; ``num`` holds docutils' ``morerows`` and ``morecols``.
+@(private = "file")
+html_entry :: proc(w: ^Html_Writer, n: Node, d: Node_Data) {
+	tag := "th" if w.in_thead else "td"
+	fmt.sbprintf(&w.buf, "<%s", tag)
+	if d.num[1] > 0 do fmt.sbprintf(&w.buf, " colspan=\"%d\"", d.num[1] + 1)
+	if d.num[0] > 0 do fmt.sbprintf(&w.buf, " rowspan=\"%d\"", d.num[0] + 1)
+	strings.write_byte(&w.buf, '>')
+	html_children(w, n)
+	fmt.sbprintf(&w.buf, "</%s>\n", tag)
 }
 
 @(private = "file")
 html_section_title :: proc(w: ^Html_Writer, n: Node) {
-	t := &w.p.tree
-	style := Title_Style{n = len(t.nodes[n].name)}
-	for i in 0 ..< min(len(t.nodes[n].name), 2) do style.chars[i] = t.nodes[n].name[i]
-
-	level := len(w.title_styles) + 1
-	for s, i in w.title_styles {
-		if s == style {
-			level = i + 1
-			break
-		}
-	}
-	if level > len(w.title_styles) do append(&w.title_styles, style)
-	w.section_depth = level
-
-	tag_num := clamp(level, 1, 6)
-	title_node := t.nodes[n].first
-	title_text := ""
-	if title_node != NO_NODE {
-		title_text = t.nodes[title_node].raw if len(t.nodes[title_node].raw) > 0 else t.nodes[title_node].text
-	}
-
-	slug := slugify(title_text, w.p.allocator)
-	fmt.sbprintf(&w.buf, "<h%d id=\"%s\">", tag_num, slug)
-	if title_node != NO_NODE {
-		for ch := t.nodes[title_node].first; ch != NO_NODE; ch = t.nodes[ch].next {
-			html_render_inline(w, ch)
-		}
-	}
-	fmt.sbprintf(&w.buf, "</h%d>\n", tag_num)
+	level := section_level(&w.title_styles, w.t.nodes[n].name)
+	title := w.t.nodes[n].first
+	if title == NO_NODE do return
+	tag := clamp(level, 1, 6)
+	name := fully_normalize_name(node_astext(&w.ctx, title), w.ctx.a)
+	fmt.sbprintf(&w.buf, "<h%d", tag)
+	html_attr(w, "id", anchor_id(name, w.ctx.a))
+	strings.write_byte(&w.buf, '>')
+	html_children(w, title, inline = true)
+	fmt.sbprintf(&w.buf, "</h%d>\n", tag)
 }
 
 @(private = "file")
-html_render_directive :: proc(w: ^Html_Writer, n: Node) {
-	t := &w.p.tree
-	name := strings.to_lower(t.nodes[n].name, context.temp_allocator)
-	info, has_info := directive_info(t, n)
-	if !has_info do return
-
-	switch name {
-	case "attention", "caution", "danger", "error", "hint", "important", "note", "tip", "warning", "admonition":
-		fmt.sbprintf(&w.buf, "<div class=\"admonition %s\">\n<p class=\"admonition-title\">%s</p>\n", name, name)
-		if len(info.lines) > 0 {
-			nested := new_node(t, .Block_Quote, 0)
-			sm := make_state_machine(w.p, nil, 0, nested)
-			nested_parse(&sm, info.lines, info.line_offset, nested)
-			for ch := t.nodes[nested].first; ch != NO_NODE; ch = t.nodes[ch].next {
-				html_render_block(w, ch)
-			}
-		}
-		strings.write_string(&w.buf, "</div>\n")
-
-	case "code", "code-block", "sourcecode":
-		lang := ""
-		start_line := 0
-		if len(info.lines) > 0 && len(strings.trim_space(info.lines[0])) > 0 {
-			lang = strings.trim_space(info.lines[0])
-			start_line = 1
-		}
-		code_text := ""
-		if start_line < len(info.lines) {
-			code_text = strings.join(info.lines[start_line:], "\n", context.temp_allocator)
-		}
-		if len(lang) > 0 {
-			fmt.sbprintf(&w.buf, "<div class=\"highlight\"><pre><code class=\"language-%s\">", lang)
+html_directive :: proc(w: ^Html_Writer, n: Node) {
+	b := w.blocks[n]
+	name := strings.to_lower(w.t.nodes[n].name, w.ctx.a)
+	switch directive_kind(name) {
+	case .Admonition, .Generic_Admonition:
+		html_admonition(w, name, b)
+	case .Code:
+		lang := code_language(b, w.ctx.a)
+		strings.write_string(&w.buf, "<div class=\"highlight\"><pre>")
+		if lang == "" {
+			strings.write_string(&w.buf, "<code>")
 		} else {
-			strings.write_string(&w.buf, "<div class=\"highlight\"><pre><code>")
+			strings.write_string(&w.buf, "<code")
+			html_attr(w, "class", concat("language-", lang, allocator = w.ctx.a))
+			strings.write_byte(&w.buf, '>')
 		}
-		escape_html_text(&w.buf, code_text)
+		escape_html_text(&w.buf, join_lines(b.content, w.ctx.a))
 		strings.write_string(&w.buf, "</code></pre></div>\n")
-
-	case "image", "figure":
-		uri := ""
-		if len(info.lines) > 0 do uri = strings.trim_space(info.lines[0])
-		fmt.sbprintf(&w.buf, "<figure class=\"figure\"><img src=\"%s\" alt=\"%s\" /></figure>\n", uri, uri)
-
-	case "raw":
-		if len(info.lines) > 0 && strings.trim_space(info.lines[0]) == "html" {
-			if len(info.lines) > 1 {
-				for line in info.lines[1:] {
-					strings.write_string(&w.buf, line)
-					strings.write_byte(&w.buf, '\n')
-				}
-			}
+	case .Image, .Figure:
+		html_figure(w, b)
+	case .Raw:
+		if strings.to_lower(directive_argument(b, w.ctx.a), w.ctx.a) != "html" do return
+		for line in b.content {
+			strings.write_string(&w.buf, line)
+			strings.write_byte(&w.buf, '\n')
 		}
-
-	case:
-		// Generic directive: if has content lines, render as nested block
-		if len(info.lines) > 0 {
-			nested := new_node(t, .Block_Quote, 0)
-			sm := make_state_machine(w.p, nil, 0, nested)
-			nested_parse(&sm, info.lines, info.line_offset, nested)
-			for ch := t.nodes[nested].first; ch != NO_NODE; ch = t.nodes[ch].next {
-				html_render_block(w, ch)
-			}
-		}
+	case .Other:
+		if b.body != NO_NODE do html_children(w, b.body)
 	}
 }
 
 @(private = "file")
-html_render_inline :: proc(w: ^Html_Writer, n: Node) {
-	t := &w.p.tree
-	#partial switch t.nodes[n].kind {
-	case .Text:
-		escape_html_text(&w.buf, t.nodes[n].text)
+html_admonition :: proc(w: ^Html_Writer, name: string, b: Directive_Block) {
+	strings.write_string(&w.buf, "<div")
+	html_attr(w, "class", concat("admonition ", name, allocator = w.ctx.a))
+	strings.write_string(&w.buf, ">\n")
+	strings.write_string(&w.buf, "<p class=\"admonition-title\">")
+	if label, named := admonition_label(name); named {
+		escape_html_text(&w.buf, label)
+	} else {
+		title := parse_inline(w.p, directive_argument(b, w.ctx.a), 0)
+		it := chain(w.t, title.first)
+		for c in iterate(&it) do html_inline(w, c)
+	}
+	strings.write_string(&w.buf, "</p>\n")
+	if b.body != NO_NODE do html_children(w, b.body)
+	strings.write_string(&w.buf, "</div>\n")
+}
 
+@(private = "file")
+html_figure :: proc(w: ^Html_Writer, b: Directive_Block) {
+	uri := directive_uri(b, w.ctx.a)
+	alt, has_alt := directive_option(b, "alt")
+	if !has_alt do alt = uri
+	strings.write_string(&w.buf, "<figure class=\"figure\"><img")
+	html_attr(w, "src", uri)
+	html_attr(w, "alt", alt)
+	strings.write_string(&w.buf, " />")
+	if b.body != NO_NODE {
+		strings.write_string(&w.buf, "\n<figcaption>\n")
+		html_children(w, b.body)
+		strings.write_string(&w.buf, "</figcaption>\n")
+	}
+	strings.write_string(&w.buf, "</figure>\n")
+}
+
+@(private = "file")
+html_inline :: proc(w: ^Html_Writer, n: Node) {
+	d := node_data(w.t, n)
+	a := w.ctx.a
+	#partial switch d.kind {
 	case .Emphasis:
-		strings.write_string(&w.buf, "<em>")
-		if t.nodes[n].first != NO_NODE {
-			for ch := t.nodes[n].first; ch != NO_NODE; ch = t.nodes[ch].next do html_render_inline(w, ch)
-		} else {
-			escape_html_text(&w.buf, t.nodes[n].text)
-		}
-		strings.write_string(&w.buf, "</em>")
-
+		html_wrapped(w, "<em>", unescape(d.text, a), "</em>")
 	case .Strong:
-		strings.write_string(&w.buf, "<strong>")
-		if t.nodes[n].first != NO_NODE {
-			for ch := t.nodes[n].first; ch != NO_NODE; ch = t.nodes[ch].next do html_render_inline(w, ch)
-		} else {
-			escape_html_text(&w.buf, t.nodes[n].text)
-		}
-		strings.write_string(&w.buf, "</strong>")
-
+		html_wrapped(w, "<strong>", unescape(d.text, a), "</strong>")
 	case .Literal:
-		strings.write_string(&w.buf, "<code>")
-		escape_html_text(&w.buf, t.nodes[n].text)
-		strings.write_string(&w.buf, "</code>")
-
+		html_wrapped(w, "<code>", d.text, "</code>")
 	case .Reference:
-		url := ""
-		ref_kind := Ref_Kind(t.nodes[n].num[0])
-		switch ref_kind {
-		case .Uri:
-			url = t.nodes[n].name
-		case .Pep:
-			url = fmt.tprintf("https://peps.python.org/pep-%04s", t.nodes[n].name)
-		case .Rfc:
-			url = fmt.tprintf("https://datatracker.ietf.org/doc/html/rfc%s", t.nodes[n].name)
-		case .Phrase:
-			if info, ok := phrase_info(t, n); ok {
-				url = info.alias
-			}
-			if len(url) == 0 do url = fmt.tprintf("#%s", slugify(t.nodes[n].name, context.temp_allocator))
-		case .Simple:
-			url = fmt.tprintf("#%s", slugify(t.nodes[n].name, context.temp_allocator))
-		}
-		fmt.sbprintf(&w.buf, "<a href=\"%s\" class=\"reference\">", url)
-		if t.nodes[n].first != NO_NODE {
-			for ch := t.nodes[n].first; ch != NO_NODE; ch = t.nodes[ch].next do html_render_inline(w, ch)
-		} else {
-			escape_html_text(&w.buf, t.nodes[n].text if len(t.nodes[n].text) > 0 else t.nodes[n].name)
-		}
-		strings.write_string(&w.buf, "</a>")
-
-	case .Footnote_Reference:
-		fmt.sbprintf(&w.buf, "<sup><a href=\"#%s\" class=\"footnote-reference\">[%s]</a></sup>", t.nodes[n].name, t.nodes[n].text if len(t.nodes[n].text) > 0 else t.nodes[n].name)
-
-	case .Citation_Reference:
-		fmt.sbprintf(&w.buf, "<sup><a href=\"#%s\" class=\"citation-reference\">[%s]</a></sup>", t.nodes[n].name, t.nodes[n].text if len(t.nodes[n].text) > 0 else t.nodes[n].name)
-
+		link := resolve_reference(&w.ctx, n)
+		href := link.value if link.kind == .External else concat("#", link.value, allocator = a)
+		strings.write_string(&w.buf, "<a")
+		html_attr(w, "href", href)
+		strings.write_string(&w.buf, " class=\"reference\">")
+		html_wrapped(w, "", reference_text(&w.ctx, n), "</a>")
+	case .Footnote_Reference, .Citation_Reference:
+		html_note_reference(w, d)
 	case .Inline_Target:
-		fmt.sbprintf(&w.buf, "<span id=\"%s\">", slugify(t.nodes[n].name, context.temp_allocator))
-		for ch := t.nodes[n].first; ch != NO_NODE; ch = t.nodes[ch].next do html_render_inline(w, ch)
-		strings.write_string(&w.buf, "</span>")
-
+		name := fully_normalize_name(unescape(d.text, a), a)
+		strings.write_string(&w.buf, "<span")
+		html_attr(w, "id", anchor_id(name, a))
+		strings.write_byte(&w.buf, '>')
+		html_wrapped(w, "", unescape(d.text, a), "</span>")
 	case .Problematic:
-		strings.write_string(&w.buf, "<span class=\"problematic\">")
-		escape_html_text(&w.buf, t.nodes[n].text)
-		strings.write_string(&w.buf, "</span>")
-
+		html_wrapped(w, "<span class=\"problematic\">", d.text, "</span>")
 	case:
-		if len(t.nodes[n].text) > 0 do escape_html_text(&w.buf, t.nodes[n].text)
-		for ch := t.nodes[n].first; ch != NO_NODE; ch = t.nodes[ch].next do html_render_inline(w, ch)
+		escape_html_text(&w.buf, unescape(d.text, a))
+		html_children(w, n, inline = true)
 	}
 }
 
-slugify :: proc(s: string, allocator: runtime.Allocator) -> string {
-	b := strings.builder_make(allocator)
-	in_dash := false
-	for i := 0; i < len(s); i += 1 {
-		c := s[i]
-		if (c >= 'a' && c <= 'z') || (c >= '0' && c <= '9') {
-			strings.write_byte(&b, c)
-			in_dash = false
-		} else if c >= 'A' && c <= 'Z' {
-			strings.write_byte(&b, c + 32)
-			in_dash = false
-		} else if !in_dash && (c == ' ' || c == '-' || c == '_' || c == '.') {
-			strings.write_byte(&b, '-')
-			in_dash = true
-		}
-	}
-	res := strings.to_string(b)
-	return strings.trim_right(res, "-")
+@(private = "file")
+html_wrapped :: proc(w: ^Html_Writer, open, text, close: string) {
+	strings.write_string(&w.buf, open)
+	escape_html_text(&w.buf, text)
+	strings.write_string(&w.buf, close)
+}
+
+@(private = "file")
+html_note_reference :: proc(w: ^Html_Writer, d: Node_Data) {
+	prefix := "footnote" if d.kind == .Footnote_Reference else "citation"
+	id := note_id(w.ctx.a, prefix, d.text)
+	strings.write_string(&w.buf, "<sup><a")
+	html_attr(w, "href", concat("#", id, allocator = w.ctx.a))
+	fmt.sbprintf(&w.buf, " class=\"%s-reference\">[", prefix)
+	escape_html_text(&w.buf, d.text)
+	strings.write_string(&w.buf, "]</a></sup>")
 }
