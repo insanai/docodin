@@ -1,10 +1,10 @@
 package rst_tests
 
-import "core:fmt"
 import "core:mem"
 import "core:strings"
 import "core:testing"
 
+import "../check"
 import rst "../rst"
 
 // Unit tests of the parser package (``odin test odin/tests``).  Conformance
@@ -49,7 +49,9 @@ split_lines_matches_string2lines :: proc(t: ^testing.T) {
 @(test)
 block_structure :: proc(t: ^testing.T) {
 	context.allocator = context.temp_allocator
-	doc, _ := parse("Title\n=====\n\nPara *em*.\n\n- a\n- b\n\n::\n\n  code\n\n----\n\n.. note:: x\n")
+	doc, _ := parse(
+		"Title\n=====\n\nPara *em*.\n\n- a\n- b\n\n::\n\n  code\n\n----\n\n.. note:: x\n",
+	)
 	testing.expect(t, slice_equal(kinds(doc), []rst.Node_Kind {
 		.Section_Title, .Paragraph, .Bullet_List, .Literal_Block, .Transition, .Directive,
 	})) // a lone "::" paragraph is dropped
@@ -79,7 +81,8 @@ system_messages_have_docutils_lines :: proc(t: ^testing.T) {
 	msgs := make([dynamic]^rst.Node)
 	messages(doc, &msgs)
 	testing.expect_value(t, len(msgs), 2)
-	testing.expect_value(t, msgs[0].text, "Bullet list ends without a blank line; unexpected unindent.")
+	testing.expect_value(t, msgs[0].text,
+		"Bullet list ends without a blank line; unexpected unindent.")
 	testing.expect_value(t, msgs[0].line, 4)
 	testing.expect_value(t, msgs[0].num[0], rst.WARNING)
 	testing.expect_value(t, msgs[1].text, "Malformed table.\nRight border not aligned or missing.")
@@ -137,7 +140,8 @@ allocates_only_from_parser_allocator :: proc(t: ^testing.T) {
 	context.allocator = mem.tracking_allocator(&track)
 	context.temp_allocator = mem.panic_allocator()
 
-	_, _ = parse("Title\n=====\n\n* a *b*\n\n  c `d <e_>`_\n\n.. [1] f\n\n=  =\nx  y\n=  =\n", mem.arena_allocator(&arena))
+	source := "Title\n=====\n\n* a *b*\n\n  c `d <e_>`_\n\n.. [1] f\n\n=  =\nx  y\n=  =\n"
+	_, _ = parse(source, mem.arena_allocator(&arena))
 	testing.expect_value(t, len(track.allocation_map), 0)
 	testing.expect_value(t, track.total_allocation_count, 0)
 }
@@ -167,7 +171,11 @@ current_line_tracking :: proc(t: ^testing.T) {
 @(test)
 html_writer_produces_valid_html :: proc(t: ^testing.T) {
 	context.allocator = context.temp_allocator
-	source := "Hello World\n===========\n\nThis is **bold** and *italic* and ``code``.\n\n- item 1\n- item 2\n\n.. note::\n   Important message.\n"
+	source :=
+		"Hello World\n===========\n\n" +
+		"This is **bold** and *italic* and ``code``.\n\n" +
+		"- item 1\n- item 2\n\n" +
+		".. note::\n   Important message.\n"
 	doc, p := parse(source)
 	html := rst.write_html(doc, &p, rst.Html_Config{standalone = true, embed_css = true})
 	testing.expect(t, strings.contains(html, "<!DOCTYPE html>"))
@@ -183,7 +191,10 @@ html_writer_produces_valid_html :: proc(t: ^testing.T) {
 @(test)
 latex_writer_produces_valid_latex :: proc(t: ^testing.T) {
 	context.allocator = context.temp_allocator
-	source := "LaTeX Title\n===========\n\nParagraph with $100 & 50% discount.\n\n.. note::\n   Be careful.\n"
+	source :=
+		"LaTeX Title\n===========\n\n" +
+		"Paragraph with $100 & 50% discount.\n\n" +
+		".. note::\n   Be careful.\n"
 	doc, p := parse(source)
 	latex := rst.write_latex(doc, &p, rst.Latex_Config{standalone = true})
 	testing.expect(t, strings.contains(latex, "\\documentclass[11pt,a4paper]{article}"))
@@ -194,3 +205,32 @@ latex_writer_produces_valid_latex :: proc(t: ^testing.T) {
 	testing.expect(t, strings.contains(latex, "\\end{document}"))
 }
 
+
+@(test)
+inline_position_locates_problems :: proc(t: ^testing.T) {
+	s := "first line\nsecond *line"
+	row, from_end := rst.inline_position_unpack(rst.inline_position(s, strings.index_byte(s, '*')))
+	testing.expect_value(t, row, 1)
+	testing.expect_value(t, from_end, len("*line"))
+}
+
+@(test)
+check_reports_elm_diagnostics :: proc(t: ^testing.T) {
+	context.allocator = context.temp_allocator
+	text := "Title\n=====\n\n- item with *emphasis\ncontinued\n"
+	messages := check.check_text(text, check.DEFAULT_OPTIONS)
+	testing.expect_value(t, len(messages), 2)
+	src := check.source_lines(text, 8)
+	b := strings.builder_make()
+	for m in messages do check.format_elm(&b, "doc.rst", src, m, false)
+	report := strings.to_string(b)
+	testing.expect(t, strings.contains(report, "-- UNCLOSED EMPHASIS "))
+	testing.expect(t, strings.contains(report, "doc.rst:4:13\n"))
+	testing.expect(t, strings.contains(report, "4| - item with *emphasis\n               ^\n"))
+	hint := "Hint: Put a blank line before this line, or indent it"
+	testing.expect(t, strings.contains(report, hint))
+	docutils := strings.builder_make()
+	check.format_docutils(&docutils, "doc.rst", messages[0])
+	testing.expect_value(t, strings.to_string(docutils),
+		"doc.rst:4: (WARNING/2) Inline emphasis start-string without end-string.\n")
+}

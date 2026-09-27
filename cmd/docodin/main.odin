@@ -6,6 +6,7 @@ import "core:os"
 import "core:path/filepath"
 import "core:strings"
 
+import "../../odin/check"
 import rst "../../odin/rst"
 
 VERSION :: "0.2.0"
@@ -28,6 +29,8 @@ Options:
   --no-standalone         Emit HTML/LaTeX body fragment without page/document wrapper
   --no-css                Do not embed default CSS stylesheet in HTML
   --engine=NAME           TeX engine: pdflatex or xelatex (default: auto-detected)
+  --error-format=FORMAT   check: elm (explained reports, default) or docutils
+  --color=WHEN            check: colorize reports: auto (default), always, never
   -v, --version           Print version and exit
   -h, --help              Print this help and exit
 
@@ -44,31 +47,64 @@ Command :: enum {
 }
 
 Config :: struct {
-	cmd:         Command,
-	input_path:  string,
-	output_path: string,
-	title:       string,
-	author:      string,
-	date:        string,
-	standalone:  bool,
-	embed_css:   bool,
-	engine:      string,
+	cmd:          Command,
+	input_path:   string,
+	output_path:  string,
+	title:        string,
+	author:       string,
+	date:         string,
+	standalone:   bool,
+	embed_css:    bool,
+	engine:       string,
+	error_format: check.Error_Format,
+	color:        string,
 }
 
 main :: proc() {
-	cfg := Config{
-		cmd         = .Auto,
-		standalone  = true,
-		embed_css   = true,
-	}
-
 	args := os.args[1:]
 	if len(args) == 0 {
 		fmt.print(USAGE)
 		os.exit(0)
 	}
+	cfg, pos_args := parse_args(args)
+	if len(pos_args) == 0 {
+		fmt.eprintln("docodin: no input file specified.")
+		os.exit(1)
+	}
 
-	pos_args := make([dynamic]string, context.temp_allocator)
+	cfg.input_path = pos_args[0]
+
+	// If check command, run checker logic
+	if cfg.cmd == .Check {
+		os.exit(run_checker(pos_args[:], &cfg))
+	}
+
+	// Auto-detect format from output extension if not explicitly set
+	if cfg.cmd == .Auto do cfg.cmd = format_from_extension(cfg.output_path)
+
+	// Read input file
+	input_data, err := os.read_entire_file(cfg.input_path, context.allocator)
+	if err != nil {
+		fmt.eprintf("docodin: cannot read input file '%s': %v\n",
+			cfg.input_path, os.error_string(err))
+		os.exit(1)
+	}
+
+	// Check for conf.py in same directory or parent directory to extract project metadata
+	extract_conf_py_metadata(&cfg)
+
+	compile(&cfg, string(input_data))
+}
+
+// Command-line options and positional arguments.  ``-h`` and ``-v`` exit.
+parse_args :: proc(args: []string) -> (cfg: Config, pos_args: [dynamic]string) {
+	cfg = Config {
+		cmd        = .Auto,
+		standalone = true,
+		embed_css  = true,
+		color      = "auto",
+	}
+	pos_args = make([dynamic]string, context.temp_allocator)
 
 	for i := 0; i < len(args); i += 1 {
 		arg := args[i]
@@ -78,27 +114,13 @@ main :: proc() {
 		} else if arg == "-v" || arg == "--version" {
 			fmt.printf("docodin %s (native toolchain)\n", VERSION)
 			os.exit(0)
-		} else if arg == "html" && len(pos_args) == 0 {
-			cfg.cmd = .Html
-		} else if arg == "latex" && len(pos_args) == 0 {
-			cfg.cmd = .Latex
-		} else if arg == "pdf" && len(pos_args) == 0 {
-			cfg.cmd = .Pdf
-		} else if arg == "check" && len(pos_args) == 0 {
-			cfg.cmd = .Check
+		} else if cmd, is_cmd := command_of(arg); is_cmd && len(pos_args) == 0 {
+			cfg.cmd = cmd
 		} else if arg == "-o" && i + 1 < len(args) {
 			i += 1
 			cfg.output_path = args[i]
-		} else if strings.has_prefix(arg, "--output=") {
-			cfg.output_path = arg[len("--output="):]
-		} else if strings.has_prefix(arg, "--title=") {
-			cfg.title = arg[len("--title="):]
-		} else if strings.has_prefix(arg, "--author=") {
-			cfg.author = arg[len("--author="):]
-		} else if strings.has_prefix(arg, "--date=") {
-			cfg.date = arg[len("--date="):]
-		} else if strings.has_prefix(arg, "--engine=") {
-			cfg.engine = arg[len("--engine="):]
+		} else if parse_value_option(&cfg, arg) {
+			// --name=value
 		} else if arg == "--no-standalone" {
 			cfg.standalone = false
 		} else if arg == "--no-css" {
@@ -110,44 +132,65 @@ main :: proc() {
 			os.exit(1)
 		}
 	}
+	return
+}
 
-	if len(pos_args) == 0 {
-		fmt.eprintln("docodin: no input file specified.")
-		os.exit(1)
+// The command named by a leading ``html``/``latex``/``pdf``/``check`` word.
+command_of :: proc(arg: string) -> (Command, bool) {
+	switch arg {
+	case "html":  return .Html, true
+	case "latex": return .Latex, true
+	case "pdf":   return .Pdf, true
+	case "check": return .Check, true
 	}
+	return .Auto, false
+}
 
-	cfg.input_path = pos_args[0]
-
-	// If check command, run checker logic
-	if cfg.cmd == .Check {
-		run_checker(pos_args[:])
-		return
+// Apply a ``--name=value`` option; false when ``arg`` is not one.
+parse_value_option :: proc(cfg: ^Config, arg: string) -> bool {
+	value :: proc(arg, prefix: string) -> (string, bool) {
+		if !strings.has_prefix(arg, prefix) do return "", false
+		return arg[len(prefix):], true
 	}
-
-	// Auto-detect format from output extension if not explicitly set
-	if cfg.cmd == .Auto {
-		ext := strings.to_lower(filepath.ext(cfg.output_path), context.temp_allocator)
-		if ext == ".html" || ext == ".htm" {
-			cfg.cmd = .Html
-		} else if ext == ".tex" {
-			cfg.cmd = .Latex
-		} else if ext == ".pdf" {
-			cfg.cmd = .Pdf
-		} else {
-			cfg.cmd = .Html // default format
+	if v, ok := value(arg, "--output="); ok {
+		cfg.output_path = v
+	} else if v, ok = value(arg, "--title="); ok {
+		cfg.title = v
+	} else if v, ok = value(arg, "--author="); ok {
+		cfg.author = v
+	} else if v, ok = value(arg, "--date="); ok {
+		cfg.date = v
+	} else if v, ok = value(arg, "--engine="); ok {
+		cfg.engine = v
+	} else if v, ok = value(arg, "--error-format="); ok {
+		switch v {
+		case "elm":      cfg.error_format = .Elm
+		case "docutils": cfg.error_format = .Docutils
+		case:
+			fmt.eprintf("docodin: unknown error format '%s' (use elm or docutils)\n", arg)
+			os.exit(1)
 		}
+	} else if v, ok = value(arg, "--color="); ok {
+		cfg.color = v
+	} else {
+		return false
 	}
+	return true
+}
 
-	// Read input file
-	input_data, err := os.read_entire_file(cfg.input_path, context.allocator)
-	if err != nil {
-		fmt.eprintf("docodin: cannot read input file '%s': %v\n", cfg.input_path, os.error_string(err))
-		os.exit(1)
+// Output format for an output file name (HTML by default).
+format_from_extension :: proc(output_path: string) -> Command {
+	ext := strings.to_lower(filepath.ext(output_path), context.temp_allocator)
+	switch ext {
+	case ".html", ".htm": return .Html
+	case ".tex":          return .Latex
+	case ".pdf":          return .Pdf
 	}
+	return .Html // default format
+}
 
-	// Check for conf.py in same directory or parent directory to extract project metadata
-	extract_conf_py_metadata(&cfg)
-
+// Parse ``input`` and write it in the configured format.
+compile :: proc(cfg: ^Config, input: string) {
 	// Initialize arena for parse
 	arena: virtual.Arena
 	if a_err := virtual.arena_init_growing(&arena); a_err != nil {
@@ -157,16 +200,16 @@ main :: proc() {
 	defer virtual.arena_destroy(&arena)
 	alloc := virtual.arena_allocator(&arena)
 
-	p := rst.Parser{
+	p := rst.Parser {
 		allocator = alloc,
 		settings  = rst.DEFAULT_SETTINGS,
 	}
 
-	doc, _, _ := rst.parse_text(&p, string(input_data), 0, true)
+	doc, _, _ := rst.parse_text(&p, input, 0, true)
 
 	switch cfg.cmd {
 	case .Html:
-		html_cfg := rst.Html_Config{
+		html_cfg := rst.Html_Config {
 			title      = cfg.title,
 			author     = cfg.author,
 			standalone = cfg.standalone,
@@ -176,7 +219,7 @@ main :: proc() {
 		write_output(cfg.output_path, result)
 
 	case .Latex:
-		latex_cfg := rst.Latex_Config{
+		latex_cfg := rst.Latex_Config {
 			title      = cfg.title,
 			author     = cfg.author,
 			date       = cfg.date,
@@ -186,7 +229,7 @@ main :: proc() {
 		write_output(cfg.output_path, result)
 
 	case .Pdf:
-		compile_pdf(doc, &p, &cfg)
+		compile_pdf(doc, &p, cfg)
 
 	case .Check, .Auto:
 		// handled above
@@ -200,7 +243,8 @@ write_output :: proc(path: string, content: string) {
 	}
 	err := os.write_entire_file(path, content)
 	if err != nil {
-		fmt.eprintf("docodin: error writing output to '%s': %v\n", path, os.error_string(err))
+		fmt.eprintf("docodin: error writing output to '%s': %v\n",
+			path, os.error_string(err))
 		os.exit(1)
 	}
 	fmt.eprintf("docodin: generated '%s' (%d bytes)\n", path, len(content))
@@ -266,7 +310,8 @@ find_tex_binary :: proc(preferred: string) -> (path: string, ok: bool) {
 	candidates := make([dynamic]string, context.temp_allocator)
 	if len(preferred) > 0 {
 		append(&candidates, preferred)
-		pref_path, _ := filepath.join([]string{"/Library/TeX/texbin", preferred}, context.temp_allocator)
+		texbin_path := []string{"/Library/TeX/texbin", preferred}
+		pref_path, _ := filepath.join(texbin_path, context.temp_allocator)
 		append(&candidates, pref_path)
 	}
 	append(&candidates, "/Library/TeX/texbin/xelatex")
@@ -294,7 +339,8 @@ compile_pdf :: proc(doc: ^rst.Node, p: ^rst.Parser, cfg: ^Config) {
 
 	tex_bin, found_tex := find_tex_binary(cfg.engine)
 	if !found_tex {
-		fmt.eprintln("docodin: could not find TeX engine (xelatex/pdflatex) in /Library/TeX/texbin or PATH")
+		fmt.eprintln("docodin: could not find TeX engine (xelatex/pdflatex) " +
+			"in /Library/TeX/texbin or PATH")
 		os.exit(1)
 	}
 
@@ -317,7 +363,8 @@ compile_pdf :: proc(doc: ^rst.Node, p: ^rst.Parser, cfg: ^Config) {
 
 	err := os.write_entire_file(tmp_tex, tex_content)
 	if err != nil {
-		fmt.eprintf("docodin: failed to write intermediate LaTeX file '%s': %v\n", tmp_tex, os.error_string(err))
+		fmt.eprintf("docodin: failed to write intermediate LaTeX file '%s': %v\n",
+			tmp_tex, os.error_string(err))
 		os.exit(1)
 	}
 
@@ -344,7 +391,8 @@ compile_pdf :: proc(doc: ^rst.Node, p: ^rst.Parser, cfg: ^Config) {
 	// Second pass for labels/crossrefs
 	state2, _, _, exec_err2 := os.process_exec(desc, context.allocator)
 	if exec_err2 != nil || !state2.success {
-		fmt.eprintf("docodin: TeX second pass compilation failed (exit code %d)\n", state2.exit_code)
+		fmt.eprintf("docodin: TeX second pass compilation failed (exit code %d)\n",
+			state2.exit_code)
 		os.exit(1)
 	}
 
@@ -359,27 +407,37 @@ compile_pdf :: proc(doc: ^rst.Node, p: ^rst.Parser, cfg: ^Config) {
 	fmt.eprintf("docodin: successfully generated PDF '%s'\n", out_pdf)
 }
 
-run_checker :: proc(files: []string) {
+// ``docodin check``: parser diagnostics of each file (see odin/check); exits
+// with 1 when an error was found.
+run_checker :: proc(files: []string, cfg: ^Config) -> int {
+	color := cfg.color == "always"
+	if cfg.color == "auto" {
+		no_color := os.get_env("NO_COLOR", context.temp_allocator)
+		color = os.is_tty(os.stderr) && no_color == ""
+	}
+	status := 0
 	for f in files {
 		data, err := os.read_entire_file(f, context.allocator)
 		if err != nil {
 			fmt.eprintf("docodin: cannot read %s: %v\n", f, os.error_string(err))
+			status = 1
 			continue
 		}
-		p := rst.Parser{
-			allocator = context.allocator,
-			settings  = rst.DEFAULT_SETTINGS,
+		text := string(data)
+		b := strings.builder_make()
+		src: check.Source_Lines
+		if cfg.error_format == .Elm {
+			src = check.source_lines(text, check.DEFAULT_OPTIONS.tab_width)
 		}
-		doc, _, _ := rst.parse_text(&p, string(data), 0, true)
-		has_errors := false
-		for n := doc.first; n != nil; n = n.next {
-			if n.kind == .System_Message {
-				fmt.eprintf("%s:%d: (%s) %s\n", f, n.line, n.name, n.text)
-				has_errors = true
+		for m in check.check_text(text, check.DEFAULT_OPTIONS) {
+			if m.level < rst.WARNING do continue
+			if m.level >= rst.ERROR do status = 1
+			switch cfg.error_format {
+			case .Elm:      check.format_elm(&b, f, src, m, color)
+			case .Docutils: check.format_docutils(&b, f, m)
 			}
 		}
-		if !has_errors {
-			fmt.printf("%s: OK\n", f)
-		}
+		os.write_string(os.stderr, strings.to_string(b))
 	}
+	return status
 }

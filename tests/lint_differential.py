@@ -1,9 +1,9 @@
 """Differential test of the native checker (``bin/docodin-check``) against docutils.
 
 Parses generated documents with docutils (parser only, no transforms) and
-compares the reported parser messages with ``bin/docodin-check --report=warning``.
+compares the reported parser messages with ``bin/docodin-check --error-format=docutils --report=warning``.
 Messages produced by directives, roles and the document's name registry are
-not the checker's (see cmd/docodin-check/main.odin) and are ignored.
+not the checker's (see odin/check/check.odin) and are ignored.
 
     python tests/lint_differential.py [--cases N] [--seed S] [--corpus DIR ...]
 """
@@ -57,7 +57,7 @@ def docutils_messages(text: str, path: str) -> list[str]:
 
 
 def native_messages(path: str) -> list[str]:
-    proc = subprocess.run([BINARY, "--report=warning", "--exit-status=none", path],
+    proc = subprocess.run([BINARY, "--error-format=docutils", "--report=warning", "--exit-status=none", path],
                           capture_output=True, text=True, check=False)
     if proc.returncode != 0:
         raise RuntimeError(f"exit status {proc.returncode}: {proc.stderr}")

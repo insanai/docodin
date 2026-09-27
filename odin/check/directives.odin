@@ -1,9 +1,9 @@
-package main
+package check
 
 import "core:strconv"
 import "core:strings"
 
-import rst "../../odin/rst"
+import rst "../rst"
 
 // Standard docutils directives whose content or arguments contain
 // reStructuredText.  The checker parses those parts the way the directive
@@ -63,7 +63,8 @@ SIDEBAR_OPTIONS := [?]Option_Spec{{"class", .Class}, {"name", .Any}, {"subtitle"
 NAME_ONLY := [?]Option_Spec{{"name", .Any}}
 @(rodata)
 TABLE_OPTIONS := [?]Option_Spec {
-	{"class", .Class}, {"name", .Any}, {"align", .Align}, {"width", .Required}, {"widths", .Required},
+	{"class", .Class}, {"name", .Any}, {"align", .Align},
+	{"width", .Required}, {"widths", .Required},
 }
 @(rodata)
 LIST_TABLE_OPTIONS := [?]Option_Spec {
@@ -78,12 +79,15 @@ FIGURE_OPTIONS := [?]Option_Spec {
 }
 
 @(rodata)
-CONTENTS_OPTIONS := [?]Option_Spec{{"depth", .Nonnegative_Int}, {"local", .Flag}, {"backlinks", .Backlinks}, {"class", .Class}}
+CONTENTS_OPTIONS := [?]Option_Spec {
+	{"depth", .Nonnegative_Int}, {"local", .Flag}, {"backlinks", .Backlinks}, {"class", .Class},
+}
 
 // Directive names are matched case-insensitively (English names).
 directive_spec :: proc(name: string) -> (spec: Directive_Spec, ok: bool) {
 	switch strings.to_lower(name, context.temp_allocator) {
-	case "attention", "caution", "danger", "error", "hint", "important", "note", "tip", "warning":
+	case "attention", "caution", "danger", "error", "hint", "important", "note", "tip",
+	     "warning":
 		return {.Admonition, 0, 0, true, true, CLASS_NAME[:]}, true
 	case "admonition":     return {.Generic_Admonition, 1, 0, true, true, CLASS_NAME[:]}, true
 	case "topic":          return {.Topic, 1, 0, true, true, CLASS_NAME[:]}, true
@@ -131,18 +135,18 @@ Option_Value :: struct {
 
 // ``Body.parse_directive_block``; ``ok`` is false where docutils raises a
 // MarkupError (the directive is not run).
-parse_directive_block :: proc(info: ^rst.Directive_Info, spec: Directive_Spec) -> (b: Directive_Block, ok: bool) {
-	indented := info.lines
-	line_offset := info.line_offset
-	if len(indented) > 0 && is_blank(indented[0]) {
-		indented = indented[1:]
-		line_offset += 1
-	}
-	for len(indented) > 0 && is_blank(indented[len(indented) - 1]) do indented = indented[:len(indented) - 1]
-
+parse_directive_block :: proc(
+	info: ^rst.Directive_Info,
+	spec: Directive_Spec,
+) -> (
+	b: Directive_Block,
+	ok: bool,
+) {
+	indented, line_offset := trimmed_block(info)
+	takes_args := spec.required > 0 || spec.optional > 0
 	arg_block: []string
 	i := 0
-	if len(indented) > 0 && (spec.required > 0 || spec.optional > 0 || len(spec.options) > 0) {
+	if len(indented) > 0 && (takes_args || len(spec.options) > 0) {
 		for i < len(indented) && !is_blank(indented[i]) do i += 1
 		arg_block = indented[:i]
 		b.content = indented[min(i + 1, len(indented)):]
@@ -152,17 +156,11 @@ parse_directive_block :: proc(info: ^rst.Directive_Info, spec: Directive_Spec) -
 		b.content_offset = line_offset
 	}
 	if len(spec.options) > 0 {
-		opt_start := len(arg_block)
-		for line, j in arg_block {
-			if _, _, is_field := rst.match_field_marker(line); is_field {
-				opt_start = j
-				break
-			}
-		}
+		opt_start := options_start(arg_block)
 		parse_options(arg_block[opt_start:], spec, &b) or_return
 		arg_block = arg_block[:opt_start]
 	}
-	if len(arg_block) > 0 && spec.required == 0 && spec.optional == 0 {
+	if len(arg_block) > 0 && !takes_args {
 		// docutils joins the argument lines and the rest of the block; the
 		// option lines between them are dropped (rare, and then the source
 		// lines of the content are approximate)
@@ -177,11 +175,35 @@ parse_directive_block :: proc(info: ^rst.Directive_Info, spec: Directive_Spec) -
 		b.content = b.content[1:]
 		b.content_offset += 1
 	}
-	if spec.required > 0 || spec.optional > 0 {
+	if takes_args {
 		b.arguments = parse_arguments(arg_block, spec) or_return
 	}
 	if len(b.content) > 0 && !spec.has_content do return b, false
 	return b, true
+}
+
+// The directive block without a leading blank line and trailing blank lines.
+@(private = "file")
+trimmed_block :: proc(info: ^rst.Directive_Info) -> (indented: []string, line_offset: int) {
+	indented = info.lines
+	line_offset = info.line_offset
+	if len(indented) > 0 && is_blank(indented[0]) {
+		indented = indented[1:]
+		line_offset += 1
+	}
+	for len(indented) > 0 && is_blank(indented[len(indented) - 1]) {
+		indented = indented[:len(indented) - 1]
+	}
+	return
+}
+
+// Index of the first option (field marker) line of the argument block.
+@(private = "file")
+options_start :: proc(arg_block: []string) -> int {
+	for line, j in arg_block {
+		if _, _, is_field := rst.match_field_marker(line); is_field do return j
+	}
+	return len(arg_block)
 }
 
 // ``Body.parse_directive_arguments``
@@ -232,7 +254,7 @@ parse_options :: proc(lines: []string, spec: Directive_Spec, b: ^Directive_Block
 		body := make([dynamic]string, 0, 2, context.temp_allocator)
 		if first := rst.strip(lines[i][end:]); len(first) > 0 do append(&body, first)
 		i += 1
-		for i < len(lines) && len(lines[i]) > 0 && (lines[i][0] == ' ' || lines[i][0] == '\t') {
+		for i < len(lines) && is_continuation(lines[i]) {
 			append(&body, rst.strip(lines[i]))
 			i += 1
 		}
@@ -249,6 +271,12 @@ parse_options :: proc(lines: []string, spec: Directive_Spec, b: ^Directive_Block
 		append(&b.options, opt)
 	}
 	return true
+}
+
+// An indented line continuing a field body.
+@(private = "file")
+is_continuation :: #force_inline proc(line: string) -> bool {
+	return len(line) > 0 && (line[0] == ' ' || line[0] == '\t')
 }
 
 @(private = "file")
@@ -290,7 +318,9 @@ valid_class_value :: proc(value: string) -> bool {
 		for r in name {
 			// ``make_id`` keeps ASCII letters and digits (non-ASCII letters
 			// are transliterated, so they count as well)
-			if r >= 0x80 || (r >= '0' && r <= '9') || (r >= 'a' && r <= 'z') || (r >= 'A' && r <= 'Z') {
+			ascii_alnum :=
+				(r >= '0' && r <= '9') || (r >= 'a' && r <= 'z') || (r >= 'A' && r <= 'Z')
+			if r >= 0x80 || ascii_alnum {
 				has_alnum = true
 				break
 			}
