@@ -1233,7 +1233,7 @@ _STOCK_CLASSES = state_classes
 _STOCK_STATES = {cls.__name__: cls for cls in state_classes}
 _SNAPSHOT = Snapshot([
     *state_classes, SpecializedBody, SpecializedText, QuotedLiteralBlock, RSTState,
-    BodyHelpers, ExplicitHelpers, StateWS, statemachine.State])
+    BodyHelpers, ExplicitHelpers, StateWS, statemachine.State, Inliner])
 
 
 def _stock_classes(classes: Any) -> bool:

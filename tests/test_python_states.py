@@ -97,6 +97,21 @@ states.Body.bullet = bullet
 dump(publish_doctree(sys.stdin.read(), settings_overrides=SETTINGS))
 """
 
+# An extension wrapping an inline markup method of ``Inliner`` (docutils
+# dispatches through the class-level ``dispatch`` table).
+_PATCHED_INLINER = """\
+original_literal = states.Inliner.literal
+
+def literal(self, match, lineno):
+    before, inlines, remaining, messages = original_literal(self, match, lineno)
+    for node in inlines:
+        node["classes"].append("patched")
+    return before, inlines, remaining, messages
+
+states.Inliner.dispatch["``"] = literal
+dump(publish_doctree(sys.stdin.read(), settings_overrides=SETTINGS))
+"""
+
 # An extension's own state machine with custom state classes.
 _OWN_MACHINE = _CUSTOM_BODY + """\
 from docutils.frontend import get_default_settings
@@ -152,6 +167,11 @@ def test_monkeypatched_bullet_transition() -> None:
     result = _check(_PATCHED_BULLET)
     assert result["tree"].count('<bullet_list bullet="-" classes="patched">') == 1
     assert result["tree"].count('<bullet_list bullet="*" classes="patched">') == 1
+
+
+def test_monkeypatched_inliner_method() -> None:
+    result = _check(_PATCHED_INLINER, "Some ``code`` here.\n\n- and ``more``\n")
+    assert result["tree"].count('<literal classes="patched">') == 2
 
 
 def test_custom_state_classes_in_own_state_machine() -> None:

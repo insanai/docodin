@@ -7,7 +7,7 @@ Python state machine when
 * the state classes are not the stock ones (custom ``state_classes``, a
   subclass of a state, another initial state, a custom ``Inliner`` class);
 * an extension replaced or wrapped a method or changed a pattern of a stock
-  state class since the module was loaded (`Snapshot`), except the
+  state class or of ``Inliner`` since the module was loaded (`Snapshot`), except the
   transitions the native builder replays (``Body.doctest``, ``Text.indent``);
 * ``DOCODIN_NATIVE=0`` is set in the environment (Python everywhere).
 """
