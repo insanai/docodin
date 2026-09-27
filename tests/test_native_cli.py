@@ -12,6 +12,7 @@ import os
 import re
 import shutil
 import subprocess
+import sys
 from pathlib import Path
 
 import pytest
@@ -155,10 +156,6 @@ def test_usage_errors_are_explained() -> None:
     assert err.startswith("-- UNEXPECTED VALUE ")
     err = usage_error("a.rst", "b.html", "c")
     assert err.startswith("-- TOO MANY ARGUMENTS ")
-    err = usage_error("--config=docutils.conf")
-    assert err.startswith("-- UNSUPPORTED OPTION ")
-    err = usage_error("--writer=odt")
-    assert 'Writer "odt" not found.' in err
 
 
 def test_writer_commands_and_help(tmp_path: Path) -> None:
@@ -187,3 +184,110 @@ def test_check_command(tmp_path: Path) -> None:
                          capture_output=True, text=True, check=False)
     assert elm.returncode == 0
     assert elm.stderr.startswith("-- UNCLOSED EMPHASIS ")
+
+
+# --- documents that need Python ---------------------------------------------------------------
+
+CODE_DOC = """\
+Title
+=====
+
+.. code:: python
+
+   def f(x):
+       return x + 1
+
+Text with a `link`_.
+
+.. _link: https://example.org
+
+.. code:: nolanguage
+
+   unknown lexer
+"""
+
+FALLBACK_CASES = {
+    "pygments": ["code.rst"],
+    "pygments latex command": ["latex", "code.rst"],
+    "pygments file destination": ["--writer=pseudoxml", "code.rst", "out.html"],
+    "pygments standard input": ["--writer=xml", "-"],
+    "pygments halt": ["--writer=pseudoxml", "--halt=warning", "code.rst"],
+    "pygments exit status": ["--exit-status=warning", "--report=info", "code.rst"],
+    "configuration file": ["--writer=pseudoxml", "--config=my.conf", "plain.rst"],
+    "other writer": ["--writer=manpage", "plain.rst"],
+    "latin-9 source": ["--writer=pseudoxml", "--input-encoding=iso-8859-15", "latin9.rst"],
+}
+
+
+def fallback_dir(base: Path, name: str) -> Path:
+    d = base / name
+    d.mkdir()
+    (d / "code.rst").write_text(CODE_DOC, encoding="utf-8")
+    (d / "plain.rst").write_text("Title\n=====\n\nPlain *text*.\n", encoding="utf-8")
+    (d / "latin9.rst").write_bytes("Title\n=====\n\n5 \u20ac.\n".encode("iso-8859-15"))
+    (d / "my.conf").write_text("[general]\nreport_level: 1\n", encoding="utf-8")
+    return d
+
+
+def run_with(argv: list[str], cwd: Path, env: dict[str, str]) -> tuple[bytes, bytes, int, dict]:
+    proc = subprocess.run(argv, cwd=cwd, input=CODE_DOC.encode(), capture_output=True, env=env,
+                          check=False, timeout=120)
+    files = {str(p.relative_to(cwd)): p.read_bytes() for p in sorted(cwd.rglob("*.html"))}
+    return proc.stdout, proc.stderr, proc.returncode, files
+
+
+@pytest.mark.parametrize("name", sorted(FALLBACK_CASES))
+def test_python_fallback(tmp_path: Path, name: str) -> None:
+    """A document that needs Python: ``docodin`` runs ``python -m docodin`` with the same
+    arguments, standard streams and exit status."""
+    args = FALLBACK_CASES[name]
+    env = {**os.environ, "DOCUTILSCONFIG": "", "PYTHONWARNINGS": "ignore",
+           "DOCODIN_PYTHON": sys.executable}
+    ours = run_with([str(BINARY), *args], fallback_dir(tmp_path, "native"), env)
+    direct = [sys.executable, "-m", "docodin", *args]
+    theirs = run_with(direct, fallback_dir(tmp_path, "python"), env)
+    assert ours[2] == theirs[2], (ours[1], theirs[1])
+    assert ours[1] == theirs[1]
+    assert ours[0] == theirs[0]
+    assert ours[3] == theirs[3]
+
+
+def without_python(tmp_path: Path) -> dict[str, str]:
+    """No ``$DOCODIN_PYTHON`` and no ``python3`` on the PATH."""
+    empty = tmp_path / "empty-path"
+    empty.mkdir(exist_ok=True)
+    return {"PATH": str(empty), "DOCODIN_PYTHON": str(tmp_path / "no-python"),
+            "NO_COLOR": "1", "HOME": str(tmp_path)}
+
+
+def test_needs_python_report(tmp_path: Path) -> None:
+    """Without a Python that imports docodin: an Elm-style report and exit status 1."""
+    d = fallback_dir(tmp_path, "doc")
+    env = without_python(tmp_path)
+    out, err, status, _ = run_with([str(BINARY), "code.rst"], d, env)
+    text = err.decode()
+    assert status == 1 and out == b""
+    assert text.startswith("-- NEEDS PYTHON ") and "code.rst:4\n" in text
+    assert 'Highlighting "python" code needs Pygments.' in text
+    assert "4| .. code:: python\n" in text
+    assert "`--syntax-highlight=none`" in text
+    assert "code.rst:13\n" in text  # every need is reported
+    for args, feature in ((["--config=my.conf", "plain.rst"], '"--config"'),
+                          (["--writer=odt", "plain.rst"], 'writer "odt"'),
+                          (["--input-encoding=latin-9", "plain.rst"], '"latin-9"')):
+        out, err, status, _ = run_with([str(BINARY), *args], d, env)
+        assert status == 1 and out == b"" and err.startswith(b"-- NEEDS PYTHON ")
+        assert feature in err.decode()
+    out, err, status, _ = run_with([str(BINARY), "--syntax-highlight=none", "code.rst"], d, env)
+    assert status == 0 and out.startswith(b"<!DOCTYPE html>")
+
+
+def test_python_without_docodin(tmp_path: Path) -> None:
+    """``$DOCODIN_PYTHON`` must import docodin; else the search goes on (here: fails)."""
+    d = fallback_dir(tmp_path, "doc")
+    fake = tmp_path / "fake-python"
+    fake.write_text("#!/bin/sh\nexit 1\n", encoding="utf-8")
+    fake.chmod(0o755)
+    env = {**without_python(tmp_path), "DOCODIN_PYTHON": str(fake)}
+    _, err, status, _ = run_with([str(BINARY), "code.rst"], d, env)
+    assert status == 1 and err.startswith(b"-- NEEDS PYTHON ")

@@ -15,8 +15,17 @@ import wr "../writers"
 // html5 with the aliases html and xhtml, latex and xetex), with docutils'
 // settings, system messages, halting and exit status.
 //
-//     output, parts, messages, status, err := publish.publish(text, "doc.rst", "html5",
-//         {{"report_level", "info"}, {"smart_quotes", true}})
+//     output, parts, messages, status, err, needs := publish.publish(text, "doc.rst",
+//         "html5", {{"report_level", "info"}, {"smart_quotes", true}})
+//
+// Where docutils would use a Python library (Pygments, PIL, ``urllib``,
+// codecs, parser and writer modules, external MathML converters), the
+// pipeline works as docutils does without it and reports a Python need:
+// such a document is published with docutils instead.
+
+// Where docutils would use a Python library (see doctree/python_needs.odin).
+Python_Need :: dt.Python_Need
+Python_Feature :: dt.Python_Feature
 
 // A system message written to the warning stream (``msg.astext()`` and a
 // newline, as docutils writes it to ``stderr``).
@@ -77,7 +86,10 @@ Options :: struct {
 // writes to the warning stream, up to a halting one.  ``exit_status`` is
 // the status of ``publish_cmdline`` (``enable_exit_status``): the highest
 // message level plus 10 if it reached ``exit_status_level``, else 1 after
-// an error, else 0.  Results are allocated with ``allocator``.
+// an error, else 0.  ``needs`` lists where docutils would use a Python
+// library: if there are any, the other results are those of docutils
+// without the libraries, and the hosts publish the document with docutils.
+// Results are allocated with ``allocator``.
 publish :: proc(
 	text, source_path, writer: string,
 	overrides: []Override,
@@ -89,6 +101,7 @@ publish :: proc(
 	messages: []Message,
 	exit_status: int,
 	err: Error,
+	needs: []Python_Need,
 ) {
 	arena: virtual.Arena
 	if virtual.arena_init_growing(&arena) != nil do panic("publish: cannot reserve arena")
@@ -108,7 +121,8 @@ publish :: proc(
 	}
 	defer dt.destroy(p.doc)
 	messages = collect_messages(&p)
-	return p.output, p.parts, messages, exit_status_of(&p), clone_error(p.err, allocator)
+	needs = collect_needs(&p)
+	return p.output, p.parts, messages, exit_status_of(&p), clone_error(p.err, allocator), needs
 }
 
 // The writer of a name or alias (``html`` is html5).
@@ -139,12 +153,15 @@ Pipeline :: struct {
 	parts:        wr.Parts,
 	err:          Error,
 	written:      Maybe(int), // messages written before an exception
+	needs:        [dynamic]Python_Need, // of the settings (the document has its own)
 }
 
 @(private = "file")
 prepare :: proc(p: ^Pipeline, writer: string, overrides: []Override) -> bool {
 	w, ok := writer_of(writer)
 	if !ok {
+		// ``writers.get_writer_class`` imports a module of that name
+		append(&p.needs, Python_Need{feature = .Writer, detail = writer})
 		p.err = Settings_Error{unknown_writer(writer, context.allocator), ""}
 		return false
 	}
@@ -156,6 +173,12 @@ prepare :: proc(p: ^Pipeline, writer: string, overrides: []Override) -> bool {
 	}
 	source := source_setting(p.source_path)
 	p.settings["_source"] = source if source != "" else None{}
+	for name in ([]string{"output_encoding", "error_encoding"}) {
+		encoding, is_str := p.settings[name].(string)
+		if is_str && !native_codec(encoding) {
+			append(&p.needs, Python_Need{feature = .Codec, detail = encoding})
+		}
+	}
 	return true
 }
 
@@ -279,6 +302,9 @@ write :: proc(p: ^Pipeline, sectnum: Maybe(tf.Sectnum_Settings)) {
 handle_unencodable :: proc(p: ^Pipeline, raw: string, ws: wr.Settings) -> (string, string) {
 	codec := codec_of(ws.output_encoding)
 	handler := ws.output_encoding_error_handler
+	if !native_error_handler(handler) {
+		append(&p.needs, Python_Need{feature = .Codec, detail = handler})
+	}
 	out, e := apply_error_handler(raw, codec, handler, p.allocator)
 	if enc, failed := e.?; failed {
 		p.err = Unicode_Error{enc, ws.output_encoding, handler}
@@ -310,6 +336,19 @@ collect_messages :: proc(p: ^Pipeline) -> []Message {
 		out[i] = Message{int(m.level), strings.clone(m.text, p.allocator)}
 	}
 	return out
+}
+
+// The needs of the settings and the document.
+@(private = "file")
+collect_needs :: proc(p: ^Pipeline) -> []Python_Need {
+	all := make([dynamic]Python_Need, 0, len(p.needs), p.allocator)
+	append(&all, ..p.needs[:])
+	if p.doc != nil do append(&all, ..p.doc.python_needs[:])
+	for &n in all {
+		n.detail = strings.clone(n.detail, p.allocator)
+		n.source = strings.clone(n.source, p.allocator)
+	}
+	return all[:]
 }
 
 // ``Publisher.publish(enable_exit_status=True)``.

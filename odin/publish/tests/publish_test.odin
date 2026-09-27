@@ -69,7 +69,6 @@ validators_reject_bad_values :: proc(t: ^testing.T) {
 		{"report_level", "loud"},
 		{"tab_width", "-1"},
 		{"footnote_backlinks", "maybe"},
-		{"output_encoding", "klingon"},
 		{"output_encoding_error_handler", "shrug"},
 		{"strip_classes", "Not A Class"},
 		{"smartquotes_locales", "de"},
@@ -81,20 +80,63 @@ validators_reject_bad_values :: proc(t: ^testing.T) {
 		testing.expectf(t, err != "", "%s=%v accepted", o.name, o.value)
 		testing.expect_value(t, which.name, o.name)
 	}
-	_, _, _, status, err := pb.publish(DOC, "", "html5", {{"report_level", "loud"}})
+	_, _, _, status, err, _ := pb.publish(DOC, "", "html5", {{"report_level", "loud"}})
 	e, is_settings := err.(pb.Settings_Error)
 	testing.expect(t, is_settings)
 	testing.expect_value(t, e.setting, "report_level")
 	testing.expect_value(t, status, 1)
-	_, _, _, _, err = pb.publish(DOC, "", "odt", nil)
+	_, _, _, _, err, _ = pb.publish(DOC, "", "odt", nil)
 	e, is_settings = err.(pb.Settings_Error)
 	testing.expect(t, is_settings && e.message == `Writer "odt" not found.`)
+}
+
+// Where docutils would use a Python library: the feature, detail and line.
+@(test)
+reports_python_needs :: proc(t: ^testing.T) {
+	context.allocator = context.temp_allocator
+	Case :: struct {
+		text, writer: string,
+		overrides:    []pb.Override,
+		need:         pb.Python_Need,
+	}
+	cases := []Case {
+		{"x\n\n.. code:: python\n\n   x = 1\n", "pseudoxml", nil,
+		 {.Pygments, "python", "doc.rst", 3}},
+		{".. role:: py(code)\n   :language: c\n\n:py:`x`\n", "pseudoxml", nil,
+		 {.Pygments, "c", "doc.rst", 4}},
+		{".. image:: a.png\n   :scale: 50\n", "html5", nil, {.Pil, "a.png", "doc.rst", 1}},
+		{".. raw:: html\n   :url: https://example.org/x\n", "xml", nil,
+		 {.Url, "https://example.org/x", "doc.rst", 1}},
+		{".. include:: x.md\n   :parser: markdown\n", "xml", nil,
+		 {.Parser, "markdown", "doc.rst", 1}},
+		{".. math:: x\n", "html5", {{"math_output", "MathML ttm"}},
+		 {.Mathml_Converter, "ttm", "doc.rst", 1}},
+		{"x\n", "pseudoxml", {{"output_encoding", "latin-9"}}, {.Codec, "latin-9", "", 0}},
+		{"\u00e9\n", "pseudoxml", {{"output_encoding", "ascii:namereplace"}},
+		 {.Codec, "namereplace", "", 0}},
+		{"x\n", "odt", nil, {.Writer, "odt", "", 0}},
+	}
+	for c in cases {
+		_, _, _, _, _, needs := pb.publish(c.text, "doc.rst", c.writer, c.overrides)
+		testing.expectf(t, len(needs) == 1 && needs[0] == c.need, "%q: %v", c.text, needs)
+	}
+	plain := []Case {
+		{".. code::\n\n   x = 1\n", "pseudoxml", nil, {}},
+		{".. code:: python\n\n   x\n", "pseudoxml", {{"syntax_highlight", "none"}}, {}},
+		{".. image:: a.png\n   :scale: 50\n", "latex", nil, {}},
+		{".. image:: a.png\n   :scale: 50\n   :width: 1\n   :height: 2\n", "html5", nil, {}},
+		{".. figure:: missing.png\n   :figwidth: image\n", "html5", nil, {}},
+	}
+	for c in plain {
+		_, _, _, _, _, needs := pb.publish(c.text, "doc.rst", c.writer, c.overrides)
+		testing.expectf(t, len(needs) == 0, "%q: %v", c.text, needs)
+	}
 }
 
 @(test)
 publishes_pseudoxml :: proc(t: ^testing.T) {
 	context.allocator = context.temp_allocator
-	output, parts, messages, status, err := pb.publish(DOC, "doc.rst", "pseudoxml", nil)
+	output, parts, messages, status, err, _ := pb.publish(DOC, "doc.rst", "pseudoxml", nil)
 	testing.expect(t, err == nil)
 	testing.expect_value(t, status, 0)
 	head := `<document ids="title" names="title" source="doc.rst" title="Title">`
@@ -105,9 +147,9 @@ publishes_pseudoxml :: proc(t: ^testing.T) {
 	testing.expect_value(t, messages[0].level, 2)
 	testing.expect(t, strings.has_prefix(messages[0].text, "doc.rst:6: (WARNING/2) Inline "))
 	testing.expect(t, strings.has_suffix(messages[0].text, "\n"))
-	_, _, quiet, _, _ := pb.publish(DOC, "", "pseudoxml", {{"report_level", 3}})
+	_, _, quiet, _, _, _ := pb.publish(DOC, "", "pseudoxml", {{"report_level", 3}})
 	testing.expect_value(t, len(quiet), 0)
-	source, _, _, _, _ := pb.publish(DOC, "", "pseudoxml", nil)
+	source, _, _, _, _, _ := pb.publish(DOC, "", "pseudoxml", nil)
 	testing.expect(t, strings.contains(source, `source="<string>"`))
 }
 
@@ -122,7 +164,7 @@ every_writer_writes :: proc(t: ^testing.T) {
 		{"xetex", "\\documentclass[a4paper]{article}"},
 	}
 	for s in starts {
-		output, parts, _, _, err := pb.publish(DOC, "", s[0], nil)
+		output, parts, _, _, err, _ := pb.publish(DOC, "", s[0], nil)
 		testing.expectf(t, err == nil, "%s: %v", s[0], err)
 		testing.expectf(t, strings.has_prefix(output, s[1]), "%s: %.40s", s[0], output)
 		testing.expect(t, len(parts.items) >= 4)
@@ -133,7 +175,7 @@ every_writer_writes :: proc(t: ^testing.T) {
 halting_raises_system_message :: proc(t: ^testing.T) {
 	context.allocator = context.temp_allocator
 	text := "`one\n\n`two\n"
-	output, _, messages, status, err := pb.publish(text, "", "pseudoxml", {{"halt_level", 2}})
+	output, _, messages, status, err, _ := pb.publish(text, "", "pseudoxml", {{"halt_level", 2}})
 	halt, halted := err.(pb.System_Message)
 	testing.expect(t, halted)
 	testing.expect_value(t, halt.level, 2)
@@ -147,10 +189,10 @@ halting_raises_system_message :: proc(t: ^testing.T) {
 @(test)
 exit_status_levels :: proc(t: ^testing.T) {
 	context.allocator = context.temp_allocator
-	_, _, _, status, err := pb.publish(DOC, "", "pseudoxml", {{"exit_status_level", "warning"}})
+	_, _, _, status, err, _ := pb.publish(DOC, "", "pseudoxml", {{"exit_status_level", "warning"}})
 	testing.expect(t, err == nil)
 	testing.expect_value(t, status, 12)
-	_, _, _, status, _ = pb.publish(DOC, "", "pseudoxml", {{"exit_status_level", 3}})
+	_, _, _, status, _, _ = pb.publish(DOC, "", "pseudoxml", {{"exit_status_level", 3}})
 	testing.expect_value(t, status, 0)
 }
 
@@ -158,7 +200,7 @@ exit_status_levels :: proc(t: ^testing.T) {
 output_encodings :: proc(t: ^testing.T) {
 	context.allocator = context.temp_allocator
 	text := "Café — x\n"
-	_, _, _, status, err := pb.publish(text, "", "pseudoxml", {{"output_encoding", "ascii"}})
+	_, _, _, status, err, _ := pb.publish(text, "", "pseudoxml", {{"output_encoding", "ascii"}})
 	u, is_unicode := err.(pb.Unicode_Error)
 	testing.expect(t, is_unicode)
 	testing.expect_value(t, status, 1)
@@ -166,7 +208,7 @@ output_encodings :: proc(t: ^testing.T) {
 	report := pb.error_report(err)
 	testing.expect(t, strings.has_prefix(report,
 		"UnicodeEncodeError: 'ascii' codec can't encode character '\\xe9' in position "))
-	output, _, _, _, err2 := pb.publish(text, "", "pseudoxml",
+	output, _, _, _, err2, _ := pb.publish(text, "", "pseudoxml",
 		{{"output_encoding", "ascii:backslashreplace"}})
 	testing.expect(t, err2 == nil)
 	testing.expect(t, strings.contains(output, "Caf\\xe9 \\u2014 x"))
@@ -196,8 +238,9 @@ decoding_input :: proc(t: ^testing.T) {
 explicit_false_trim_keeps_the_space :: proc(t: ^testing.T) {
 	context.allocator = context.temp_allocator
 	text := "x [#]_\n\n.. [#] f\n"
-	trim, _, _, _, _ := pb.publish(text, "", "pseudoxml", {{"footnote_references", "superscript"}})
-	keep, _, _, _, _ := pb.publish(text, "", "pseudoxml",
+	trim, _, _, _, _, _ := pb.publish(text, "", "pseudoxml",
+		{{"footnote_references", "superscript"}})
+	keep, _, _, _, _, _ := pb.publish(text, "", "pseudoxml",
 		{{"footnote_references", "superscript"}, {"trim_footnote_reference_space", false}})
 	testing.expect(t, strings.contains(trim, "        x\n"))
 	testing.expect(t, strings.contains(keep, "        x \n"))
@@ -207,7 +250,7 @@ explicit_false_trim_keeps_the_space :: proc(t: ^testing.T) {
 transform_halts_like_docutils :: proc(t: ^testing.T) {
 	context.allocator = context.temp_allocator
 	text := "Para.\n\n.. class:: a\n"
-	_, _, messages, status, err := pb.publish(text, "", "pseudoxml",
+	_, _, messages, status, err, _ := pb.publish(text, "", "pseudoxml",
 		{{"halt_level", 3}, {"exit_status_level", 3}})
 	halt, halted := err.(pb.System_Message)
 	testing.expect(t, halted && halt.level == 3)

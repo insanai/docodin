@@ -151,11 +151,32 @@ format_elm :: proc(
 // command-line tools.  ``location`` names the tool or the file; ``hint``
 // may be "".
 format_report :: proc(b: ^strings.Builder, title, location, text, hint: string, color: bool) {
+	format_line_report(b, title, location, text, {}, 0, hint, color)
+}
+
+// An Elm-style report showing line ``line`` of ``src`` (none for 0 or a
+// line ``src`` lacks), for conditions of the tools rather than markup
+// errors (a document that needs Python).
+format_line_report :: proc(
+	b: ^strings.Builder,
+	title, location, text: string,
+	src: Source_Lines,
+	line: int,
+	hint: string,
+	color: bool,
+) {
 	pal := palette(color, rst.ERROR)
 	write_header(b, title, location, pal)
 	write_wrapped(b, text, 0)
-	if hint != "" {
+	shown := line >= 1 && line <= len(src.lines)
+	if shown {
+		ex := Excerpt{first = line, last = line}
+		mark_content(src, line, &ex)
 		strings.write_byte(b, '\n')
+		write_excerpt(b, src, ex, pal)
+	}
+	if hint != "" {
+		if !shown do strings.write_byte(b, '\n')
 		strings.write_string(b, pal.hint)
 		strings.write_string(b, "Hint")
 		strings.write_string(b, pal.reset)

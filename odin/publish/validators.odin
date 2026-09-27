@@ -93,6 +93,10 @@ LATEX_WRITERS :: bit_set[wr.Writer_Name]{.Latex, .Xetex}
 // Set ``name`` to ``text`` converted by its validator; the error text of
 // the validator on failure.  An error handler given with an encoding
 // ("name:handler") also sets the ``<name>_error_handler`` setting.
+// Encodings are not looked up (``codecs.lookup``): Python has codecs the
+// native code lacks, and only Python can tell those from unknown names, so
+// the codecs that are not native are Python needs where they are used
+// (``native_codec``, ``native_decoder``).
 set_validated :: proc(
 	s: ^Settings,
 	writer: wr.Writer_Name,
@@ -110,7 +114,6 @@ set_validated :: proc(
 			key := strings.concatenate({name, "_error_handler"}, allocator)
 			s[key] = handler
 		}
-		if err := check_encoding(encoding); err != "" do return err
 		s[name] = encoding
 		return ""
 	}
@@ -142,7 +145,7 @@ VALIDATE := [Validator]Validate_Proc {
 	},
 	.Nonnegative_Int     = parse_nonnegative,
 	.Encoding            = proc(text: string, _: runtime.Allocator) -> (Value, string) {
-		return text, check_encoding(text)
+		return text, ""
 	},
 	.Error_Handler       = proc(text: string, _: runtime.Allocator) -> (Value, string) {
 		return text, check_error_handler(text)
@@ -300,15 +303,6 @@ check_math_output :: proc(text: string) -> string {
 	return fmt.aprintf(msg, text)
 }
 
-// ``codecs.lookup(encoding)`` for the codecs docodin can encode and
-// decode.
-check_encoding :: proc(encoding: string) -> string {
-	// "unicode": no encoding (``Output.encode`` returns the text)
-	if codec_of(encoding) != .Unknown || encoding == "unicode" do return ""
-	msg := "LookupError: unknown encoding: \"%s\" (docodin supports utf-8, utf-8-sig, " +
-		"utf-16, utf-32, ascii and latin-1)"
-	return fmt.aprintf(msg, encoding)
-}
 
 // ``codecs.lookup_error(handler)``.
 check_error_handler :: proc(handler: string) -> string {

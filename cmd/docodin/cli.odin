@@ -22,6 +22,11 @@ Cli :: struct {
 	overrides:   [dynamic]pb.Override, // the settings that differ from the defaults
 	source:      string, // "" or "-": standard input
 	warnings:    string, // ``--warnings`` file
+	// the options (with their values) but ``--output-path``, for a run of
+	// the Python front end with other positional arguments
+	option_args: [dynamic]string,
+	// the writer or options need docutils' Python front end
+	needs:       [dynamic]pb.Python_Need,
 }
 
 USAGE_HEAD :: `Usage: docodin [--writer=NAME] [options] [SOURCE [DESTINATION]]
@@ -42,9 +47,10 @@ parse_command_line :: proc(args: []string, default_writer: string) -> Cli {
 	}
 	w, ok := pb.writer_of(cli.writer_name)
 	if !ok {
-		names := []string{"html5", "html", "xhtml", "latex", "xetex", "xml", "pseudoxml"}
-		err := fmt.tprintf(`Writer "%s" not found.`, cli.writer_name)
-		invalid_value("--writer", cli.writer_name, err, names)
+		// ``writers.get_writer_class`` imports a module of that name: the
+		// options are those of the Python writer
+		append(&cli.needs, pb.Python_Need{feature = .Writer, detail = cli.writer_name})
+		return cli
 	}
 	cli.writer = w
 	cli.settings = pb.default_settings(w, SHIM_DOCUTILS)
@@ -84,10 +90,12 @@ parse_options :: proc(cli: ^Cli, args: []string, positional: ^[dynamic]string) {
 		}
 		name, value, has_value := split_option(arg)
 		o := lookup_option(cli, name)
+		if o.dest != "output_path" do append(&cli.option_args, arg)
 		if takes_value(o) && !has_value {
 			if i + 1 >= len(args) do missing_value(name, o)
 			i += 1
 			value, has_value = args[i], true
+			if o.dest != "output_path" do append(&cli.option_args, value)
 		} else if !takes_value(o) && has_value {
 			usage_error("UNEXPECTED VALUE", fmt.tprintf("The option `%s` takes no value.", name),
 				fmt.tprintf("Write `%s` alone.", name))
@@ -146,7 +154,7 @@ apply_option :: proc(cli: ^Cli, o: ^Option, name, value: string) {
 		cli.warnings = value
 	case .Ignore:
 	case .Unsupported:
-		unsupported_option(name)
+		append(&cli.needs, pb.Python_Need{feature = .Option, detail = name})
 	case .Help:
 		print_help(cli)
 		os.exit(0)
@@ -165,6 +173,13 @@ store_value :: proc(cli: ^Cli, o: ^Option, name, value: string) {
 		invalid_value(name, value, err, word_list(o.choices))
 	}
 	if o.overrides != "" do cli.settings[o.overrides] = pb.None{}
+	// ``validate_encoding_and_error_handler`` looks the codec up
+	if pb.validator_of(o.dest, cli.writer) == .Encoding {
+		encoding, _ := cli.settings[o.dest].(string)
+		if !pb.native_codec(encoding) {
+			append(&cli.needs, pb.Python_Need{feature = .Codec, detail = encoding})
+		}
+	}
 }
 
 @(private = "file")
@@ -380,14 +395,6 @@ invalid_value :: proc(name, value, err: string, choices: []string) -> ! {
 	hint := "See `docodin --help` for the values."
 	if len(choices) > 0 do hint = fmt.tprintf("Use one of %s.", quoted_list(choices))
 	usage_error("INVALID VALUE", text, hint)
-}
-
-@(private = "file")
-unsupported_option :: proc(name: string) -> ! {
-	text := fmt.tprintf("The option `%s` is not supported by the native docodin.", name)
-	hint := "Configuration files and debugging dumps need Python: run " +
-		"`DOCODIN_DOCUTILS=1 python -m docutils` (docutils on docodin) for them."
-	usage_error("UNSUPPORTED OPTION", text, hint)
 }
 
 @(private = "file")

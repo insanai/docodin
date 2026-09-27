@@ -10,7 +10,10 @@ The inputs are the docutils functional test inputs and ``docs/**/*.rst`` with ev
 and a few settings variants, and generated documents (tests/fuzz_differential.py and the
 transform and writer pieces) under random settings, including halting and exit status levels.
 Code is compared with ``syntax_highlight: none`` (no Pygments).  Documents whose images
-docutils would measure with PIL are reported separately.
+docutils would measure with PIL are reported separately.  Where the native publisher reports
+that docutils would use a Python library (the hosts publish such documents with docutils),
+its output is still that of docutils without the library, as in this reference: it is
+compared, and the documents are counted by feature.
 
     PY="uv run --no-project --python 3.14 --with docutils==0.22.4 python"
     $PY tests/native_publish_differential.py --docutils-src ~/src/docutils-0.22.4 --fuzz 3000
@@ -271,14 +274,16 @@ def compare(job: dict, native: dict) -> str:
 
 def report(jobs: list[dict], results: dict[str, dict], work: Path) -> int:
     totals: dict[tuple[str, str], Counter] = defaultdict(Counter)
-    failures, kinds = [], Counter()
+    failures, kinds, needs = [], Counter(), Counter()
     for job in jobs:
         key = (job["writer"], job["group"])
         if "skip" in job:
             totals[key]["skipped"] += 1
             continue
         pil = job["expected"]["pil"]
-        diff = compare(job, results.get(job["name"], {"crash": "no result"}))
+        native = results.get(job["name"], {"crash": "no result"})
+        needs.update({need.split(":", 1)[0] for need in native.get("needs", [])})
+        diff = compare(job, native)
         totals[key]["total"] += 1
         totals[key]["pil" if pil else "identical"] += diff == ""
         totals[key]["pil-total"] += pil
@@ -293,6 +298,8 @@ def report(jobs: list[dict], results: dict[str, dict], work: Path) -> int:
               f"({c['pil']} / {c['pil-total']}, {c['skipped']})")
     for kind, n in kinds.most_common():
         print(f"  {n:5} differ first in {kind}")
+    for feature, n in sorted(needs.items()):
+        print(f"  {n:5} need Python ({feature})")
     (work / "failures.txt").write_text("\n".join(failures) + "\n", encoding="utf-8")
     print(f"{len(failures)} failures listed in {work / 'failures.txt'}")
     return 1 if failures else 0

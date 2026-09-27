@@ -17,7 +17,7 @@ import text "../text"
 // * Results are heap buffers owned by the caller; release with
 //   ``docodin_free``.
 
-ABI_VERSION :: 4
+ABI_VERSION :: 5
 VERSION :: "0.1.0"
 
 @(thread_local, private = "file")
@@ -207,9 +207,14 @@ docodin_split_lines :: proc "c" (
 //     field name, N kind (0 None, 1 False, 2 True, 3 int, 4 str, 5 list),
 //     then N value (int), a field (str) or N items and the fields (list).
 // Result: (WIRE_VERSION, output, [(name, value)] parts, [(level, text)]
-// messages, exit_status, error), error: None or (kind, text, report, level,
-// encoding, start, end, characters) with kind "settings", "system_message",
-// "exception" or "unicode_encode"; nil for a malformed request.
+// messages, exit_status, error, needs), error: None or (kind, text, report,
+// level, encoding, start, end, characters) with kind "settings",
+// "system_message", "exception" or "unicode_encode"; needs: [(feature,
+// detail, source, line, text)], where docutils would use a Python library
+// (feature "pygments", "pil", "url", "codec", "parser", "mathml-converter"
+// or "writer"; source "" and line 0 when unknown).  With needs, the other
+// results are those of docutils without the libraries: publish the
+// document with docutils.  nil for a malformed request.
 @(export)
 docodin_publish :: proc "c" (request: [^]u8, request_len: int, out_len: ^int) -> [^]u8 {
 	context = call_context()
@@ -226,10 +231,10 @@ docodin_publish :: proc "c" (request: [^]u8, request_len: int, out_len: ^int) ->
 	overrides := read_overrides(&r)
 	if !r.ok do return nil
 	if !has_source do source_path = ""
-	output, parts, messages, status, err := publish.publish(text, source_path, writer,
+	output, parts, messages, status, err, needs := publish.publish(text, source_path, writer,
 		overrides, {docutils_dir = docutils_dir})
 	w := writer_make(len(output) * 2 + 256)
-	w_tuple(&w, 6)
+	w_tuple(&w, 7)
 	w_int(&w, WIRE_VERSION)
 	w_str(&w, output)
 	w_list(&w, len(parts.items))
@@ -246,7 +251,21 @@ docodin_publish :: proc "c" (request: [^]u8, request_len: int, out_len: ^int) ->
 	}
 	w_int(&w, status)
 	write_publish_error(&w, err)
+	write_python_needs(&w, needs)
 	return finish(w, out_len)
+}
+
+@(private = "file")
+write_python_needs :: proc(w: ^Writer, needs: []publish.Python_Need) {
+	w_list(w, len(needs))
+	for n in needs {
+		w_tuple(w, 5)
+		w_str(w, publish.python_feature_name(n.feature))
+		w_str(w, n.detail)
+		w_str(w, n.source)
+		w_int(w, n.line)
+		w_str(w, publish.python_need_text(n))
+	}
 }
 
 @(private = "file")

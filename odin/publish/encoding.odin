@@ -53,6 +53,36 @@ Codec_Alias :: struct {
 	codec: Codec,
 }
 
+// A codec of ``output_encoding`` or ``error_encoding`` the native code
+// has ("unicode": no encoding); another is a Python need.
+native_codec :: proc(encoding: string) -> bool {
+	return encoding == "unicode" || codec_of(encoding) != .Unknown
+}
+
+// A codec ``decode`` decodes; another is a Python need.
+native_decoder :: proc(encoding: string) -> bool {
+	#partial switch codec_of(encoding) {
+	case .Utf8, .Utf8_Sig, .Ascii, .Latin1:
+		return true
+	}
+	return false
+}
+
+// An error handler of ``Output.encode`` the native code has; another (a
+// handler of Python's ``codecs`` registry) is a Python need.
+native_error_handler :: proc(handler: string) -> bool {
+	switch handler {
+	case "strict", "ignore", "replace", "xmlcharrefreplace", "backslashreplace":
+		return true
+	}
+	return false
+}
+
+// An error handler of ``decode``; another is a Python need.
+native_decode_handler :: proc(handler: string) -> bool {
+	return handler == "strict" || handler == "replace" || handler == "ignore"
+}
+
 // ``encodings.aliases`` of the supported codecs (normalized names).
 @(private = "file", rodata)
 CODEC_ALIASES := [?]Codec_Alias {

@@ -44,7 +44,7 @@ run_pdf :: proc(args: []string) -> int {
 	tex, _ := filepath.join({dir, strings.concatenate({filepath.stem(pdf), ".tex"})})
 	cli.settings["output_path"] = tex
 	cli.overrides = changed_settings(&cli)
-	if status := write_latex(&cli, tex); status != 0 do return status
+	if status := write_latex(&cli, writer, tex); status != 0 do return status
 	return compile_pdf(engine, tex, dir, pdf)
 }
 
@@ -92,11 +92,16 @@ find_tex :: proc(engine: string) -> (string, bool) {
 
 // Publish the LaTeX source to ``tex`` (messages to standard error).
 @(private = "file")
-write_latex :: proc(cli: ^Cli, tex: string) -> int {
-	text, ok := read_source_file(cli)
+write_latex :: proc(cli: ^Cli, writer, tex: string) -> int {
+	if len(cli.needs) > 0 do return python_latex(cli, writer, tex, cli.needs[:])
+	data, read_ok := read_input(cli.source)
+	if !read_ok do return 1
+	text, need, ok := decode_source(data, cli)
+	if n, needed := need.?; needed do return python_latex(cli, writer, tex, {n})
 	if !ok do return 1
-	output, _, messages, status, err := pb.publish(text, cli.source, cli.writer_name,
+	output, _, messages, status, err, needs := pb.publish(text, cli.source, cli.writer_name,
 		cli.overrides[:], NATIVE_OPTIONS)
+	if len(needs) > 0 do return python_latex(cli, writer, tex, needs, text)
 	for m in messages do os.write_string(os.stderr, m.text)
 	if err != nil {
 		os.write_string(os.stderr, pb.error_report(err))
@@ -109,22 +114,19 @@ write_latex :: proc(cli: ^Cli, tex: string) -> int {
 	return 0
 }
 
+// The LaTeX source written by ``python -m docodin`` with the same options
+// (a document that needs Python).
 @(private = "file")
-read_source_file :: proc(cli: ^Cli) -> (string, bool) {
-	data, rerr := os.read_entire_file_from_path(cli.source, context.allocator)
-	if rerr != nil {
-		reason := os_error_text(cli.source, rerr)
-		fmt.eprintf("Unable to open source file for reading:\n  InputError: %s\n", reason)
-		return "", false
-	}
-	encoding := setting_string(cli, "input_encoding", "utf-8")
-	handler := setting_string(cli, "input_encoding_error_handler", "strict")
-	text, derr := pb.decode(data, encoding, handler)
-	if derr != "" {
-		fmt.eprintf("docodin: cannot decode %s: %s\n", cli.source, derr)
-		return "", false
-	}
-	return pb.universal_newlines(text), true
+python_latex :: proc(
+	cli: ^Cli,
+	writer, tex: string,
+	needs: []pb.Python_Need,
+	text := "",
+) -> int {
+	args := make([dynamic]string)
+	append(&args, ..cli.option_args[:])
+	append(&args, "--", cli.source, tex)
+	return python_fallback(args[:], writer, needs, nil, text, cli.source)
 }
 
 // Run the engine twice (labels and cross references), then remove the

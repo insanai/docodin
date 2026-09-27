@@ -13,7 +13,7 @@ import threading
 from collections.abc import Callable, Sequence
 from typing import Any, NamedTuple
 
-ABI_VERSION = 4
+ABI_VERSION = 5
 WIRE_VERSION = 3
 
 # Parse_Flag bit positions (odin/rst/document.odin)
@@ -255,8 +255,10 @@ class NativeLibrary:
                 paths ("": ``<docutils>``).
 
         Returns:
-            The output (text), parts, messages, exit status and error (None, or
-            (kind, text, report, level, encoding, start, end, characters)).
+            The output (text), parts, messages, exit status, error (None, or
+            (kind, text, report, level, encoding, start, end, characters)) and the
+            Python needs: where docutils would use a Python library, as
+            (feature, detail, source, line, text).
 
         Raises:
             TypeError: If a setting value has another type.
@@ -270,8 +272,9 @@ class NativeLibrary:
         request = b"".join(fields)
         size = ctypes.c_ssize_t()
         ptr = self._publish(request, len(request), ctypes.byref(size))
-        _, output, parts, messages, status, error = self._take(ptr, size.value)
-        return PublishResult(output, dict(parts), messages, status, error)
+        _, output, parts, messages, status, error, needs = self._take(ptr, size.value)
+        return PublishResult(output, dict(parts), messages, status, error,
+                             [PythonNeed(*need) for need in needs])
 
     @property
     def has_educate(self) -> bool:
@@ -359,6 +362,21 @@ def _setting_value(name: str, value: Any) -> bytes:
     raise TypeError(f"docodin: setting {name!r}: unsupported value {value!r}")
 
 
+class PythonNeed(NamedTuple):
+    """Where docutils would use a Python library for a document."""
+
+    feature: str  # pygments, pil, url, codec, parser, mathml-converter or writer
+    detail: str  # the language, image, URL, codec, parser, converter or writer
+    source: str  # "" if unknown
+    line: int  # 0 if unknown
+    text: str  # the explanation
+
+    def __str__(self) -> str:
+        where = f"{self.source}:{self.line}: " if self.source and self.line else (
+            f"{self.source}: " if self.source else "")
+        return where + self.text
+
+
 class PublishResult(NamedTuple):
     """What ``docodin_publish`` returns."""
 
@@ -367,6 +385,7 @@ class PublishResult(NamedTuple):
     messages: list[tuple[int, str]]
     exit_status: int
     error: tuple | None
+    needs_python: list[PythonNeed]
 
 _lock = threading.Lock()
 _instance: NativeLibrary | None = None

@@ -7,10 +7,12 @@ package main
 // strings and ``smartquotes_locales`` pairs), publishes each with ``publish.publish``
 // in its working directory and prints one JSON object per line:
 //
-//     {"name", "output", "parts": [[name, value]...], "messages", "report", "status"}
+//     {"name", "output", "parts": [[name, value]...], "messages", "report", "status",
+//      "needs": ["feature:detail"...]}
 //
 // ``messages`` is the text written to the warning stream, ``report`` what
-// ``publish_cmdline`` writes about a failure.
+// ``publish_cmdline`` writes about a failure, ``needs`` where docutils would
+// use a Python library.
 //
 // Usage: publish-differential [--docutils-dir DIR] CASES.json
 
@@ -39,6 +41,7 @@ Outcome :: struct {
 	messages: string,
 	report:   string,
 	status:   int,
+	needs:    []string,
 }
 
 main :: proc() {
@@ -76,7 +79,7 @@ main :: proc() {
 run_case :: proc(c: Case, options: pb.Options, scratch: runtime.Allocator) {
 	context.allocator = scratch
 	context.temp_allocator = scratch
-	output, parts, messages, status, err := pb.publish(c.text, c.source_path, c.writer,
+	output, parts, messages, status, err, needs := pb.publish(c.text, c.source_path, c.writer,
 		c.overrides, options)
 	out := Outcome {
 		name   = c.name,
@@ -84,6 +87,10 @@ run_case :: proc(c: Case, options: pb.Options, scratch: runtime.Allocator) {
 		parts  = make([][2]string, len(parts.items)),
 		report = pb.error_report(err),
 		status = status,
+		needs  = make([]string, len(needs)),
+	}
+	for n, i in needs {
+		out.needs[i] = strings.concatenate({pb.python_feature_name(n.feature), ":", n.detail})
 	}
 	for p, i in parts.items do out.parts[i] = {p.name, p.value}
 	b := strings.builder_make()

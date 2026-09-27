@@ -84,22 +84,30 @@ command_writer :: proc(arg: string) -> (string, bool) {
 @(private = "file")
 run_publish :: proc(args: []string, default_writer: string) -> int {
 	cli := parse_command_line(args, default_writer)
+	if len(cli.needs) > 0 do return python_fallback(args, default_writer, cli.needs[:])
 	source := cli.source if cli.source != "" else "-"
-	text, ok := read_source(source, &cli)
+	data, read_ok := read_input(source)
+	if !read_ok do return 1
+	input: Maybe([]u8)
+	if source == "-" do input = data
+	text, need, ok := decode_source(data, &cli)
+	if n, needed := need.?; needed do return python_fallback(args, default_writer, {n}, input)
 	if !ok do return 1
 	source_path := "<stdin>" if source == "-" else source
-	output, _, messages, status, err := pb.publish(text, source_path, cli.writer_name,
+	output, _, messages, status, err, needs := pb.publish(text, source_path, cli.writer_name,
 		cli.overrides[:], NATIVE_OPTIONS)
+	if len(needs) > 0 {
+		return python_fallback(args, default_writer, needs, input, text, source_path)
+	}
 	write_messages(&cli, messages, err)
 	if _, failed := err.(pb.Settings_Error); failed do return 2
 	if err == nil && !write_destination(&cli, output) do return 1
 	return status
 }
 
-// ``FileInput.read``: the source decoded with ``input_encoding`` and with
-// universal newlines.  On failure, docutils' report.
-@(private = "file")
-read_source :: proc(path: string, cli: ^Cli) -> (string, bool) {
+// ``FileInput.read`` of a path or of standard input ("-"): the bytes; on
+// failure, docutils' report.
+read_input :: proc(path: string) -> ([]u8, bool) {
 	data: []byte
 	rerr: os.Error
 	if path == "-" {
@@ -110,21 +118,39 @@ read_source :: proc(path: string, cli: ^Cli) -> (string, bool) {
 	if rerr != nil {
 		reason := os_error_text(path, rerr)
 		fmt.eprintf("Unable to open source file for reading:\n  InputError: %s\n", reason)
-		return "", false
+		return nil, false
 	}
+	return data, true
+}
+
+// The source decoded with ``input_encoding`` and with universal newlines.
+// A codec or error handler the native code lacks is a Python need; on
+// failure, docutils' report.
+decode_source :: proc(
+	data: []u8,
+	cli: ^Cli,
+) -> (
+	text: string,
+	need: Maybe(pb.Python_Need),
+	ok: bool,
+) {
 	encoding := setting_string(cli, "input_encoding", "utf-8")
 	handler := setting_string(cli, "input_encoding_error_handler", "strict")
-	text, derr := pb.decode(data, encoding, handler)
-	if derr != "" {
-		msg := fmt.tprintf(
-			"UnicodeError: Unable to decode input data.  Tried the following encodings: " +
-			"'%s'.\n(%s)",
-			encoding, derr,
-		)
-		os.write_string(os.stderr, pb.exception_report(msg))
-		return "", false
+	if !pb.native_decoder(encoding) {
+		return "", pb.Python_Need{feature = .Codec, detail = encoding}, false
 	}
-	return pb.universal_newlines(text), true
+	decoded, derr := pb.decode(data, encoding, handler)
+	if derr == "" do return pb.universal_newlines(decoded), nil, true
+	if !pb.native_decode_handler(handler) {
+		return "", pb.Python_Need{feature = .Codec, detail = handler}, false
+	}
+	msg := fmt.tprintf(
+		"UnicodeError: Unable to decode input data.  Tried the following encodings: " +
+		"'%s'.\n(%s)",
+		encoding, derr,
+	)
+	os.write_string(os.stderr, pb.exception_report(msg))
+	return "", nil, false
 }
 
 // ``str(OSError)``.
