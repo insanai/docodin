@@ -83,6 +83,9 @@ include_source :: proc(c: ^Context, d: ^Directive) -> string {
 	if has_prefix(file_path, "<") && has_suffix(file_path, ">") && len(file_path) >= 2 {
 		file_path = concat("/", file_path[1:len(file_path) - 1])
 		root_prefix = standard_include_path
+		if root_prefix == "" && c.doc.settings.docutils_dir != "" {
+			root_prefix = concat(c.doc.settings.docutils_dir, "/parsers/rst/include")
+		}
 		if root_prefix == "" do root_prefix = DEFAULT_INCLUDE_PATH
 	}
 	return adapt_path(c, file_path, root_prefix)
@@ -458,6 +461,11 @@ expandtabs :: proc(s: string, tabsize: int) -> string {
 // the native reader fetches no other URLs.  On failure: the exception
 // class and ``str(error)``.
 read_url :: proc(c: ^Context, d: ^Directive, url: string) -> (text: string, class, err: string) {
+	// ``urllib.request.Request``: a URL without a scheme is a ``ValueError``
+	colon := strings.index_byte(url, ':')
+	if colon <= 0 || strings.contains_rune(url[:colon], '/') {
+		return "", "ValueError", concat("unknown url type: ", py_repr(url))
+	}
 	file_path, local := file_url_path(c, url)
 	if !local do return "", "URLError", "<urlopen error the native reader fetches file: URLs only>"
 	switch {

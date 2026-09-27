@@ -393,7 +393,12 @@ widths_option :: proc(
 
 // ``directives.single_char_or_unicode``.
 single_char_or_unicode :: proc(c: ^Context, argument: Maybe(string)) -> (Option_Value, string) {
-	a := argument.? or_else ""
+	a, given := argument.?
+	if !given {
+		// ``unicode_code(None)``: not a conversion error (docutils raises)
+		raise_exception(c, "AttributeError: 'NoneType' object has no attribute 'isdigit'")
+		return Opt_None{}, ""
+	}
 	char, err := unicode_code(c, a)
 	if err != "" do return nil, strings.trim_prefix(err, "ValueError: ")
 	if cp_len(char) > 1 do return nil, concat(

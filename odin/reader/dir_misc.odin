@@ -179,10 +179,7 @@ unicode_code :: proc(c: ^Context, code: string) -> (string, string) {
 	value := 0
 	for ch in transmute([]u8)digits {
 		d := int(ch - '0') if ch <= '9' else int((ch | 0x20) - 'a') + 10
-		value = value * base + d
-		if value > 0x7FFF_FFFF {
-			return "", "ValueError: code too large (Python int too large to convert to C int)"
-		}
+		value = min(value * base + d, 0x110000) // Python 3.14: no OverflowError
 	}
 	if value > 0x10FFFF do return "", "ValueError: chr() arg not in range(0x110000)"
 	b := strings.builder_make(c.allocator)
@@ -436,6 +433,10 @@ raw_text :: proc(
 	case has_url:
 		url := options_string(&d.options, "url")
 		content, class, fetch_err := read_url(c, d, url)
+		if class == "ValueError" { 	// not caught by the directive: the parse fails
+			raise_exception(c, concat("ValueError: ", fetch_err))
+			return "", url, nil
+		}
 		if class == "UnicodeError" {
 			return "", "", directive_error(
 				.SEVERE, "Problem with \"", d.name, "\" directive:\n", fetch_err,

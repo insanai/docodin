@@ -417,6 +417,10 @@ definition_list_item :: proc(
 			dt.append_child(doc, dli, term)
 		case .Classifier:
 			kids := inline_nodes(c, t, d.first, int(d.line), container, &msgs)
+			// ``classifier(unescape(part, True), part)``: no text for an empty part
+			if len(kids) > 0 && dt.tag(doc, kids[0]) == .Text && dt.text(doc, kids[0]) == "" {
+				kids = kids[1:]
+			}
 			dt.append_child(doc, dli, element(c, .classifier, d.raw, kids))
 		case:
 			definition = ch

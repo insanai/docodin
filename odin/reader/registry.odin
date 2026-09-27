@@ -63,83 +63,20 @@ DIRECTIVE_REGISTRY := [?]Registry_Entry {
 	{"restructuredtext-test-directive", &TEST_DIRECTIVE},
 }
 
-// ``languages.en.directives``: English name -> canonical name.
-@(private = "file")
-EN_DIRECTIVES := [?][2]string {
-	{"attention", "attention"},
-	{"caution", "caution"},
-	{"danger", "danger"},
-	{"error", "error"},
-	{"hint", "hint"},
-	{"important", "important"},
-	{"note", "note"},
-	{"tip", "tip"},
-	{"warning", "warning"},
-	{"admonition", "admonition"},
-	{"sidebar", "sidebar"},
-	{"topic", "topic"},
-	{"line-block", "line-block"},
-	{"parsed-literal", "parsed-literal"},
-	{"code", "code"},
-	{"code-block", "code"},
-	{"sourcecode", "code"},
-	{"math", "math"},
-	{"rubric", "rubric"},
-	{"epigraph", "epigraph"},
-	{"highlights", "highlights"},
-	{"pull-quote", "pull-quote"},
-	{"compound", "compound"},
-	{"container", "container"},
-	{"table", "table"},
-	{"csv-table", "csv-table"},
-	{"list-table", "list-table"},
-	{"meta", "meta"},
-	{"image", "image"},
-	{"figure", "figure"},
-	{"include", "include"},
-	{"raw", "raw"},
-	{"replace", "replace"},
-	{"unicode", "unicode"},
-	{"date", "date"},
-	{"class", "class"},
-	{"rst-class", "class"},
-	{"role", "role"},
-	{"default-role", "default-role"},
-	{"title", "title"},
-	{"contents", "contents"},
-	{"sectnum", "sectnum"},
-	{"section-numbering", "sectnum"},
-	{"header", "header"},
-	{"footer", "footer"},
-	{"target-notes", "target-notes"},
-	{"restructuredtext-test-directive", "restructuredtext-test-directive"},
-}
-
 // ``directives.directive(name, language, document)``: the spec (nil if
 // unknown or not ported) and the lookup messages.
 lookup_directive :: proc(c: ^Context, name: string) -> (^Directive_Spec, [dynamic]dt.Node) {
 	msgs := make([dynamic]dt.Node, c.allocator)
 	normname := dt.py_lower(name, c.allocator)
-	canonical := ""
-	found := false
-	for e in EN_DIRECTIVES {
-		if e[0] == normname {
-			canonical, found = e[1], true
-			break
-		}
-	}
-	if !found {
-		// not in the language module, nor in the English fallback
-		text := concat(
-			"No directive entry for \"", name, "\" in module \"", EN_MODULE, "\".\n",
-			"Trying \"", name, "\" as canonical directive name.",
-		)
-		append(&msgs, dt.info(c.doc, text, {line = c.doc.current_line}))
-		canonical = normname
-	}
+	if spec, cached := c.directives[normname]; cached do return spec, msgs
+	canonical, text := canonical_name(c, .Directive, name, normname)
+	if text != "" do append(&msgs, dt.info(c.doc, text, {line = c.doc.current_line}))
 	for e in DIRECTIVE_REGISTRY {
 		if e.name != canonical do continue
-		if e.spec != nil && e.spec.run != nil do return e.spec, msgs
+		if e.spec != nil && e.spec.run != nil {
+			c.directives[normname] = e.spec
+			return e.spec, msgs
+		}
 		c.unported += 1
 		break
 	}

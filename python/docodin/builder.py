@@ -652,8 +652,10 @@ class TreeBuilder:
                 term.source, term.line = sm.srcline(child[1])
                 _append(dli, term)
             elif kind == K_CLASSIFIER:
-                _append(dli, _element(nodes.classifier, child[2],
-                                      self.inline(child[3], child[1], container, msgs)))
+                kids = self.inline(child[3], child[1], container, msgs)
+                if kids and kids[0].__class__ is Text and kids[0] == "":
+                    del kids[0]  # ``classifier(unescape(part, True), part)`` of an empty part
+                _append(dli, _element(nodes.classifier, child[2], kids))
             else:  # K_DEFINITION
                 definition = child
         dd = _element(nodes.definition, "", msgs)

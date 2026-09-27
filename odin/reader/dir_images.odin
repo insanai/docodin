@@ -182,6 +182,13 @@ figure_caption :: proc(c: ^Context, d: ^Directive, figure: dt.Node) -> dt.Node {
 	node := dt.new_element(doc, .Element) // anonymous container for parsing
 	d_nested_parse(c, d, node)
 	children := dt.children(doc, node, c.allocator)
+	if len(children) == 0 {
+		// ``if len(node) > i+1`` after a loop over no children
+		msg := "UnboundLocalError: cannot access local variable 'i' where it is not " +
+			"associated with a value"
+		raise_exception(c, msg)
+		return 0
+	}
 	rest := len(children)
 	for child, i in children {
 		if dt.is(doc, child, {.target, .pending}) {

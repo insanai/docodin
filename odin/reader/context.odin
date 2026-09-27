@@ -92,11 +92,26 @@ Context :: struct {
 	dry_run_failed:   bool, // the dry run would have had side effects
 	moved_cursor:     Moved_Cursor,
 	unported:         int, // registered directives not ported yet, seen
+	// ``docutils.languages`` module of ``language_code`` (``LANGUAGE_MODULES``)
+	language:         int,
+	language_loaded:  bool,
+	// ``RSTStateMachine.language`` (``RST_LANGUAGES``, ``NO_RST_LANGUAGE``)
+	rst_language:     int,
+	// ``directives._directives``: directives by (lowercase) local name
+	directives:       map[string]^Directive_Spec,
+	// the first Python exception docutils raises (see ``raise_exception``)
+	exception:        string,
+	exception_at:     int, // ``len(reporter.written)`` then
 }
 
 // What ``parse_document`` tells besides the document.
 Parse_Info :: struct {
 	unported_directives: int, // uses of directives that are not ported yet
+	// The exception docutils raises while parsing ("Class: message"; ""
+	// for none): the parse fails with it, and the messages written after
+	// ``len(reporter.written) == exception_at`` would not exist.
+	exception:           string,
+	exception_at:        int,
 }
 
 // ``Parser.parse(text, new_document(source_path, settings))``.
@@ -133,15 +148,29 @@ parse_document :: proc(
 		match_titles = true,
 		linear       = true,
 	}
+	// ``Parser.setup_parse`` / ``finish_parse``
+	dt.attach_observer(doc, dt.observe_parse_message)
+	defer dt.detach_observer(doc, dt.observe_parse_message)
 	start(&c, &top)
 	p := new_parser(&c, c.flags, int(doc.settings.line_length_limit))
 	setup_include_hook(&c, &top, &p)
 	tree_doc, count, final_offset := rst.parse_text(&p, text, 0, true)
+	// ``RSTStateMachine.run`` (not run when a line is too long)
+	if final_offset != -1 do load_rst_language(&c)
 	c.line_count = count
 	build_items(&c, &p.tree, rst.first_child(&p.tree, tree_doc), 0, &top, true)
 	finish(&c, &top, final_offset, count)
 	info.unported_directives = c.unported
+	info.exception, info.exception_at = c.exception, c.exception_at
 	return
+}
+
+// A Python exception docutils raises here, aborting the parse.  The native
+// reader carries on; the first exception is reported in ``Parse_Info``.
+raise_exception :: proc(c: ^Context, text: string) {
+	if c.exception != "" do return
+	c.exception = dt.clone(c.doc, text)
+	c.exception_at = len(c.doc.reporter.written)
 }
 
 @(private = "file")
@@ -159,6 +188,7 @@ context_init :: proc(c: ^Context, doc: ^dt.Doc) {
 	c.absolute_lines = make(map[dt.Node]int, 16, a)
 	c.title_styles = make([dynamic]string, a)
 	c.roles = make(map[string]^Role, 16, a)
+	c.directives = make(map[string]^Directive_Spec, 16, a)
 	c.include_log = make([dynamic]Include_Entry, a)
 	c.captured = make([dynamic]Captured_Insert, a)
 }

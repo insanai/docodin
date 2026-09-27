@@ -432,6 +432,9 @@ option_field :: proc(
 		field_name := element(c, .field_name, name, nodes[:])
 		f.name = dt.astext(c.doc, field_name, c.allocator)
 		f.messages = len(msgs) > 0
+		// ``field_body(..., *messages)``: the messages have a parent (they
+		// are not loose parse messages)
+		element(c, .field_body, "", msgs[:])
 	}
 	body := body_in
 	for len(body) > 0 && is_blank(body[0]) do body = body[1:]

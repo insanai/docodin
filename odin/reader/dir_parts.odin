@@ -3,6 +3,7 @@ package reader
 import "core:fmt"
 
 import dt "../doctree"
+import tf "../transforms"
 
 // Document part directives (``directives.parts``, ``directives.references``):
 // they create ``pending`` elements for the transforms.
@@ -47,9 +48,6 @@ TARGET_NOTES := Directive_Spec {
 	run         = run_target_notes,
 }
 
-// ``languages.en.labels['contents']``.
-CONTENTS_LABEL :: "Contents"
-
 // ``pending.details.update(options)``.
 @(private = "file")
 update_details :: proc(c: ^Context, pending: dt.Node, options: ^Options) {
@@ -78,6 +76,7 @@ run_contents :: proc(c: ^Context, d: ^Directive) -> (Nodes, Failure) {
 		msg := "\" directive may not be used within topics or body elements."
 		return nil, directive_error(.ERROR, "The \"", d.name, msg)
 	}
+	contents_label := tf.language_label(document_language(c), .contents)
 	local := options_has(&d.options, "local")
 	title: dt.Node
 	messages := make([dynamic]dt.Node, c.allocator)
@@ -87,7 +86,7 @@ run_contents :: proc(c: ^Context, d: ^Directive) -> (Nodes, Failure) {
 		title = element(c, .title, title_text, text_nodes[:])
 		messages = msgs
 	} else if !local {
-		title = dt.new_element(doc, .title, "", CONTENTS_LABEL)
+		title = dt.new_element(doc, .title, "", contents_label)
 	}
 	topic := dt.new_element(doc, .topic)
 	dt.list_append(doc, topic, dt.K_CLASSES, "contents")
@@ -97,7 +96,7 @@ run_contents :: proc(c: ^Context, d: ^Directive) -> (Nodes, Failure) {
 	dt.set_source(doc, topic, src)
 	dt.set_line(doc, topic, (ln.? or_else 0) - 1)
 	if local do dt.list_append(doc, topic, dt.K_CLASSES, "local")
-	name := CONTENTS_LABEL
+	name := contents_label
 	if title != 0 && dt.child_count(doc, title) > 0 { 	// ``if title:``
 		name = dt.astext(doc, title)
 		dt.append_child(doc, topic, title)
@@ -112,6 +111,19 @@ run_contents :: proc(c: ^Context, d: ^Directive) -> (Nodes, Failure) {
 	out := result_of(c, topic)
 	append(&out, ..messages[:])
 	return out, nil
+}
+
+// ``languages.get_language(settings.language_code, reporter)``: the
+// language module of the document, loaded (with the reporter's messages)
+// on first use.
+@(private = "file")
+document_language :: proc(c: ^Context) -> int {
+	s := &c.doc.settings
+	if !c.language_loaded {
+		c.language = tf.get_language(c.doc, s.language_code, s.docutils_dir, true)
+		c.language_loaded = true
+	}
+	return c.language
 }
 
 @(private = "file")

@@ -69,45 +69,7 @@ GENERIC_CUSTOM_ROLE := Role {
 	name = "generic_custom_role",
 }
 
-// ``languages.en.roles``: English name -> canonical name.
-@(private = "file")
-EN_ROLES := [?][2]string {
-	{"abbreviation", "abbreviation"},
-	{"ab", "abbreviation"},
-	{"acronym", "acronym"},
-	{"ac", "acronym"},
-	{"code", "code"},
-	{"emphasis", "emphasis"},
-	{"literal", "literal"},
-	{"math", "math"},
-	{"pep-reference", "pep-reference"},
-	{"pep", "pep-reference"},
-	{"rfc-reference", "rfc-reference"},
-	{"rfc", "rfc-reference"},
-	{"strong", "strong"},
-	{"subscript", "subscript"},
-	{"sub", "subscript"},
-	{"superscript", "superscript"},
-	{"sup", "superscript"},
-	{"title-reference", "title-reference"},
-	{"title", "title-reference"},
-	{"t", "title-reference"},
-	{"raw", "raw"},
-	{"index", "index"},
-	{"i", "index"},
-	{"anonymous-reference", "anonymous-reference"},
-	{"citation-reference", "citation-reference"},
-	{"footnote-reference", "footnote-reference"},
-	{"named-reference", "named-reference"},
-	{"substitution-reference", "substitution-reference"},
-	{"uri-reference", "uri-reference"},
-	{"uri", "uri-reference"},
-	{"url", "uri-reference"},
-	{"target", "target"},
-}
-
 DEFAULT_INTERPRETED_ROLE :: "title-reference"
-EN_MODULE :: "docutils.parsers.rst.languages.en"
 
 // The options a role function accepts (``role_fn.options`` after
 // ``set_implicit_options``).
@@ -130,12 +92,6 @@ canonical_role :: proc(name: string) -> ^Role {
 	return nil
 }
 
-@(private = "file")
-en_role :: proc(name: string) -> (string, bool) {
-	for e in EN_ROLES do if e[0] == name do return e[1], true
-	return "", false
-}
-
 // ``roles.role(role_name, language, lineno, reporter)``: the role and the
 // lookup messages.
 lookup_role :: proc(c: ^Context, role_name: string, lineno: int) -> (^Role, [dynamic]dt.Node) {
@@ -143,20 +99,11 @@ lookup_role :: proc(c: ^Context, role_name: string, lineno: int) -> (^Role, [dyn
 	normname := dt.py_lower(role_name, c.allocator)
 	if r, ok := c.roles[normname]; ok do return r, msgs
 	canonical := DEFAULT_INTERPRETED_ROLE
-	text := ""
 	if role_name != "" {
-		found: bool
-		canonical, found = en_role(normname)
-		if !found {
-			// not in the language module, nor in the English fallback
-			text = concat(
-				"No role entry for \"", role_name, "\" in module \"", EN_MODULE, "\".\n",
-				"Trying \"", role_name, "\" as canonical role name.",
-			)
-			canonical = normname
-		}
+		text: string
+		canonical, text = canonical_name(c, .Role, role_name, normname)
+		if text != "" do append(&msgs, dt.info(c.doc, text, {line = lineno}))
 	}
-	if text != "" do append(&msgs, dt.info(c.doc, text, {line = lineno}))
 	r := canonical_role(canonical)
 	if r == nil do return nil, msgs
 	c.roles[dt.clone(c.doc, normname)] = r
