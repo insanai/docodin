@@ -59,6 +59,9 @@ ALIAS_NONE, ALIAS_NAME, ALIAS_URI = range(3)
 TARGET_REFURI, TARGET_REFNAME = range(2)
 
 Text = nodes.Text
+# Constructs after which docutils attaches a message it reported before
+# parsing the construct's content (see TreeBuilder._early_message).
+_EARLY_MESSAGE_KINDS = frozenset((K_PARAGRAPH, K_ENUMERATED_LIST))
 _EXPLICIT_UNINDENT = "Explicit markup ends without a blank line; unexpected unindent."
 
 
@@ -387,6 +390,26 @@ class TreeBuilder:
 
     # -- traversal -----------------------------------------------------------
 
+    def _early_message(self, items: list, index: int,
+                       sm: OdinStateMachine) -> nodes.system_message | None:
+        """A message docutils reports before the construct at ``items[index]``
+        is parsed, but attaches after it (see ``_EARLY_MESSAGE_KINDS``):
+        created first, so messages reach the reporter in docutils' order."""
+        if index + 1 >= len(items):
+            return None
+        construct, following = items[index], items[index + 1]
+        if following[0] != K_SYSTEM_MESSAGE:
+            return None
+        if construct[0] == K_PARAGRAPH:
+            # ``Text.text``: an indented line right after the paragraph
+            if (following[3] != "Unexpected indentation."
+                    or following[1] != construct[1] + construct[2].count("\n") + 1):
+                return None
+        elif not following[3].startswith("Enumerated list start value not ordinal-1"):
+            return None  # ``Body.enumerator`` reports the start before the items
+        self.set_current_line(sm, following[5])
+        return self.message(following)
+
     def _paragraph(self, item, parent, sm, linear, delta):
         """Hot path of ``b_paragraph`` (most frequent block element)."""
         # (K, line, raw, children, cur_line, cur)
@@ -420,17 +443,24 @@ class TreeBuilder:
         linear = sm._is_linear()
         delta = sm.line_delta
         source = sm._linear_source
-        for item in items:
+        early = None
+        for index, item in enumerate(items):
             kind = item[0]
             if skip_unindent:
                 skip_unindent = False
                 if kind == K_SYSTEM_MESSAGE and item[3] == _EXPLICIT_UNINDENT:
                     continue
+            if early is not None:  # created before the paragraph, attached after it
+                _append(sm.node, early)
+                early = None
+                continue
             if linear:
                 document.current_source = source
                 document.current_line = item[1] + delta
             else:
                 document.current_source, document.current_line = sm.srcline(item[1])
+            if kind in _EARLY_MESSAGE_KINDS:
+                early = self._early_message(items, index, sm)
             if kind == K_PARAGRAPH:
                 self._paragraph(item, sm.node, sm, linear, delta)
             elif kind == K_DIRECTIVE:
@@ -449,17 +479,24 @@ class TreeBuilder:
         linear = sm._is_linear()
         delta = sm.line_delta
         source = sm._linear_source
-        for item in items:
+        early = None
+        for index, item in enumerate(items):
             kind = item[0]
             if skip_unindent:
                 skip_unindent = False
                 if kind == K_SYSTEM_MESSAGE and item[3] == _EXPLICIT_UNINDENT:
                     continue
+            if early is not None:  # created before the paragraph, attached after it
+                _append(parent, early)
+                early = None
+                continue
             if linear:
                 document.current_source = source
                 document.current_line = item[1] + delta
             else:
                 document.current_source, document.current_line = sm.srcline(item[1])
+            if kind in _EARLY_MESSAGE_KINDS:
+                early = self._early_message(items, index, sm)
             if kind == K_PARAGRAPH:
                 self._paragraph(item, parent, sm, linear, delta)
             elif kind == K_DIRECTIVE:
