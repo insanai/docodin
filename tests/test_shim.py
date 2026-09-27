@@ -92,3 +92,86 @@ def test_shim_nodes_and_visitor() -> None:
     assert "<document>" in formatted
     assert "<section ids=['intro']>" in formatted
     assert "<title>" in formatted
+
+
+def test_native_rendering_html_and_latex() -> None:
+    """Verify direct native Odin HTML5 and LaTeX rendering functions."""
+    content = "Hello DocOdin\n=============\n\nThis is a *fast* test with **bold** text."
+
+    html_out = docodin.render_html(content, title="My Test", standalone=True)
+    assert "<!DOCTYPE html>" in html_out
+    assert "<title>My Test</title>" in html_out
+    assert '<h1 id="hello-docodin">Hello DocOdin</h1>' in html_out
+    assert "<em>fast</em>" in html_out
+    assert "<strong>bold</strong>" in html_out
+
+    tex_out = docodin.render_latex(content, title="My Test", standalone=True)
+    assert "\\documentclass[11pt,a4paper]{article}" in tex_out
+    assert "\\title{My Test}" in tex_out
+    assert "\\section{Hello DocOdin}" in tex_out
+    assert "\\emph{fast}" in tex_out
+    assert "\\textbf{bold}" in tex_out
+
+
+def test_native_statemachine_string2lines() -> None:
+    """Verify that shim string2lines delegates to the native Odin line splitter."""
+    install_shim(force=True)
+    try:
+        from docutils.statemachine import string2lines
+
+        text = "line 1\r\n\tline 2 with tab\nline 3"
+        lines = string2lines(text, tab_width=4)
+        assert len(lines) == 3
+        assert lines[0] == "line 1"
+        assert lines[1] == "    line 2 with tab"
+        assert lines[2] == "line 3"
+    finally:
+        uninstall_shim()
+
+
+def test_sphinx_conf_discovery_and_metadata(tmp_path: Any) -> None:
+    """Verify Sphinx conf.py metadata extraction in python and the native CLI compiler."""
+    import subprocess
+    from pathlib import Path
+    from docodin.conf import find_conf_py, get_metadata
+
+    conf_dir = Path(tmp_path) / "docs"
+    conf_dir.mkdir(parents=True)
+    conf_file = conf_dir / "conf.py"
+    conf_file.write_text(
+        "project = 'Sphinx Test Doc'\n"
+        "author = 'Insan.ai Engineers'\n"
+        "version = '1.0'\n"
+        "release = '1.0.0'\n"
+        "html_title = 'Sphinx Test Doc Documentation'\n",
+        encoding="utf-8",
+    )
+
+    doc_file = conf_dir / "index.rst"
+    doc_file.write_text(
+        "Welcome\n=======\n\nDocOdin native test.\n",
+        encoding="utf-8",
+    )
+
+    # 1. Test Python metadata extraction
+    found = find_conf_py(doc_file)
+    assert found == conf_file
+
+    meta = get_metadata(doc_file)
+    assert meta["project"] == "Sphinx Test Doc"
+    assert meta["title"] == "Sphinx Test Doc Documentation"
+    assert meta["author"] == "Insan.ai Engineers"
+
+    # 2. Test Standalone Odin CLI auto-extracting conf.py metadata
+    cli_bin = Path(__file__).resolve().parent.parent / "bin" / "docodin"
+    if cli_bin.is_file():
+        out_html = conf_dir / "index.html"
+        result = subprocess.run(
+            [str(cli_bin), "html", str(doc_file), "-o", str(out_html)],
+            capture_output=True,
+            text=True,
+        )
+        assert result.returncode == 0
+        html_content = out_html.read_text(encoding="utf-8")
+        assert "Sphinx Test Doc Documentation" in html_content
+        assert '<h1 id="welcome">Welcome</h1>' in html_content
