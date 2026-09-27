@@ -362,14 +362,41 @@ make_inline :: #force_inline proc(il: ^Inliner, kind: Node_Kind) -> ^Node {
 	return new_node(kind, il.lineno, il.allocator)
 }
 
+// ``text`` starts at byte ``start`` of the inline source; its position is kept
+// for diagnostics (see ``inline_position``).
 @(private = "file")
-problematic :: proc(il: ^Inliner, text: string, message: string) -> ^Node {
+problematic :: proc(il: ^Inliner, text: string, message: string, start: int) -> ^Node {
 	n := make_inline(il, .Problematic)
 	n.raw = text
 	n.text = text
 	n.name = message
 	n.num[0] = WARNING
+	n.num[1] = inline_position(il.s, start)
 	return n
+}
+
+// Position of byte ``start`` of the inline source ``s``, packed as
+// ``row << 16 | distance to the end of its line`` (``row``: newlines before
+// it).  The distance from the line end locates the text in the source line
+// whatever the block's indentation (inline sources are de-indented).
+inline_position :: proc "contextless" (s: string, start: int) -> i32 {
+	row := 0
+	line_end := len(s)
+	for i in 0 ..< len(s) {
+		if s[i] != '\n' do continue
+		if i < start {
+			row += 1
+		} else {
+			line_end = i
+			break
+		}
+	}
+	return i32(min(row, 0x7FFF) << 16 | min(line_end - start, 0xFFFF))
+}
+
+// Inverse of ``inline_position``.
+inline_position_unpack :: proc "contextless" (pos: i32) -> (row, from_line_end: int) {
+	return int(pos >> 16), int(pos & 0xFFFF)
 }
 
 // ``Inliner.inline_obj``
@@ -405,7 +432,7 @@ inline_obj :: proc(
 	parts := []string{"Inline ", class_name, " start-string without end-string."}
 	msg := strings.concatenate(parts, il.allocator)
 	text := unescape(il.s[matchstart:matchend], il.allocator, restore_backslashes = true)
-	list_append(&inlines, problematic(il, text, msg))
+	list_append(&inlines, problematic(il, text, msg, matchstart))
 	return matchstart, inlines, matchend, false
 }
 
@@ -563,7 +590,8 @@ interpreted_or_phrase_ref :: proc(
 				text := unescape(s[rolestart:textend], a, restore_backslashes = true)
 				list_append(&inlines, problematic(il, text,
 					"Multiple roles in interpreted text " +
-					"(both prefix and suffix present; only one allowed)."))
+					"(both prefix and suffix present; only one allowed).",
+					rolestart))
 				return rolestart, inlines, textend, false
 			}
 			role = erole
@@ -578,7 +606,7 @@ interpreted_or_phrase_ref :: proc(
 					"Mismatch: both interpreted text role ", position, " and reference suffix.",
 				}
 				msg := strings.concatenate(parts, a)
-				list_append(&inlines, problematic(il, text, msg))
+				list_append(&inlines, problematic(il, text, msg, rolestart))
 				return rolestart, inlines, textend, false
 			}
 			list_append(&inlines, phrase_ref(il, rawsource, escaped))
@@ -593,7 +621,8 @@ interpreted_or_phrase_ref :: proc(
 	}
 	text := unescape(s[matchstart:matchend], a, restore_backslashes = true)
 	list_append(&inlines, problematic(il, text,
-		"Inline interpreted text or phrase reference start-string without end-string."))
+		"Inline interpreted text or phrase reference start-string without end-string.",
+		matchstart))
 	return matchstart, inlines, matchend, false
 }
 
