@@ -60,3 +60,8 @@ echo "=== Building docodin standalone CLI compiler ==="
 odin build "${PROJECT_DIR}/cmd/docodin" "${OPT[@]}" -out:"${PROJECT_DIR}/bin/docodin"
 echo "Built ${PROJECT_DIR}/bin/docodin"
 
+echo "=== Building docodin language server ==="
+# built aside and moved into place: editors may be running the old binary
+odin build "${PROJECT_DIR}/cmd/docodin-lsp" "${OPT[@]}" -out:"${BUILD_DIR}/docodin-lsp"
+mv -f "${BUILD_DIR}/docodin-lsp" "${PROJECT_DIR}/bin/docodin-lsp"
+echo "Built ${PROJECT_DIR}/bin/docodin-lsp"
