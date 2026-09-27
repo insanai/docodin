@@ -8,6 +8,8 @@ Output is compared with real docutils when it is installed.
 from __future__ import annotations
 
 import json
+import os
+import shutil
 import subprocess
 import sys
 from pathlib import Path
@@ -138,7 +140,7 @@ def _masked(output: str) -> list[str]:
 
 
 def test_sphinx_conf_discovery_and_metadata(tmp_path: Any) -> None:
-    """Verify Sphinx conf.py metadata extraction in python and the native CLI compiler."""
+    """conf.py metadata extraction in Python; the native CLI ignores conf.py, as docutils."""
     from docodin.conf import find_conf_py, get_metadata
 
     conf_dir = Path(tmp_path) / "docs"
@@ -168,7 +170,7 @@ def test_sphinx_conf_discovery_and_metadata(tmp_path: Any) -> None:
     assert meta["title"] == "Sphinx Test Doc Documentation"
     assert meta["author"] == "Insan.ai Engineers"
 
-    # 2. Test Standalone Odin CLI auto-extracting conf.py metadata
+    # 2. The native CLI writes exactly what docutils writes: conf.py is not read.
     cli_bin = Path(__file__).resolve().parent.parent / "bin" / "docodin"
     if cli_bin.is_file():
         out_html = conf_dir / "index.html"
@@ -177,10 +179,20 @@ def test_sphinx_conf_discovery_and_metadata(tmp_path: Any) -> None:
             capture_output=True,
             text=True,
         )
-        assert result.returncode == 0
+        assert result.returncode == 0, result.stderr
         html_content = out_html.read_text(encoding="utf-8")
-        assert "Sphinx Test Doc Documentation" in html_content
-        assert '<h1 id="welcome">Welcome</h1>' in html_content
+        assert "Sphinx Test Doc" not in html_content
+        assert "<title>Welcome</title>" in html_content
+        assert '<h1 class="title">Welcome</h1>' in html_content
+        uv = shutil.which("uv")
+        if uv:
+            reference = subprocess.run(
+                [uv, "run", "--no-project", "--python", "3.14", "--with", "docutils==0.22.4",
+                 "python", "-m", "docutils", "--writer=html5", str(doc_file)],
+                capture_output=True, text=True, env={**os.environ, "DOCUTILSCONFIG": ""},
+            )
+            assert reference.returncode == 0, reference.stderr
+            assert html_content == reference.stdout
 
 
 def _python(code: str, **env: str) -> subprocess.CompletedProcess:

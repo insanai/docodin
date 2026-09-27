@@ -147,6 +147,24 @@ format_elm :: proc(
 	strings.write_byte(b, '\n')
 }
 
+// An Elm-style report without a source excerpt: the usage errors of the
+// command-line tools.  ``location`` names the tool or the file; ``hint``
+// may be "".
+format_report :: proc(b: ^strings.Builder, title, location, text, hint: string, color: bool) {
+	pal := palette(color, rst.ERROR)
+	write_header(b, title, location, pal)
+	write_wrapped(b, text, 0)
+	if hint != "" {
+		strings.write_byte(b, '\n')
+		strings.write_string(b, pal.hint)
+		strings.write_string(b, "Hint")
+		strings.write_string(b, pal.reset)
+		strings.write_string(b, ": ")
+		write_wrapped(b, hint, len("Hint: "))
+		strings.write_byte(b, '\n')
+	}
+}
+
 @(private = "file")
 write_header :: proc(b: ^strings.Builder, title, location: string, pal: Palette) {
 	strings.write_string(b, pal.header)
