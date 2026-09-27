@@ -21,7 +21,7 @@ import "core:strings"
 import "../../odin/check"
 import pb "../../odin/publish"
 
-VERSION :: "0.3.0"
+VERSION :: "0.1.0"
 
 // The docutils directory of the native tools: the shim's copy of the
 // package data (stylesheets, templates and standard include files).

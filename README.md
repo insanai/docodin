@@ -80,25 +80,20 @@ everywhere, for debugging.
 
 ## Performance
 
-Sphinx 9.1, building CPython's documentation (599 pages, HTML, one process,
-Linux x86-64):
+Linux x86-64 with 32 cores, Python 3.13, docutils 0.22.4 and Sphinx 9.1 (see
+CHANGELOG.md):
 
-| docutils | docodin | Speedup |
-|----------|---------|---------|
-| 64.8 s   | 49.0 s  | 1.32×   |
+| Workload | docutils | docodin |
+|----------|----------|---------|
+| Sphinx, CPython documentation (599 pages, `-j1`) | 64.3 s | 48.3 s (1.33×) |
+| Sphinx, CPython documentation (`-j auto`) | 32.5 s wall, 99 s CPU | 29.1 s wall, 74 s CPU |
+| Publish the docutils documentation to HTML5 (60 files, in process) | 1.98 s | 0.90 s (shim), 0.20 s (`publish_native`) |
+| The same, one command per file | 7.48 s (`python -m docutils`) | 0.23 s (`docodin`) |
+| Check the docutils and Sphinx documentation for markup errors | 2.83 s | 0.05 s (`docodin-check -j1`) |
 
-The reading phase (parsing and docutils transforms) drops from 35.7 s to
-22.4 s. The rest is Sphinx's own processing and Python's garbage collector.
-Peak memory is the same.
-
-Standalone docutils work on the docutils documentation (60 files, 1.36 MB,
-Apple M1):
-
-| Task | docutils | docodin | Speedup |
-|------|----------|---------|---------|
-| parse → doctree | 1192 ms | 228 ms | 5.2× |
-| publish HTML5 | 1794 ms | 802 ms | 2.2× |
-| `docodin-check` on the docutils and Sphinx docs (2.75 MB) | 2.47 s | 49 ms (1 core), 14 ms (8 cores) | 50–175× |
+In Sphinx builds the output is identical, and the remaining time is mostly
+Sphinx's own processing. Peak memory of the single-process build is higher
+(999 MB against 890 MB); the memory held after reading is the same.
 
 ## Native publishing
 
