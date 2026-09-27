@@ -18,7 +18,7 @@ import text "../text"
 //   ``docodin_free``.
 
 ABI_VERSION :: 6
-VERSION :: "0.1.0"
+VERSION :: "0.2.0"
 
 @(thread_local, private = "file")
 tl_arena: Bump_Arena
