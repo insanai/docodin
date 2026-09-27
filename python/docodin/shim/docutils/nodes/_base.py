@@ -150,7 +150,13 @@ class Node:
                 return stop
             except SkipDeparture:
                 call_depart = False
-            stop = self._walkabout_children(visitor)
+            try:
+                for child in self.children[:]:
+                    if child.walkabout(visitor):
+                        stop = True
+                        break
+            except SkipSiblings:
+                pass
         except SkipChildren:
             pass
         except StopTraversal:
@@ -161,15 +167,6 @@ class Node:
                                % self.__class__.__name__)
             visitor.dispatch_departure(self)
         return stop
-
-    def _walkabout_children(self, visitor: Any) -> bool:
-        try:
-            for child in self.children[:]:
-                if child.walkabout(visitor):
-                    return True
-        except SkipSiblings:
-            pass
-        return False
 
     # The traversals below are the pre-order recursions
     #

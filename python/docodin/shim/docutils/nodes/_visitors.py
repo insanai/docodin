@@ -42,20 +42,25 @@ class NodeVisitor:
     def __init__(self, document: Any, /) -> None:
         self.document = document
 
+    # The debug messages are only formatted when the reporter shows them
+    # (``Reporter.debug`` does nothing otherwise).
+
     def dispatch_visit(self, node: Any) -> Any:
         node_name = node.__class__.__name__
         method = getattr(self, "visit_" + node_name, self.unknown_visit)
-        self.document.reporter.debug(
-            "docutils.nodes.NodeVisitor.dispatch_visit calling %s for %s"
-            % (method.__name__, node_name))
+        reporter = self.document.reporter
+        if getattr(reporter, "debug_flag", True):
+            reporter.debug("docutils.nodes.NodeVisitor.dispatch_visit calling %s for %s"
+                           % (method.__name__, node_name))
         return method(node)
 
     def dispatch_departure(self, node: Any) -> Any:
         node_name = node.__class__.__name__
         method = getattr(self, "depart_" + node_name, self.unknown_departure)
-        self.document.reporter.debug(
-            "docutils.nodes.NodeVisitor.dispatch_departure calling %s for %s"
-            % (method.__name__, node_name))
+        reporter = self.document.reporter
+        if getattr(reporter, "debug_flag", True):
+            reporter.debug("docutils.nodes.NodeVisitor.dispatch_departure calling %s for %s"
+                           % (method.__name__, node_name))
         return method(node)
 
     def unknown_visit(self, node: Any) -> None:
