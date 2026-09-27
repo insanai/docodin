@@ -73,7 +73,8 @@ match_footnote :: proc "contextless" (line: string) -> (label: string, end: int,
 	}
 	if s < len(line) && line[s] == '#' {
 		if l, e, found := close(line, s, s + 1); found do return l, e, true
-		ends := simplename_ends(line, s + 1)
+		ends: Name_Ends = ---
+		simplename_ends(line, s + 1, &ends)
 		for k in 0 ..< ends.count {
 			if l, e, found := close(line, s, ends.ends[k]); found do return l, e, true
 		}
@@ -98,7 +99,8 @@ footnote_label_close :: proc "contextless" (line: string, s, e: int) -> (string,
 match_citation :: proc "contextless" (line: string) -> (label: string, end: int, ok: bool) {
 	i := explicit_start(line)
 	if i < 0 || i >= len(line) || line[i] != '[' do return
-	ends := simplename_ends(line, i + 1)
+	ends: Name_Ends = ---
+	simplename_ends(line, i + 1, &ends)
 	for k in 0 ..< ends.count {
 		e := ends.ends[k]
 		if e < len(line) && line[e] == ']' {
@@ -135,7 +137,8 @@ match_directive_name :: proc "contextless" (
 	end: int,
 	ok: bool,
 ) {
-	ends := simplename_ends(line, i)
+	ends: Name_Ends = ---
+	simplename_ends(line, i, &ends)
 	for k in 0 ..< ends.count {
 		e := ends.ends[k]
 		for sp in ([2]int{1, 0}) {
@@ -208,13 +211,17 @@ footnote :: proc(
 	r := get_first_known_indented(sm, cp_len(line[:mend]))
 	fn := make_node(sm, kind, lineno)
 	t.nodes[fn].name = label
-	t.nodes[fn].raw = join_lines(r.lines, sm.p.allocator)
+	t.nodes[fn].raw = join_block(sm.p, r.lines)
 	t.nodes[fn].cur_line = i32(sm.p.cur_line) // registered before its content is parsed
 	manual := kind == .Citation || (label[0] != '#' && label[0] != '*')
 	if manual {
 		lbl := make_node(sm, .Label, lineno)
 		t.nodes[lbl].text = label
 		append_child(t, fn, lbl)
+		if sp := sm.p.spans; sp != nil { // "[label]"
+			start, end := source_offset(sp, label, -1), source_offset(sp, label, len(label) + 1)
+			set_span(sm.p, lbl, start, end)
+		}
 	}
 	if len(r.lines) > 0 {
 		nested_parse(sm, r.lines, r.offset, fn)
@@ -223,6 +230,7 @@ footnote :: proc(
 		append_child(t, fn, make_message(sm.p, WARNING, msg, reporter_line(sm)))
 	}
 	list_append(t, &nodes, fn)
+	span_block(sm.p, fn, line, r.lines)
 	return nodes, r.blank_finish
 }
 
@@ -319,7 +327,7 @@ hyperlink_target :: proc(
 	r := get_first_known_indented(sm, indent, until_blank = true, strip_indent = false)
 	blank_finish = r.blank_finish
 	if len(r.lines) == 0 do return {}, blank_finish, true
-	blocktext := concat(line[:mend], join_lines(r.lines, a), allocator = a)
+	blocktext := concat(line[:mend], join_block(sm.p, r.lines), allocator = a)
 	block := make([]string, len(r.lines), a)
 	for l, i in r.lines do block[i] = escape2null(l, a)
 	escaped := block[0]
@@ -336,7 +344,9 @@ hyperlink_target :: proc(
 	}
 	block = block[blockindex:]
 	block[0] = strip(escaped[end:])
-	list_append(t, &nodes, make_target(sm, block, blocktext, lineno, name))
+	tgt := make_target(sm, block, blocktext, lineno, name)
+	span_block(sm.p, tgt, line, r.lines)
+	list_append(t, &nodes, tgt)
 	return
 }
 
@@ -353,10 +363,12 @@ anonymous_target :: proc(
 	a := sm.p.allocator
 	lineno := abs_line_number(sm)
 	r := get_first_known_indented(sm, cp_len(line[:mend]), until_blank = true)
-	blocktext := concat(line[:mend], join_lines(r.lines, a), allocator = a)
+	blocktext := concat(line[:mend], join_block(sm.p, r.lines), allocator = a)
 	block := make([]string, len(r.lines), a)
 	for l, i in r.lines do block[i] = escape2null(l, a)
-	list_append(t, &nodes, make_target(sm, block, blocktext, lineno, ""))
+	tgt := make_target(sm, block, blocktext, lineno, "")
+	span_block(sm.p, tgt, line, r.lines)
+	list_append(t, &nodes, tgt)
 	return nodes, r.blank_finish
 }
 
@@ -453,7 +465,7 @@ substitution_def :: proc(
 	block := make([]string, len(r.lines), a)
 	copy(block, r.lines)
 	offset := r.offset
-	blocktext := concat(line[:mend], join_lines(block, a), allocator = a)
+	blocktext := concat(line[:mend], join_block(sm.p, block), allocator = a)
 	subname, escaped, end, blockindex, found := substitution_name(block, a)
 	if !found do return {}, blank_finish, true
 	block = block[blockindex:]
@@ -488,6 +500,7 @@ substitution_def :: proc(
 	nsm.disconnected = true // ``block.disconnect()``
 	blank_finish = substitution_def_state(&nsm, sub, blank_finish)
 	t.nodes[sub].cur_line = i32(sm.p.cur_line) // validated and registered here
+	span_block(sm.p, sub, line, r.lines)
 	list_append(t, &nodes, sub)
 	return
 }
@@ -569,7 +582,7 @@ directive :: proc(
 	// stays where an explicit list or enclosing construct left it)
 	t.nodes[d].num[1] = i32(reporter_line(sm))
 	first := max(initial, 0)
-	t.nodes[d].raw = join_lines(sm.lines[first:max(last, first)], sm.p.allocator)
+	t.nodes[d].raw = join_block(sm.p, sm.lines[first:max(last, first)])
 	set_directive_info(t, d, Directive_Info {
 		lines        = r.lines,
 		line_offset  = r.offset,
@@ -577,11 +590,13 @@ directive :: proc(
 		blank_finish = r.blank_finish,
 	})
 	list_append(t, &nodes, d)
+	span_block(sm.p, d, line, r.lines)
 	p := sm.p
 	if p.include_hook != nil && !sm.disconnected {
 		if lines, insert := p.include_hook(p.hook_data, p, sm, d); insert {
 			insert_input(sm, lines)
 			t.nodes[d].num[0] = 1 // the host must not insert them again
+			if p.spans != nil do p.spans.fallback = span_end(p, d)
 		}
 	}
 	return nodes, r.blank_finish || is_next_line_blank(sm)
@@ -604,11 +619,14 @@ comment :: proc(
 		if len(strip(first)) == 0 {
 			c := make_node(sm, .Comment, abs_line_number(sm))
 			t.nodes[c].cur_line = i32(sm.p.cur_line)
+			span_string(sm.p, c, rstrip(match_line))
 			list_append(t, &nodes, c)
 			return nodes, true
 		}
 		if strings.has_prefix(first, "end of inclusion from \"") {
-			list_append(t, &nodes, make_node(sm, .Include_End, abs_line_number(sm)))
+			end := make_node(sm, .Include_End, abs_line_number(sm))
+			span_string(sm.p, end, rstrip(match_line))
+			list_append(t, &nodes, end)
 			return nodes, true
 		}
 	}
@@ -619,8 +637,9 @@ comment :: proc(
 		lines = lines[:len(lines) - 1]
 	}
 	c := make_node(sm, .Comment, lineno)
-	t.nodes[c].text = join_lines(lines, sm.p.allocator)
+	t.nodes[c].text = join_block(sm.p, lines)
 	t.nodes[c].cur_line = i32(sm.p.cur_line)
+	span_block(sm.p, c, match_line, lines)
 	list_append(t, &nodes, c)
 	return nodes, r.blank_finish
 }

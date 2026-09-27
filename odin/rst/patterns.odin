@@ -13,53 +13,74 @@ MAX_NAME_ENDS :: 64
 
 // Possible end offsets of a ``simplename`` starting at ``start``, longest first
 // (the order in which a greedy regex backtracks).  ``count`` is 0 when no
-// simplename starts at ``start``.
+// simplename starts at ``start``.  Filled in place by ``simplename_ends``
+// (declare it ``= ---``: the array is large and only ``count`` entries are
+// written).
 Name_Ends :: struct {
 	ends:  [MAX_NAME_ENDS]int,
 	count: int,
 }
 
-simplename_ends :: proc "contextless" (s: string, start: int) -> (result: Name_Ends) {
-	i := start
-	buf: [MAX_NAME_ENDS]int
+simplename_ends :: proc "contextless" (s: string, start: int, out: ^Name_Ends) {
 	n := 0
+	i := start
 	for {
-		// one word run
 		run_start := i
-		for i < len(s) {
-			r, w := rune_at(s, i)
-			if !is_alnum(r) do break
-			i += w
-		}
+		i = word_run_end(s, i)
 		if i == run_start do break
 		if n < MAX_NAME_ENDS {
-			buf[n] = i
+			out.ends[n] = i
 			n += 1
 		} else {
-			buf[n - 1] = i // keep the longest; very long chains are pathological
+			out.ends[n - 1] = i // keep the longest; very long chains are pathological
 		}
-		// separator followed by a word character?
-		if i < len(s) {
-			switch s[i] {
-			case '-', '.', '_', '+', ':':
-				r, _ := rune_at(s, i + 1)
-				if is_alnum(r) {
-					i += 1
-					continue
-				}
-			}
-		}
-		break
+		if !chain_continues(s, i) do break
+		i += 1
 	}
-	for k in 0 ..< n do result.ends[k] = buf[n - 1 - k]
-	result.count = n
-	return
+	out.count = n
+	for k in 0 ..< n / 2 do out.ends[k], out.ends[n - 1 - k] = out.ends[n - 1 - k], out.ends[k]
 }
 
 // Longest simplename at ``start`` (0 length if none).
 simplename_end :: proc "contextless" (s: string, start: int) -> int {
-	ends := simplename_ends(s, start)
-	return ends.ends[0] if ends.count > 0 else start
+	i := start
+	for {
+		run_start := i
+		i = word_run_end(s, i)
+		if i == run_start || !chain_continues(s, i) do break
+		i += 1
+	}
+	return max(i, start)
+}
+
+// End of the run of word characters (``(?:(?!_)\w)*``) at ``i``.
+@(private = "file")
+word_run_end :: #force_inline proc "contextless" (s: string, i: int) -> int {
+	j := i
+	for j < len(s) {
+		c := s[j]
+		if c < 0x80 {
+			if ASCII_FLAGS[c] & FLAG_ALNUM == 0 do break
+			j += 1
+			continue
+		}
+		r, w := rune_at(s, j)
+		if !is_alnum(r) do break
+		j += w
+	}
+	return j
+}
+
+// A separator ``[-._+:]`` followed by a word character at ``i``.
+@(private = "file")
+chain_continues :: #force_inline proc "contextless" (s: string, i: int) -> bool {
+	if i >= len(s) do return false
+	switch s[i] {
+	case '-', '.', '_', '+', ':':
+		r, _ := rune_at(s, i + 1)
+		return is_alnum(r)
+	}
+	return false
 }
 
 is_simplename :: proc "contextless" (s: string) -> bool {

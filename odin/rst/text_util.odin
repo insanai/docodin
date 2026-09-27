@@ -6,24 +6,24 @@ import "core:strings"
 // ``docutils.utils.escape2null``: backslash escapes become NUL + char.
 // Zero-copy when ``text`` contains no backslash.
 escape2null :: proc(text: string, allocator: runtime.Allocator) -> string {
-	if strings.index_byte(text, '\\') < 0 do return text
+	i := strings.index_byte(text, '\\')
+	if i < 0 do return text
 	buf := make([]byte, len(text), allocator)
-	i := 0
+	copy(buf, text[:i])
 	for i < len(text) {
-		b := text[i]
-		if b == '\\' {
-			buf[i] = 0
-			i += 1
-			if i < len(text) {
-				// keep the escaped character verbatim (skip escape processing)
-				_, w := rune_at(text, i)
-				copy(buf[i:], text[i:i + w])
-				i += w
-			}
-		} else {
-			buf[i] = b
-			i += 1
+		// text[i] is a backslash
+		buf[i] = 0
+		i += 1
+		if i < len(text) {
+			// keep the escaped character verbatim (skip escape processing)
+			_, w := rune_at(text, i)
+			copy(buf[i:], text[i:i + w])
+			i += w
 		}
+		next := strings.index_byte(text[i:], '\\')
+		end := len(text) if next < 0 else i + next
+		copy(buf[i:], text[i:end])
+		i = end
 	}
 	return string(buf)
 }

@@ -37,6 +37,16 @@ classify :: proc "contextless" (line: string) -> (m: Line_Match) {
 	if len(line) == 0 { m.t = .Blank; return }
 	if line[0] == ' ' { m.t = .Indent; return }
 	ok: bool
+	if line[0] < 0x80 && ASCII_FLAGS[line[0]] & FLAG_ALNUM != 0 {
+		// a word character: only an enumerator can match before 'text'
+		if m.enumer, ok = match_enumerator(line); ok {
+			m.t = .Enumerator
+			m.end = m.enumer.end
+		} else {
+			m.t = .Text
+		}
+		return
+	}
 	if m.end, ok = match_bullet(line); ok { m.t = .Bullet; return }
 	if m.enumer, ok = match_enumerator(line); ok {
 		m.t = .Enumerator
@@ -150,17 +160,22 @@ block_quote :: proc(sm: ^State_Machine, lines: []string, line_offset: int, out: 
 	}
 	for len(indented) > 0 {
 		bq := make_node(sm, .Block_Quote, offset + 1)
-		t.nodes[bq].raw = join_lines(indented, sm.p.allocator)
+		t.nodes[bq].raw = join_block(sm.p, indented)
 		split := split_attribution(sm, indented, offset)
 		nested_parse(sm, split.quote, offset, bq)
 		append_child(t, out, bq)
+		span_block(sm.p, bq, indented[0], split.quote)
 		if !split.found do break
 		attr := make_node(sm, .Attribution, 1 + offset + split.attr_offset)
 		t.nodes[attr].num[1] = i32(reporter_line(sm))
 		t.nodes[attr].cur_line = i32(sm.p.cur_line)
-		t.nodes[attr].raw = rstrip(join_lines(split.attribution, sm.p.allocator))
-		append_chain(t, attr, parse_inline(sm.p, t.nodes[attr].raw, int(t.nodes[attr].line)).first)
+		t.nodes[attr].raw = rstrip(join_block(sm.p, split.attribution))
+		attr_text := t.nodes[attr].raw
+		inlines := parse_inline_lines(sm.p, split.attribution, attr_text, int(t.nodes[attr].line))
+		append_chain(t, attr, inlines.first)
 		append_child(t, bq, attr)
+		span_block(sm.p, attr, indented[split.attr_offset], split.attribution)
+		span_children(sm.p, bq, 0, span_start(sm.p, bq))
 		indented = split.rest
 		offset = split.rest_offset
 		for len(indented) > 0 && len(indented[0]) == 0 {
@@ -286,8 +301,9 @@ body_doctest :: proc(sm: ^State_Machine) {
 	lineno := abs_line_number(sm)
 	block, _ := get_text_block(sm)
 	n := make_node(sm, .Doctest_Block, lineno)
-	t.nodes[n].text = join_lines(block, sm.p.allocator)
+	t.nodes[n].text = join_block(sm.p, block)
 	append_child(t, sm.parent, n)
+	if len(block) > 0 do span_block(sm.p, n, block[0], block)
 }
 
 body_line_block :: proc(sm: ^State_Machine, line: string, end: int) {
@@ -324,6 +340,7 @@ body_line_block :: proc(sm: ^State_Machine, line: string, end: int) {
 		if t.nodes[first].num[0] < 0 do t.nodes[first].num[0] = 0
 		nest_line_block_lines(sm, block)
 	}
+	span_children(sm.p, block, 0)
 }
 
 line_block_line :: proc(
@@ -337,12 +354,13 @@ line_block_line :: proc(
 ) {
 	t := &sm.p.tree
 	r := get_first_known_indented(sm, cp_len(line[:end]), until_blank = true)
-	text := join_lines(r.lines, sm.p.allocator)
+	text := join_block(sm.p, r.lines)
 	ln = make_node(sm, .Line, lineno)
 	t.nodes[ln].raw = text
 	t.nodes[ln].num[1] = i32(reporter_line(sm)) // indent lives in num[0]
 	t.nodes[ln].cur_line = i32(sm.p.cur_line)
-	append_chain(t, ln, parse_inline(sm.p, text, lineno).first)
+	append_chain(t, ln, parse_inline_lines(sm.p, r.lines, text, lineno).first)
+	span_block(sm.p, ln, line, r.lines)
 	t.nodes[ln].num[0] = -1 // indent None
 	if rstrip(line) != "|" do t.nodes[ln].num[0] = i32(end - 2) // len(match.group(1)) - 1
 	return ln, r.blank_finish
@@ -379,6 +397,7 @@ nest_line_block_segment :: proc(sm: ^State_Machine, block: Node, depth: int) {
 		} else {
 			if sub != NO_NODE {
 				nest_line_block_segment(sm, sub, depth + 1)
+				span_children(sm.p, sub, 0)
 				list_append(t, &items, sub)
 				sub = NO_NODE
 			}
@@ -387,6 +406,7 @@ nest_line_block_segment :: proc(sm: ^State_Machine, block: Node, depth: int) {
 	}
 	if sub != NO_NODE {
 		nest_line_block_segment(sm, sub, depth + 1)
+		span_children(sm.p, sub, 0)
 		list_append(t, &items, sub)
 	}
 	set_children(t, block, items)
@@ -422,6 +442,7 @@ line_state :: proc(sm: ^State_Machine, overline: string) -> (eof: bool) {
 		tr := make_node(sm, .Transition, abs_line_number(sm) - 1)
 		t.nodes[tr].raw = overline
 		append_child(t, sm.parent, tr)
+		span_string(sm.p, tr, strip(overline))
 		return true
 	}
 	if len(l2) == 0 { // Line.blank
@@ -430,6 +451,7 @@ line_state :: proc(sm: ^State_Machine, overline: string) -> (eof: bool) {
 		tr := make_node(sm, .Transition, abs_line_number(sm) - 1)
 		t.nodes[tr].raw = marker
 		append_child(t, sm.parent, tr)
+		span_string(sm.p, tr, marker)
 		return false
 	}
 	if l2[0] != ' ' && match_line(l2) { // Line.underline
@@ -480,7 +502,7 @@ line_title :: proc(sm: ^State_Machine, overline, l2: string) -> (eof: bool) {
 		list_append(t, &messages, msg)
 	}
 	style := concat(ov[:1], un[:1], allocator = a)
-	emit_section_title(sm, lstrip(title), source, style, lineno + 1, messages)
+	emit_section_title(sm, lstrip(title), source, style, lineno + 1, messages, {overline, un})
 	return false
 }
 
@@ -505,6 +527,7 @@ state_correction :: proc(sm: ^State_Machine, lines: int) -> (eof: bool) {
 	return body_text(sm, line)
 }
 
+// ``lines``: the first and the last adornment or title line (spans).
 emit_section_title :: proc(
 	sm: ^State_Machine,
 	title: string,
@@ -512,6 +535,7 @@ emit_section_title :: proc(
 	style: string,
 	lineno: int,
 	messages: Node_List,
+	lines: [2]string,
 ) {
 	t := &sm.p.tree
 	n := make_node(sm, .Section_Title, lineno)
@@ -525,6 +549,8 @@ emit_section_title :: proc(
 	append_child(t, n, tn)
 	append_chain(t, n, messages.first)
 	append_child(t, sm.parent, n)
+	span_string(sm.p, tn, title)
+	span_block(sm.p, n, lines[0], []string{lines[1]})
 }
 
 // --- Text state: paragraphs, definition lists, titles --------------------------
@@ -610,7 +636,7 @@ text_underline :: proc(sm: ^State_Machine, line1: string, l2: string) -> bool {
 		append_child(t, sm.parent, mark_source_line(sm.p, msg))
 		return true
 	}
-	emit_section_title(sm, title, source, underline[:1], lineno - 1, messages)
+	emit_section_title(sm, title, source, underline[:1], lineno - 1, messages, {line1, underline})
 	return true
 }
 
@@ -625,7 +651,7 @@ paragraph :: proc(
 	literalnext: bool,
 ) {
 	t := &sm.p.tree
-	data := rstrip(join_lines(lines, sm.p.allocator))
+	data := rstrip(join_block(sm.p, lines))
 	text := data
 	if ends_with_literal_marker(data) {
 		if len(data) == 2 do return true
@@ -641,8 +667,12 @@ paragraph :: proc(
 	t.nodes[para].raw = data
 	t.nodes[para].num[1] = i32(reporter_line(sm))
 	t.nodes[para].cur_line = i32(sm.p.cur_line)
-	append_chain(t, para, parse_inline(sm.p, text, lineno).first)
+	append_chain(t, para, parse_inline_lines(sm.p, lines, text, lineno).first)
 	append_child(t, out, para)
+	if sp := sm.p.spans; sp != nil {
+		end := joined_offset(sp, lines, nil, len(data))
+		set_span(sm.p, para, source_offset(sp, lines[0], 0), end)
+	}
 	return
 }
 
@@ -666,9 +696,10 @@ literal_block :: proc(sm: ^State_Machine, out: Node) {
 		return
 	}
 	lb := make_node(sm, .Literal_Block, r.offset + 1)
-	t.nodes[lb].text = join_lines(lines, sm.p.allocator)
+	t.nodes[lb].text = join_block(sm.p, lines)
 	t.nodes[lb].raw = t.nodes[lb].text
 	append_child(t, out, lb)
+	span_block(sm.p, lb, lines[0], lines)
 	if !r.blank_finish do append_child(t, out, unindent_warning(sm, "Literal block"))
 }
 
@@ -684,9 +715,10 @@ quoted_literal_block :: proc(sm: ^State_Machine, out: Node) {
 	before := t.nodes[out].last
 	if ctx_start >= 0 {
 		lb := make_node(sm, .Literal_Block, initial_lineno)
-		t.nodes[lb].text = join_lines(lines[ctx_start:ctx_end], sm.p.allocator)
+		t.nodes[lb].text = join_block(sm.p, lines[ctx_start:ctx_end])
 		t.nodes[lb].raw = t.nodes[lb].text
 		append_child(t, out, lb)
+		span_block(sm.p, lb, lines[ctx_start], lines[ctx_start:ctx_end])
 	} else {
 		append_child(t, out, make_message(sm.p, WARNING,
 			"Literal block expected; none found.", abs_line_number(&q)))
@@ -777,6 +809,7 @@ text_indent :: proc(sm: ^State_Machine, termline: string) {
 		append_child(t, dl, it)
 		blank_finish = bf
 	}
+	span_children(sm.p, dl, 0)
 	if !blank_finish do append_child(t, sm.parent, unindent_warning(sm, "Definition list"))
 }
 
@@ -793,7 +826,7 @@ definition_list_item :: proc(
 	r := get_indented(sm)
 	item = make_node(sm, .Definition_List_Item, dt_lineno)
 	t.nodes[item].raw = concat(
-		termline, "\n" if len(r.lines) > 0 else "", join_lines(r.lines, sm.p.allocator),
+		termline, "\n" if len(r.lines) > 0 else "", join_block(sm.p, r.lines),
 		allocator = sm.p.allocator,
 	)
 	term(sm, termline, dt_lineno, item)
@@ -806,6 +839,8 @@ definition_list_item :: proc(
 			dd_lineno))
 	}
 	nested_parse(sm, r.lines, r.offset, dd)
+	span_block(sm.p, item, termline, r.lines)
+	span_lines(sm.p, dd, r.lines, span_end(sm.p, item))
 	return item, r.blank_finish
 }
 
@@ -825,21 +860,44 @@ term :: proc(sm: ^State_Machine, line: string, lineno: int, item: Node) {
 		if t.nodes[n].kind == .Text do pieces = split_classifiers(t.nodes[n].text, a)
 		if len(pieces) <= 1 {
 			append_child(t, current, n)
-		} else {
-			head := make_node(sm, .Text, lineno)
-			t.nodes[head].text = rstrip(pieces[0])
-			append_child(t, current, head)
-			for part in pieces[1:] {
-				c := make_node(sm, .Classifier, lineno)
-				t.nodes[c].raw = unescape(part, a, restore_backslashes = true)
-				txt := make_node(sm, .Text, lineno)
-				t.nodes[txt].text = part
-				append_child(t, c, txt)
-				append_child(t, item, c)
-				current = c
-			}
+			continue
+		}
+		head := make_node(sm, .Text, lineno)
+		t.nodes[head].text = rstrip(pieces[0])
+		append_child(t, current, head)
+		span_classifier_piece(sm.p, line, n, head)
+		for part in pieces[1:] {
+			c := make_node(sm, .Classifier, lineno)
+			t.nodes[c].raw = unescape(part, a, restore_backslashes = true)
+			txt := make_node(sm, .Text, lineno)
+			t.nodes[txt].text = part
+			append_child(t, c, txt)
+			append_child(t, item, c)
+			span_classifier_piece(sm.p, line, n, txt)
+			current = c
 		}
 	}
+	if sm.p.spans == nil do return
+	// the term from the line start, the classifiers over their pieces
+	start := source_offset(sm.p.spans, line, 0)
+	span_children(sm.p, dt, start, start)
+	it = children(t, item)
+	for c in iterate(&it) do if t.nodes[c].kind == .Classifier do span_children(sm.p, c, 0)
+}
+
+// The span of ``piece``, a Text node cut from the Text node ``whole`` of
+// the inline markup of the single line ``line``.
+@(private = "file")
+span_classifier_piece :: proc(p: ^Parser, line: string, whole, piece: Node) {
+	sp := p.spans
+	if sp == nil do return
+	t := &p.tree
+	whole_start, _ := node_span(t, whole)
+	k := 0 // offset of ``whole`` in ``line``
+	for k < len(line) && source_offset(sp, line, k) < whole_start do k += 1
+	k += int(uintptr(raw_data(t.nodes[piece].text)) - uintptr(raw_data(t.nodes[whole].text)))
+	text := t.nodes[piece].text
+	set_span(p, piece, source_offset(sp, line, k), source_offset(sp, line, k + len(text)))
 }
 
 // re.split(' +: +', text)

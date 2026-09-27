@@ -26,6 +26,10 @@ Cell :: struct {
 	offset:             int, // line offset of the cell content in the table
 	lines:              []string,
 	used:               bool,
+	// with spans: the code point index of each line in its table row, and
+	// the source offset of the first line
+	starts:             []int,
+	at:                 int,
 }
 
 Table_Data :: struct {
@@ -88,12 +92,14 @@ rune_at_or :: #force_inline proc "contextless" (rs: []rune, i: int) -> rune {
 }
 
 // ``StringList.get_2D_block(top, left, bottom, right)`` followed by
-// ``replace(pad, '')``.
+// ``replace(pad, '')``.  ``starts`` (optional) receives the index in its
+// row of each line's first rune.
 @(private = "file")
 get_2d_block :: proc(
 	block: [][]rune,
 	top, left, bottom, right: int,
 	allocator: runtime.Allocator,
+	starts: []int = nil,
 ) -> []string {
 	rows := block[top:bottom]
 	trimmed := make([][]rune, len(rows), allocator)
@@ -103,11 +109,15 @@ get_2d_block :: proc(
 		t := rune_rstrip(line[left_i:right_i])
 		trimmed[i] = t
 		if len(t) > 0 do indent = min(indent, len(t) - len(rune_lstrip(t)))
+		if starts != nil do starts[i] = left_i
 	}
 	out := make([]string, len(trimmed), allocator)
 	for t, i in trimmed {
 		t := t
-		if 0 < indent && indent < right do t = t[min(indent, len(t)):]
+		if 0 < indent && indent < right {
+			if starts != nil do starts[i] += min(indent, len(t))
+			t = t[min(indent, len(t)):]
+		}
 		out[i] = runes_to_string(t, true, allocator)
 	}
 	return out
@@ -144,7 +154,7 @@ malformed_table :: proc(
 	message := "Malformed table."
 	if detail != "" do message = concat("Malformed table.\n", detail, allocator = a)
 	startline := abs_line_number(sm) - len(block) + 1
-	return make_message_block(sm.p, ERROR, message, join_lines(block, a), startline + offset)
+	return make_message_block(sm.p, ERROR, message, join_block(sm.p, block), startline + offset)
 }
 
 @(private = "file")
@@ -160,6 +170,8 @@ body_table :: proc(sm: ^State_Machine, kind: Table_Kind) {
 	t := &sm.p.tree
 	a := sm.p.allocator
 	top_line := abs_line_number(sm)
+	top_offset := sm.line_offset
+	spans := sm.p.spans != nil
 	nodes: Node_List
 	block: [][]rune
 	messages: Node_List
@@ -173,8 +185,8 @@ body_table :: proc(sm: ^State_Machine, kind: Table_Kind) {
 		err: Table_Error
 		ok: bool
 		switch kind {
-		case .Grid:   data, err, ok = parse_grid_table(block, a)
-		case .Simple: data, err, ok = parse_simple_table(block, a)
+		case .Grid:   data, err, ok = parse_grid_table(block, a, spans)
+		case .Simple: data, err, ok = parse_simple_table(block, a, spans)
 		}
 		tableline := abs_line_number(sm) - len(block) + 1
 		if ok {
@@ -183,7 +195,11 @@ body_table :: proc(sm: ^State_Machine, kind: Table_Kind) {
 			// bug), ``tableline`` is lower still; docutils' cell lines come
 			// from the source positions of the lines, so the delta absorbs it.
 			cell_delta := -1 + (top_line - tableline)
-			list_append(t, &nodes, build_table(sm, data, tableline, cell_delta))
+			rows := sm.lines[top_offset:][:len(block)]
+			if spans do register_cells(sm.p, rows, data, kind)
+			table := build_table(sm, data, tableline, cell_delta)
+			if spans do span_table(sm.p, table, rows)
+			list_append(t, &nodes, table)
 		} else {
 			msg := malformed_table(sm, rows_to_strings(block, a), err.message, err.offset)
 			list_append(t, &nodes, msg)
@@ -394,6 +410,7 @@ build_table_row :: proc(
 				disconnected = true,
 			)
 		}
+		span_lines(sm.p, entry, cell.lines, cell.at)
 	}
 	return r
 }
@@ -411,12 +428,14 @@ Grid :: struct {
 	rowseps:       []bool,
 	colseps:       []bool,
 	allocator:     runtime.Allocator,
+	spans:         bool, // record the cells' line starts
 }
 
 @(private = "file")
 Grid_Cell :: struct {
 	top, left, bottom, right: int,
 	lines:                    []string,
+	starts:                   []int,
 }
 
 @(private = "file")
@@ -462,12 +481,13 @@ find_head_body_sep :: proc(
 parse_grid_table :: proc(
 	rows: [][]rune,
 	allocator: runtime.Allocator,
+	spans := false,
 ) -> (
 	data: Table_Data,
 	err: Table_Error,
 	ok: bool,
 ) {
-	g := Grid{allocator = allocator}
+	g := Grid{allocator = allocator, spans = spans}
 	g.block = make([][]rune, len(rows), allocator)
 	for r, i in rows {
 		g.block[i] = make([]rune, len(r), allocator)
@@ -511,8 +531,9 @@ scan_cells :: proc(g: ^Grid) -> bool {
 		bottom, right, found := scan_cell(g, top, left)
 		if !found do continue
 		if !mark_done(g, top, left, bottom, right) do return false
-		lines := get_2d_block(g.block, top + 1, left + 1, bottom, right, g.allocator)
-		append(&g.cells, Grid_Cell{top, left, bottom, right, lines})
+		starts := make([]int, bottom - top - 1, g.allocator) if g.spans else nil
+		lines := get_2d_block(g.block, top + 1, left + 1, bottom, right, g.allocator, starts)
+		append(&g.cells, Grid_Cell{top, left, bottom, right, lines, starts})
 		append(&corners, Corner{top, right}, Corner{bottom, left})
 		slice.sort_by(corners[:], proc(a, b: Corner) -> bool {
 			return a[0] < b[0] || (a[0] == b[0] && a[1] < b[1])
@@ -692,7 +713,7 @@ place_cells :: proc(
 		morerows := brow - rownum - 1
 		morecols := rcol - colnum - 1
 		remaining -= (morerows + 1) * (morecols + 1)
-		rows[rownum][colnum] = Cell{morerows, morecols, c.top + 1, c.lines, true}
+		rows[rownum][colnum] = Cell{morerows, morecols, c.top + 1, c.lines, true, c.starts, 0}
 	}
 	if remaining != 0 do return {"Unused cells remaining.", 0}, false
 	return {}, true
@@ -708,17 +729,19 @@ Simple :: struct {
 	border_end:    int,
 	table:         [dynamic][]Cell,
 	allocator:     runtime.Allocator,
+	spans:         bool, // record the cells' line starts
 }
 
 parse_simple_table :: proc(
 	rows: [][]rune,
 	allocator: runtime.Allocator,
+	spans := false,
 ) -> (
 	data: Table_Data,
 	err: Table_Error,
 	ok: bool,
 ) {
-	t := Simple{allocator = allocator}
+	t := Simple{allocator = allocator, spans = spans}
 	t.block = make([][]rune, len(rows), allocator)
 	for r, i in rows {
 		t.block[i] = make([]rune, len(r), allocator)
@@ -857,7 +880,8 @@ parse_row :: proc(
 	row, ierr, iok := init_row(t, columns[:], start)
 	if !iok do return ierr, false
 	for c, i in columns {
-		row[i].lines = get_2d_block(lines, 0, c[0], len(lines), c[1], t.allocator)
+		if t.spans do row[i].starts = make([]int, len(lines), t.allocator)
+		row[i].lines = get_2d_block(lines, 0, c[0], len(lines), c[1], t.allocator, row[i].starts)
 	}
 	append(&t.table, row)
 	return {}, true
@@ -935,8 +959,71 @@ init_row :: proc(
 			)
 			return nil, {message, offset + 1}, false
 		}
-		cells[k] = Cell{0, morecols, offset, nil, true}
+		cells[k] = Cell{0, morecols, offset, nil, true, nil, 0}
 		i += 1
 	}
 	return cells, {}, true
+}
+
+// --- source positions ----------------------------------------------------------------
+
+// Register the lines of the cells of a table made of the input lines
+// ``rows`` as copies of the source (see ``span_register_copy``), and note
+// where each cell starts.
+@(private = "file")
+register_cells :: proc(p: ^Parser, rows: []string, data: Table_Data, kind: Table_Kind) {
+	for group in ([2][][]Cell{data.head_rows, data.body_rows}) {
+		for row in group {
+			for &cell in row {
+				if !cell.used || len(cell.starts) != len(cell.lines) do continue
+				// a cell without lines is at the start of its table line
+				cell.at = source_offset(p.spans, rows[min(cell.offset, len(rows) - 1)], 0)
+				for line, j in cell.lines {
+					src := rows[cell.offset + j]
+					// grid rows were stripped of their indentation
+					lead := leading_ws(src) if kind == .Grid else 0
+					k := rune_index_offset(src, lead + cell.starts[j])
+					if j == 0 do cell.at = source_offset(p.spans, src, k)
+					span_register_copy(p.spans, line, src, k)
+				}
+			}
+		}
+	}
+}
+
+// Byte offset in ``line`` of index ``index`` of its runes padded after wide
+// characters (``to_runes``); an index on a pad moves past the wide character.
+@(private = "file")
+rune_index_offset :: proc "contextless" (line: string, index: int) -> int {
+	b, i := 0, 0
+	for b < len(line) && i < index {
+		r, w := rune_at(line, b)
+		i += 2 if is_wide(r) else 1
+		b += w
+	}
+	return b
+}
+
+// The spans of a table's structure: the table and its group span its lines,
+// the column specifications are empty at its start, and the head, body and
+// rows span their entries.
+@(private = "file")
+span_table :: proc(p: ^Parser, table: Node, rows: []string) {
+	t := &p.tree
+	span_block(p, table, rows[0], rows)
+	start, end := node_span(t, table)
+	tgroup := t.nodes[table].first
+	set_span(p, tgroup, start, end)
+	at := start // where an empty row or body is
+	for c := t.nodes[tgroup].first; c != NO_NODE; c = t.nodes[c].next {
+		if t.nodes[c].kind == .Colspec {
+			set_span(p, c, start, start)
+			continue
+		}
+		for row := t.nodes[c].first; row != NO_NODE; row = t.nodes[row].next {
+			span_children(p, row, at)
+			at = max(at, span_end(p, row))
+		}
+		span_children(p, c, at if t.nodes[c].first != NO_NODE else end)
+	}
 }

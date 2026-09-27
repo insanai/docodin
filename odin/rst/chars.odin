@@ -71,8 +71,10 @@ is_wide :: #force_inline proc "contextless" (r: rune) -> bool {
 }
 
 // ``punctuation_chars.match_chars``: is (c1, c2) an open/close pair?
+// (QUOTE_PAIRS is sorted by opener.)
 match_chars :: proc "contextless" (c1, c2: rune) -> bool {
 	for pair in QUOTE_PAIRS {
+		if pair[0] > c1 do break
 		if pair[0] == c1 && pair[1] == c2 do return true
 	}
 	return false
@@ -144,6 +146,9 @@ strip :: #force_inline proc "contextless" (s: string) -> string {
 // Number of leading whitespace code points (``len(s) - len(s.lstrip())``).
 leading_ws :: proc "contextless" (s: string) -> int {
 	n, i := 0, 0
+	for i < len(s) && s[i] == ' ' do i += 1
+	if i == len(s) || (s[i] < 0x80 && ASCII_FLAGS[s[i]] & FLAG_SPACE == 0) do return i
+	n = i
 	for i < len(s) {
 		r, w := rune_at(s, i)
 		if !is_space(r) do break

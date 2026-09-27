@@ -89,10 +89,67 @@ Node_Data :: struct {
 	extra:    u32,
 }
 
+// Source positions (``Parse_Flag.Spans``, off by default).  Every node of a
+// ``parse_text`` parse gets a span: the half-open byte range ``[start, end)``
+// of the source it was parsed from, in the text given to ``parse_text``
+// (``node_span``; the line table is ``Tree.line_starts``).  The rules:
+//
+// * A span runs from the first byte of the construct (its marker, or its
+//   text when it has none) to the end of its last non-blank line, trailing
+//   whitespace and line break excluded.  Indentation before the first byte
+//   is outside; the indentation of later lines is inside.
+// * ``Document``: the whole text.  ``Section_Title``: from the overline (or
+//   the title line) to the end of the underline; its ``Title``: the title
+//   text.  ``Transition``: the marker.
+// * Explicit markup (``Directive``, ``Comment``, ``Target``, ``Footnote``,
+//   ``Citation``, ``Substitution_Definition``): from ``..`` (``__`` for an
+//   anonymous target) through the whole indented block.  ``Label``:
+//   ``[label]``.  A comment made of a malformed target or substitution
+//   definition starts at its ``..``.
+// * Lists: ``List_Item`` from its bullet or enumerator through its content;
+//   ``Field`` from ``:name:``; ``Field_Name`` is ``:name:``; ``Field_Body``,
+//   ``Definition`` and ``Description`` span their block (empty after the
+//   marker when there is none).  ``Option_Group`` is the option marker,
+//   ``Option`` one option, ``Option_String`` and ``Option_Argument`` their
+//   text.  ``Term`` runs to the end of its text before the first
+//   classifier, each ``Classifier`` over its text and the markup after it.
+//   The lists themselves, ``Line_Block``, ``THead``, ``TBody`` and ``Row``
+//   span their children.
+// * ``Paragraph``, ``Literal_Block``, ``Doctest_Block``, ``Block_Quote``
+//   (with its ``Attribution``, which starts at the dash), ``Line`` (from
+//   ``|``): their lines.
+// * Tables: ``Table`` and ``TGroup`` span the table's lines; a ``Colspec``
+//   is empty at the table's start.  An ``Entry`` spans its cell's text,
+//   from the first character of the cell's first non-blank line to the end
+//   of its last one (empty at the cell's start when it has no text), so it
+//   includes the text of the cells beside it; entries of a row, and rows
+//   with cells spanning several rows, may overlap.  The nodes parsed from a
+//   cell are located in the cell's lines.
+// * Inline nodes span their markup, from the start-string to the end-string
+//   (role prefix or suffix and ``_``/``__`` included); ``Text`` its
+//   characters; a standalone URI, e-mail address, PEP or RFC reference the
+//   matched text.
+// * ``System_Message``: the text of the line it reports (``line``), or of
+//   the current line when it reports none; its children share its span.
+//   Messages report positions, so their spans need not lie inside their
+//   parent's.
+// * Nodes built from lines that ``include`` inserted get an empty span at
+//   the end of the inserting directive.
+//
+// Apart from messages, a node's span lies inside its parent's, and the
+// spans of siblings follow each other without overlapping (except table
+// rows and entries, above).
 Tree :: struct {
-	nodes:      #soa[dynamic]Node_Data, // nodes[0] is the unused null slot
-	phrases:    [dynamic]Phrase_Info,    // [0] unused
-	directives: [dynamic]Directive_Info, // [0] unused
+	nodes:       #soa[dynamic]Node_Data, // nodes[0] is the unused null slot
+	phrases:     [dynamic]Phrase_Info,    // [0] unused
+	directives:  [dynamic]Directive_Info, // [0] unused
+	// The input of ``parse_text`` and its line table: the byte offset of the
+	// start of each ``string2lines`` line, then ``len(text)``.
+	text:        string,
+	line_starts: []u32,
+	// Source positions of the nodes (``Parse_Flag.Spans``), by handle; see
+	// ``node_span``.
+	spans:       [dynamic]Span,
 }
 
 // Allocate the tree's storage from ``allocator`` with room for about

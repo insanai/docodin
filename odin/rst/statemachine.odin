@@ -21,6 +21,7 @@ Parser :: struct {
 	include_hook: Include_Hook,
 	hook_data:    rawptr,
 	inserted:     int, // lines inserted into the input of the parse
+	spans:        ^Span_Map, // source positions (``Settings.spans``), else nil
 }
 
 // Called for each directive the parser finds in input connected to the
@@ -367,6 +368,7 @@ make_message :: proc(p: ^Parser, level: int, message: string, line: int) -> Node
 	t.nodes[n].text = message
 	t.nodes[n].num[0] = i32(level)
 	t.nodes[n].cur_line = i32(p.cur_line) // docutils attaches messages where they are created
+	span_message(p, n, line)
 	return n
 }
 
@@ -392,6 +394,7 @@ make_message_block :: proc(
 	t.nodes[lit].text = block
 	t.nodes[lit].raw = block
 	append_child(t, n, lit)
+	if p.spans != nil do set_span(p, lit, span_start(p, n), span_end(p, n))
 	return n
 }
 
@@ -433,6 +436,34 @@ join_lines :: proc(lines: []string, allocator: runtime.Allocator) -> string {
 	return strings.join(lines, "\n", allocator)
 }
 
+// ``'\n'.join(lines)`` for lines of the parse's input: a view of the input
+// when the lines are consecutive there, separated by '\n' (top-level blocks),
+// else a copy.
+join_block :: proc(p: ^Parser, lines: []string) -> string {
+	switch len(lines) {
+	case 0: return ""
+	case 1: return lines[0]
+	}
+	if view, ok := input_view(p.tree.text, lines); ok do return view
+	return strings.join(lines, "\n", p.allocator)
+}
+
+// The slice of ``text`` made of ``lines`` joined by '\n', if they are
+// consecutive views of it.
+@(private = "file")
+input_view :: proc "contextless" (text: string, lines: []string) -> (view: string, ok: bool) {
+	base := uintptr(raw_data(text))
+	first := uintptr(raw_data(lines[0])) - base // wraps around below ``text``
+	if first > uintptr(len(text)) do return
+	end := first + uintptr(len(lines[0]))
+	for line in lines[1:] {
+		if end >= uintptr(len(text)) || text[end] != '\n' do return
+		if uintptr(raw_data(line)) - base != end + 1 do return
+		end += 1 + uintptr(len(line))
+	}
+	return text[first:end], true
+}
+
 concat :: proc(parts: ..string, allocator := context.allocator) -> string {
 	return strings.concatenate(parts, allocator)
 }
@@ -458,7 +489,7 @@ nested_parse :: proc(
 ) {
 	p := sm.p
 	if p.depth >= MAX_NESTING {
-		block := join_lines(lines, p.allocator)
+		block := join_block(p, lines)
 		msg := make_message_block(
 			p, ERROR, "Nesting too deep; content ignored.", block, input_offset + 1,
 		)

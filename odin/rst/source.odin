@@ -1,5 +1,6 @@
 package rst
 
+import "base:intrinsics"
 import "base:runtime"
 import "core:strings"
 
@@ -12,6 +13,7 @@ Settings :: struct {
 	rfc_references:                bool,
 	trim_footnote_reference_space: bool,
 	rfc2822:                       bool, // PEP-style RFC 2822 header fields
+	spans:                         bool, // record source positions (``node_span``)
 }
 
 DEFAULT_SETTINGS :: Settings {
@@ -24,61 +26,94 @@ DEFAULT_SETTINGS :: Settings {
 // tabs and strip trailing whitespace.  Lines without tabs/\v/\f are zero-copy
 // slices of ``input``.
 split_lines :: proc(input: string, tab_width: int, allocator: runtime.Allocator) -> []string {
-	lines := make([dynamic]string, 0, estimate_line_count(input), allocator)
-	start := 0
-	i := 0
-	n := len(input)
+	lines, _ := split_lines_table(input, tab_width, allocator, false)
+	return lines
+}
+
+// ``split_lines`` and, with ``table``, the line table: the byte offset in
+// ``input`` of each line's start, followed by ``len(input)``.
+split_lines_table :: proc(
+	input: string,
+	tab_width: int,
+	allocator: runtime.Allocator,
+	table := true,
+) -> (
+	lines: []string,
+	starts: []u32,
+) {
+	estimate := count_newlines(input) + 1
+	out := make([dynamic]string, 0, estimate, allocator)
+	table_out: [dynamic]u32
+	if table do table_out = make([dynamic]u32, 0, estimate + 1, allocator)
+	start, i, n := 0, 0, len(input)
+	rewrite := false // the current line has a \t, \v or \f
 	for i < n {
-		b := input[i]
-		sep := 0
-		switch b {
-		case '\n', 0x1C, 0x1D, 0x1E:
-			sep = 1
-		case '\r':
-			sep = 2 if i + 1 < n && input[i + 1] == '\n' else 1
-		case 0xC2: // U+0085 NEXT LINE
-			if i + 1 < n && input[i + 1] == 0x85 do sep = 2
-		case 0xE2: // U+2028 LINE SEPARATOR, U+2029 PARAGRAPH SEPARATOR
-			if i + 2 < n && input[i + 1] == 0x80 {
-				if input[i + 2] == 0xA8 || input[i + 2] == 0xA9 do sep = 3
+		if i + BLOCK <= n {
+			breaks := line_break_mask(input, i)
+			tabs := tab_mask(input, i)
+			if breaks == 0 {
+				rewrite ||= tabs != 0
+				i += BLOCK
+				continue
 			}
+			k := uint(count_trailing_zeros16(breaks))
+			rewrite ||= tabs & (u16(1 << k) - 1) != 0
+			i += int(k)
 		}
+		sep := line_break_at(input, i)
 		if sep == 0 {
+			switch input[i] {
+			case '\t', '\v', '\f':
+				rewrite = true
+			}
 			i += 1
 			continue
 		}
-		append(&lines, normalize_line(input[start:i], tab_width, allocator))
+		append(&out, normalize_line(input[start:i], rewrite, tab_width, allocator))
+		if table do append(&table_out, u32(start))
 		i += sep
 		start = i
+		rewrite = false
 	}
 	if start < n {
-		append(&lines, normalize_line(input[start:], tab_width, allocator))
+		append(&out, normalize_line(input[start:], rewrite, tab_width, allocator))
+		if table do append(&table_out, u32(start))
 	}
-	return lines[:]
+	if table do append(&table_out, u32(n))
+	return out[:], table_out[:]
+}
+
+// Length of the ``str.splitlines()`` boundary at ``i`` (0: none).
+@(private = "file")
+line_break_at :: #force_inline proc "contextless" (s: string, i: int) -> int {
+	n := len(s)
+	switch s[i] {
+	case '\n', 0x1C, 0x1D, 0x1E:
+		return 1
+	case '\r':
+		return 2 if i + 1 < n && s[i + 1] == '\n' else 1
+	case 0xC2: // U+0085 NEXT LINE
+		if i + 1 < n && s[i + 1] == 0x85 do return 2
+	case 0xE2: // U+2028 LINE SEPARATOR, U+2029 PARAGRAPH SEPARATOR
+		if i + 2 < n && s[i + 1] == 0x80 && (s[i + 2] == 0xA8 || s[i + 2] == 0xA9) do return 3
+	}
+	return 0
 }
 
 @(private = "file")
-estimate_line_count :: proc(s: string) -> int {
-	// One cheap pass; avoids repeated growth of the line array.
-	count := 1
-	for i in 0 ..< len(s) {
-		if s[i] == '\n' do count += 1
-	}
-	return count
+count_trailing_zeros16 :: #force_inline proc "contextless" (m: u16) -> u16 {
+	return intrinsics.count_trailing_zeros(m)
 }
 
+// One line of ``string2lines``: ``rewrite`` when it contains \t, \v or \f.
 @(private = "file")
-normalize_line :: proc(line: string, tab_width: int, allocator: runtime.Allocator) -> string {
-	needs_rewrite := false
-	for i in 0 ..< len(line) {
-		switch line[i] {
-		case '\t', '\v', '\f':
-			needs_rewrite = true
-		}
-		if needs_rewrite do break
-	}
-	if !needs_rewrite do return rstrip(line)
-
+normalize_line :: proc(
+	line: string,
+	rewrite: bool,
+	tab_width: int,
+	allocator: runtime.Allocator,
+) -> string {
+	if !rewrite do return rstrip(line)
 	b := strings.builder_make_len_cap(0, len(line) + 16, allocator)
 	column := 0
 	for r in line {

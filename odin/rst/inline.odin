@@ -36,6 +36,18 @@ Inliner :: struct {
 	name_fail:  int,           // refname scans failing before this offset
 	role_fail:  int,           // role scans failing before this offset
 	depth:      int,
+	// ``inline_position`` cache: the rows (newlines) before ``row_at`` and
+	// the end of its line
+	row_at:     int,
+	row:        int,
+	row_end:    int,
+	// source positions (nil when off): the lines the text was joined from
+	// and the offset of each in the text
+	spans:      ^Span_Map,
+	lines:      []string,
+	line_at:    []int,
+	one_line:   [1]string, // ``lines`` of a text that is a single view
+	one_at:     [1]int,
 }
 
 @(private = "file")
@@ -52,20 +64,19 @@ Start_Kind :: enum u8 {
 	Backquote,          // `...` with optional :role: prefix
 }
 
+// A match of the initial pattern (kind ``.None``: no match).  Small, as it
+// is returned by value along the whole matcher chain.
 @(private = "file")
 Initial_Match :: struct {
 	kind:      Start_Kind,
-	start:     int, // match.start()
-	end:       int, // match.end() (end of start-string / whole construct)
-	// Reference
-	refname:   string,
-	anonymous: bool,
-	// footnote / citation reference
-	label:     string,
-	// Backquote
-	role:      string,
-	has_role:  bool,
-	bq_start:  int,
+	anonymous: bool, // Reference: name__
+	has_role:  bool, // Backquote: with a :role: prefix
+	start:     int,  // match.start()
+	end:       int,  // match.end() (end of start-string / whole construct)
+	// Reference: the reference name; footnote or citation reference: the
+	// label; Backquote: the role
+	name:      string,
+	bq_start:  int, // Backquote: the backquote
 	bq_end:    int,
 }
 
@@ -80,6 +91,7 @@ parse_inline :: proc(p: ^Parser, text: string, lineno: int) -> (out: Node_List) 
 		charlevel  = p.settings.character_level_inline_markup,
 		allocator  = p.allocator,
 	}
+	if p.spans != nil do inline_spans_begin(&il, text)
 	for &v in il.no_end do v = max(int)
 	il.name_fail = -1
 	il.role_fail = -1
@@ -87,8 +99,8 @@ parse_inline :: proc(p: ^Parser, text: string, lineno: int) -> (out: Node_List) 
 	rem := 0    // start of the "remaining" string
 	ustart := 0 // start of unprocessed text
 	for rem < len(s) {
-		m, found := search_initial(&il, rem)
-		if !found do break
+		m := search_initial(&il, rem)
+		if m.kind == .None do break
 		before_end, inlines, new_rem, trim := dispatch(&il, m, rem)
 		if inlines.first != NO_NODE {
 			pending := s[ustart:before_end]
@@ -101,6 +113,50 @@ parse_inline :: proc(p: ^Parser, text: string, lineno: int) -> (out: Node_List) 
 	}
 	list_extend(t, &out, implicit_inline(&il, s[ustart:]))
 	return
+}
+
+// ``parse_inline`` of ``text``, which was joined from ``lines`` with '\n'
+// (and possibly cut short): the lines locate the inline nodes in the source.
+@(private)
+parse_inline_lines :: proc(p: ^Parser, lines: []string, text: string, lineno: int) -> Node_List {
+	if p.spans == nil do return parse_inline(p, text, lineno)
+	p.spans.inline_lines = lines
+	defer p.spans.inline_lines = nil
+	return parse_inline(p, text, lineno)
+}
+
+@(private = "file")
+inline_spans_begin :: proc(il: ^Inliner, text: string) {
+	sp := il.p.spans
+	il.spans = sp
+	il.lines = sp.inline_lines
+	sp.inline_lines = nil // nested parses (none today) start afresh
+	if len(il.lines) <= 1 {
+		il.one_line[0] = text
+		il.lines, il.line_at = il.one_line[:], il.one_at[:]
+		return
+	}
+	il.line_at = make([]int, len(il.lines), il.allocator)
+	at := 0
+	for line, i in il.lines {
+		il.line_at[i] = at
+		at += len(line) + 1
+	}
+}
+
+// Record the text range ``[start, end)`` as the span of ``n``.
+@(private = "file")
+inline_span :: proc(il: ^Inliner, n: Node, start, end: int) {
+	if il.spans == nil do return
+	s := joined_offset(il.spans, il.lines, il.line_at, start)
+	e := joined_offset(il.spans, il.lines, il.line_at, end)
+	set_span(il.p, n, s, e)
+}
+
+// Offset of ``sub`` (a view of the escaped text) in the text.
+@(private = "file")
+text_offset :: #force_inline proc "contextless" (il: ^Inliner, sub: string) -> int {
+	return int(uintptr(raw_data(sub)) - uintptr(raw_data(il.s)))
 }
 
 // --- recognition helpers ---------------------------------------------------------
@@ -134,32 +190,51 @@ byte_at :: #force_inline proc "contextless" (s: string, i: int) -> byte {
 	return s[i] if i >= 0 && i < len(s) else 0
 }
 
-// ``Inliner.patterns.initial.search(remaining)``
+// ``Inliner.patterns.initial.search(remaining)``: the leftmost position
+// where an alternative of the pattern matches.  Candidates are the bytes
+// ``* ` _ | [ :`` and word starts (``name_`` references).  The scanner jumps
+// from one such byte to the next: a word start can only begin a reference
+// when its ``simplename`` chain reaches the next one, and that byte is a '_'
+// or a ':' (see ``chain_start``).
 @(private = "file")
-search_initial :: proc(il: ^Inliner, rem: int) -> (m: Initial_Match, found: bool) {
+search_initial :: proc(il: ^Inliner, rem: int) -> (m: Initial_Match) {
 	s := il.s
-	n := len(s)
 	i := rem
-	for i < n {
+	for i < len(s) {
+		j := next_inline_special(s, i)
+		if j < len(s) && (s[j] == '_' || s[j] == ':') {
+			// word starts whose chain may reach the '_' at or through ``j``
+			live := chain_start(s, i, j)
+			if m = search_references(il, live, j, rem); m.kind != .None do return
+		}
+		if j >= len(s) do break
+		if prefix_ok(il, j, rem) {
+			if m = match_at(il, j); m.kind != .None do return
+		}
+		i = j + 1
+	}
+	return
+}
+
+// The 'whole' alternative (``name_`` references) at the word starts in
+// ``s[from:to]``.
+@(private = "file")
+search_references :: proc(il: ^Inliner, from, to, rem: int) -> (m: Initial_Match) {
+	s := il.s
+	i := from
+	for i < to {
 		c := s[i]
 		w := 1
-		if c >= 0x80 {
-			_, w = rune_at(s, i)
+		word: bool
+		if c < 0x80 {
+			word = ASCII_FLAGS[c] & FLAG_ALNUM != 0
+		} else {
+			r: rune
+			r, w = rune_at(s, i)
+			word = is_alnum(r)
 		}
-		candidate := false
-		switch c {
-		case '*', '`', '_', '|', '[', ':':
-			candidate = true
-		case:
-			if c < 0x80 {
-				candidate = ASCII_FLAGS[c] & FLAG_ALNUM != 0
-			} else {
-				r, _ := rune_at(s, i)
-				candidate = is_alnum(r)
-			}
-		}
-		if candidate && prefix_ok(il, i, rem) {
-			if m, found = match_at(il, i); found do return
+		if word && i >= il.name_fail && prefix_ok(il, i, rem) {
+			if m = match_reference(il, i); m.kind != .None do return
 		}
 		i += w
 	}
@@ -167,31 +242,28 @@ search_initial :: proc(il: ^Inliner, rem: int) -> (m: Initial_Match, found: bool
 }
 
 @(private = "file")
-match_at :: proc(il: ^Inliner, i: int) -> (m: Initial_Match, found: bool) {
+match_at :: proc(il: ^Inliner, i: int) -> (m: Initial_Match) {
 	c := il.s[i]
-	if m, found = match_start_string(il, i); found do return
+	if m = match_start_string(il, i); m.kind != .None do return
 	// 'whole' alternatives
 	if c == '[' {
-		if fm, ok := match_footnote_ref(il, i); ok do return fm, true
+		if m = match_footnote_ref(il, i); m.kind != .None do return
 	} else if c != '*' && c != '`' && c != '_' && c != '|' && c != ':' && i >= il.name_fail {
-		if m, found = match_reference(il, i); found do return
+		if m = match_reference(il, i); m.kind != .None do return
 	}
 	// 'backquote' alternative with optional :role: prefix
 	if c == ':' && i >= il.role_fail {
-		if m, found = match_role_backquote(il, i); found do return
+		if m = match_role_backquote(il, i); m.kind != .None do return
 	}
 	if c == '`' && byte_at(il.s, i + 1) != '`' && non_ws_at(il.s, i + 1) {
-		m.start = i
-		m.kind, m.end = .Backquote, i + 1
-		m.bq_start, m.bq_end = i, i + 1
-		return m, true
+		return {kind = .Backquote, start = i, end = i + 1, bq_start = i, bq_end = i + 1}
 	}
 	return
 }
 
 // The 'start' alternatives of the initial pattern (start-strings).
 @(private = "file")
-match_start_string :: proc(il: ^Inliner, i: int) -> (m: Initial_Match, found: bool) {
+match_start_string :: proc(il: ^Inliner, i: int) -> (m: Initial_Match) {
 	s := il.s
 	m.start = i
 	switch s[i] {
@@ -199,26 +271,26 @@ match_start_string :: proc(il: ^Inliner, i: int) -> (m: Initial_Match, found: bo
 		if byte_at(s, i + 1) == '*' {
 			if non_ws_at(s, i + 2) {
 				m.kind, m.end = .Strong, i + 2
-				return m, true
+				return
 			}
 		} else if non_ws_at(s, i + 1) {
 			m.kind, m.end = .Emphasis, i + 1
-			return m, true
+			return
 		}
 	case '`':
 		if byte_at(s, i + 1) == '`' && non_ws_at(s, i + 2) {
 			m.kind, m.end = .Literal, i + 2
-			return m, true
+			return
 		}
 	case '_':
 		if byte_at(s, i + 1) == '`' && non_ws_at(s, i + 2) {
 			m.kind, m.end = .Target, i + 2
-			return m, true
+			return
 		}
 	case '|':
 		if byte_at(s, i + 1) != '|' && non_ws_at(s, i + 1) {
 			m.kind, m.end = .Substitution, i + 1
-			return m, true
+			return
 		}
 	}
 	return
@@ -226,32 +298,67 @@ match_start_string :: proc(il: ^Inliner, i: int) -> (m: Initial_Match, found: bo
 
 // Named references: (simplename)(__?) + end-string suffix.
 @(private = "file")
-match_reference :: proc(il: ^Inliner, i: int) -> (m: Initial_Match, found: bool) {
+match_reference :: proc(il: ^Inliner, i: int) -> (m: Initial_Match) {
 	s := il.s
 	m.start = i
-	ends := simplename_ends(s, i)
+	if fail := ascii_chain_without_reference(s, i); fail >= 0 {
+		il.name_fail = fail
+		return
+	}
+	ends: Name_Ends = ---
+	simplename_ends(s, i, &ends)
 	for k in 0 ..< ends.count {
 		e := ends.ends[k]
 		if byte_at(s, e) != '_' do continue
 		if byte_at(s, e + 1) == '_' && suffix_ok(il, e + 2) {
-			m.kind, m.end, m.refname, m.anonymous = .Reference, e + 2, s[i:e], true
-			return m, true
+			m.kind, m.end, m.name, m.anonymous = .Reference, e + 2, s[i:e], true
+			return
 		}
 		if suffix_ok(il, e + 1) {
-			m.kind, m.end, m.refname = .Reference, e + 1, s[i:e]
-			return m, true
+			m.kind, m.end, m.name = .Reference, e + 1, s[i:e]
+			return
 		}
 	}
 	if ends.count > 0 do il.name_fail = ends.ends[0]
 	return
 }
 
+// The end of the ASCII ``simplename`` chain at ``i`` when no '_' follows
+// any of its word runs (no ``name_`` reference can start at ``i``: the value
+// ``simplename_ends`` would give ``name_fail``); -1 when the chain has a '_'
+// or a non-ASCII character (the full match decides).
+@(private = "file")
+ascii_chain_without_reference :: proc "contextless" (s: string, i: int) -> int {
+	is_word :: #force_inline proc "contextless" (c: byte) -> bool {
+		return c < 0x80 && ASCII_FLAGS[c] & FLAG_ALNUM != 0
+	}
+	j := i
+	for {
+		for j < len(s) && is_word(s[j]) do j += 1
+		if j >= len(s) do return j
+		switch s[j] {
+		case '_':
+			return -1
+		case '-', '.', '+', ':':
+			if j + 1 < len(s) && is_word(s[j + 1]) {
+				j += 1
+				continue
+			}
+			if j + 1 < len(s) && s[j + 1] >= 0x80 do return -1
+		case 0x80 ..= 0xFF:
+			return -1
+		}
+		return j
+	}
+}
+
 // Interpreted text with a role prefix: :(simplename):`(?!`)(?!\s)
 @(private = "file")
-match_role_backquote :: proc(il: ^Inliner, i: int) -> (m: Initial_Match, found: bool) {
+match_role_backquote :: proc(il: ^Inliner, i: int) -> (m: Initial_Match) {
 	s := il.s
 	m.start = i
-	ends := simplename_ends(s, i + 1)
+	ends: Name_Ends = ---
+	simplename_ends(s, i + 1, &ends)
 	for k in 0 ..< ends.count {
 		e := ends.ends[k]
 		if byte_at(s, e) == ':' &&
@@ -259,9 +366,9 @@ match_role_backquote :: proc(il: ^Inliner, i: int) -> (m: Initial_Match, found: 
 		   byte_at(s, e + 2) != '`' &&
 		   non_ws_at(s, e + 2) {
 			m.kind, m.end = .Backquote, e + 2
-			m.role, m.has_role = s[i + 1:e], true
+			m.name, m.has_role = s[i + 1:e], true
 			m.bq_start, m.bq_end = e + 1, e + 2
-			return m, true
+			return
 		}
 	}
 	if ends.count > 0 do il.role_fail = ends.ends[0]
@@ -270,39 +377,41 @@ match_role_backquote :: proc(il: ^Inliner, i: int) -> (m: Initial_Match, found: 
 
 // \[([0-9]+|\#(simplename)?|\*|(?P<citationlabel>simplename))(?P<fnend>\]_) + suffix
 @(private = "file")
-match_footnote_ref :: proc(il: ^Inliner, i: int) -> (m: Initial_Match, ok: bool) {
+match_footnote_ref :: proc(il: ^Inliner, i: int) -> (m: Initial_Match) {
 	s := il.s
 	close := footnote_ref_close
 	FN :: Start_Kind.Footnote_Reference
 	j := i + 1
 	for j < len(s) && s[j] >= '0' && s[j] <= '9' do j += 1
 	if j > i + 1 {
-		if fm, found := close(il, i, j, FN); found do return fm, true
+		if m = close(il, i, j, FN); m.kind != .None do return
 	}
 	if byte_at(s, i + 1) == '#' {
-		ends := simplename_ends(s, i + 2)
+		ends: Name_Ends = ---
+		simplename_ends(s, i + 2, &ends)
 		for k in 0 ..< ends.count {
-			if fm, found := close(il, i, ends.ends[k], FN); found do return fm, true
+			if m = close(il, i, ends.ends[k], FN); m.kind != .None do return
 		}
-		if fm, found := close(il, i, i + 2, FN); found do return fm, true
+		if m = close(il, i, i + 2, FN); m.kind != .None do return
 	}
 	if byte_at(s, i + 1) == '*' {
-		if fm, found := close(il, i, i + 2, FN); found do return fm, true
+		if m = close(il, i, i + 2, FN); m.kind != .None do return
 	}
-	ends := simplename_ends(s, i + 1)
+	ends: Name_Ends = ---
+	simplename_ends(s, i + 1, &ends)
 	for k in 0 ..< ends.count {
-		if fm, found := close(il, i, ends.ends[k], .Citation_Reference); found do return fm, true
+		if m = close(il, i, ends.ends[k], .Citation_Reference); m.kind != .None do return
 	}
 	return
 }
 
 // ``\]_`` + end-string suffix at ``e``: the reference labelled ``s[i + 1:e]``.
 @(private = "file")
-footnote_ref_close :: proc(il: ^Inliner, i, e: int, kind: Start_Kind) -> (Initial_Match, bool) {
+footnote_ref_close :: proc(il: ^Inliner, i, e: int, kind: Start_Kind) -> Initial_Match {
 	if byte_at(il.s, e) == ']' && byte_at(il.s, e + 1) == '_' && suffix_ok(il, e + 2) {
-		return Initial_Match{kind = kind, start = i, end = e + 2, label = il.s[i + 1:e]}, true
+		return {kind = kind, start = i, end = e + 2, name = il.s[i + 1:e]}
 	}
-	return {}, false
+	return {}
 }
 
 // ``Inliner.quoted_start``
@@ -343,14 +452,16 @@ dispatch :: proc(
 		n := make_inline(il, .Reference)
 		t.nodes[n].num[0] = i32(Ref_Kind.Simple)
 		t.nodes[n].num[1] = 1 if m.anonymous else 0
-		t.nodes[n].text = m.refname
+		t.nodes[n].text = m.name
 		t.nodes[n].raw = il.s[m.start:m.end]
+		inline_span(il, n, m.start, m.end)
 		list_append(t, &inlines, n)
 		return m.start, inlines, m.end, false
 	case .Footnote_Reference, .Citation_Reference:
 		is_footnote := m.kind == .Footnote_Reference
 		n := make_inline(il, .Footnote_Reference if is_footnote else .Citation_Reference)
-		t.nodes[n].text = m.label
+		t.nodes[n].text = m.name
+		inline_span(il, n, m.start, m.end)
 		list_append(t, &inlines, n)
 		// docutils trims the preceding space for footnote references only
 		trim = is_footnote && il.p.settings.trim_footnote_reference_space
@@ -375,7 +486,8 @@ problematic :: proc(il: ^Inliner, text: string, message: string, start: int) -> 
 	t.nodes[n].text = text
 	t.nodes[n].name = message
 	t.nodes[n].num[0] = WARNING
-	t.nodes[n].num[1] = inline_position(il.s, start)
+	t.nodes[n].num[1] = problematic_position(il, start)
+	inline_span(il, n, start, start + len(text)) // unescaping keeps the length
 	return n
 }
 
@@ -396,6 +508,22 @@ inline_position :: proc "contextless" (s: string, start: int) -> i32 {
 		}
 	}
 	return i32(min(row, 0x7FFF) << 16 | min(line_end - start, 0xFFFF))
+}
+
+// ``inline_position`` counting rows from the previous call (problematic
+// markup comes in text order): linear instead of quadratic in the number
+// of problematic nodes.
+@(private = "file")
+problematic_position :: proc(il: ^Inliner, start: int) -> i32 {
+	s := il.s
+	if start < il.row_at do il.row_at, il.row, il.row_end = 0, 0, 0
+	if start > il.row_end || il.row_end == 0 {
+		il.row += count_newlines(s[il.row_at:start])
+		il.row_at = start
+		next := strings.index_byte(s[start:], '\n')
+		il.row_end = len(s) if next < 0 else start + next
+	}
+	return i32(min(il.row, 0x7FFF) << 16 | min(il.row_end - start, 0xFFFF))
 }
 
 // Inverse of ``inline_position``.
@@ -432,6 +560,7 @@ inline_obj :: proc(
 		t.nodes[n].text = text
 		// num[0]: the underscores in the end-string
 		if kind == .Substitution do t.nodes[n].num[0] = i32(ee - es - 1)
+		inline_span(il, n, matchstart, ee)
 		list_append(t, &inlines, n)
 		return matchstart, inlines, ee, false
 	}
@@ -449,6 +578,9 @@ search_end :: proc(il: ^Inliner, kind: End_Kind, from: int) -> (start, end: int,
 	if from >= il.no_end[kind] do return
 	s := il.s
 	for p := from; p < len(s); p += 1 {
+		next := strings.index_byte(s[p:], END_STRING_CHAR[kind])
+		if next < 0 do break
+		p += next
 		if !end_string_start(kind, s, p) do continue
 		if p > from {
 			prev := rune_before(s, p)
@@ -459,6 +591,17 @@ search_end :: proc(il: ^Inliner, kind: End_Kind, from: int) -> (start, end: int,
 	}
 	il.no_end[kind] = from
 	return
+}
+
+// The first character of the end-strings of ``kind``.
+@(private = "file", rodata)
+END_STRING_CHAR := [End_Kind]byte {
+	.Emphasis     = '*',
+	.Strong       = '*',
+	.Literal      = '`',
+	.Target       = '`',
+	.Substitution = '|',
+	.Interpreted  = '`',
 }
 
 // Whether an end-string of ``kind`` can start at ``p``.
@@ -515,11 +658,14 @@ search_interpreted_end :: proc(
 	if from >= il.no_end[.Interpreted] do return
 	s := il.s
 	for p := from; p < len(s); p += 1 {
-		if s[p] != '`' do continue
+		next := strings.index_byte(s[p:], '`')
+		if next < 0 do break
+		p += next
 		if p > from && !interpreted_end_prefix_ok(s, p, from) do continue
 		// role candidates first (greedy optional group)
 		if byte_at(s, p + 1) == ':' {
-			ends := simplename_ends(s, p + 2)
+			ends: Name_Ends = ---
+			simplename_ends(s, p + 2, &ends)
 			for k in 0 ..< ends.count {
 				e := ends.ends[k]
 				if byte_at(s, e) != ':' do continue
@@ -578,59 +724,69 @@ interpreted_or_phrase_ref :: proc(
 	trim: bool,
 ) {
 	t := &il.p.tree
-	a := il.allocator
-	s := il.s
 	matchstart, matchend := m.bq_start, m.bq_end
-	rolestart := m.start
-	role := m.role
-	position := ""
-	if m.has_role {
-		position = "prefix"
-	} else if quoted_start(il, m.start, m.end, rem) {
+	if !m.has_role && quoted_start(il, m.start, m.end, rem) {
 		return matchend, {}, matchend, false
 	}
 	es, ee, erole, found := search_interpreted_end(il, matchend)
 	if found && es > matchend {
-		textend := ee
-		if erole != "" {
-			if m.has_role {
-				text := unescape(s[rolestart:textend], a, restore_backslashes = true)
-				list_append(t, &inlines, problematic(il, text,
-					"Multiple roles in interpreted text " +
-					"(both prefix and suffix present; only one allowed).",
-					rolestart))
-				return rolestart, inlines, textend, false
-			}
-			role = erole
-			position = "suffix"
-		}
-		escaped := s[matchend:es]
-		rawsource := unescape(s[matchstart:textend], a, restore_backslashes = true)
-		if len(rawsource) > 0 && rawsource[len(rawsource) - 1] == '_' {
-			if role != "" {
-				text := unescape(s[rolestart:textend], a, restore_backslashes = true)
-				parts := []string{
-					"Mismatch: both interpreted text role ", position, " and reference suffix.",
-				}
-				msg := strings.concatenate(parts, a)
-				list_append(t, &inlines, problematic(il, text, msg, rolestart))
-				return rolestart, inlines, textend, false
-			}
-			list_append(t, &inlines, phrase_ref(il, rawsource, escaped))
-			return matchstart, inlines, textend, false
-		}
-		n := make_inline(il, .Interpreted)
-		t.nodes[n].raw = unescape(s[rolestart:textend], a, restore_backslashes = true)
-		t.nodes[n].text = escaped
-		t.nodes[n].name = role
+		n, start := interpreted_node(il, m, es, ee, erole)
 		list_append(t, &inlines, n)
-		return rolestart, inlines, textend, false
+		return start, inlines, ee, false
 	}
-	text := unescape(s[matchstart:matchend], a, restore_backslashes = true)
+	text := unescape(il.s[matchstart:matchend], il.allocator, restore_backslashes = true)
 	list_append(t, &inlines, problematic(il, text,
 		"Inline interpreted text or phrase reference start-string without end-string.",
 		matchstart))
 	return matchstart, inlines, matchend, false
+}
+
+// The node of the interpreted text or phrase reference ``m`` whose
+// end-string is ``s[es:ee]`` (``erole``: its role suffix), and where it
+// starts (``match.start()``).
+@(private = "file")
+interpreted_node :: proc(
+	il: ^Inliner,
+	m: Initial_Match,
+	es, ee: int,
+	erole: string,
+) -> (
+	n: Node,
+	start: int,
+) {
+	a := il.allocator
+	s := il.s
+	role, position := m.name, "prefix" if m.has_role else ""
+	if erole != "" {
+		if m.has_role {
+			text := unescape(s[m.start:ee], a, restore_backslashes = true)
+			message := "Multiple roles in interpreted text " +
+				"(both prefix and suffix present; only one allowed)."
+			return problematic(il, text, message, m.start), m.start
+		}
+		role, position = erole, "suffix"
+	}
+	escaped := s[m.bq_end:es]
+	rawsource := unescape(s[m.bq_start:ee], a, restore_backslashes = true)
+	if len(rawsource) > 0 && rawsource[len(rawsource) - 1] == '_' {
+		if role != "" {
+			text := unescape(s[m.start:ee], a, restore_backslashes = true)
+			parts := []string{
+				"Mismatch: both interpreted text role ", position, " and reference suffix.",
+			}
+			return problematic(il, text, strings.concatenate(parts, a), m.start), m.start
+		}
+		n = phrase_ref(il, rawsource, escaped)
+		inline_span(il, n, m.bq_start, ee)
+		return n, m.bq_start
+	}
+	t := &il.p.tree
+	n = make_inline(il, .Interpreted)
+	t.nodes[n].raw = unescape(s[m.start:ee], a, restore_backslashes = true)
+	t.nodes[n].text = escaped
+	t.nodes[n].name = role
+	inline_span(il, n, m.start, ee)
+	return n, m.start
 }
 
 // ``Inliner.phrase_ref``: builds a Reference (``Ref_Kind.Phrase``).  The host
@@ -746,13 +902,18 @@ implicit_inline :: proc(il: ^Inliner, text: string) -> (out: Node_List) {
 				il.depth += 1
 				list_extend(t, &out, implicit_inline(il, rest[:m.start]))
 				il.depth -= 1
-				list_append(t, &out, implicit_reference(il, rest[m.start:m.end], m))
+				ref := implicit_reference(il, rest[m.start:m.end], m)
+				at := text_offset(il, rest)
+				inline_span(il, ref, at + m.start, at + m.end)
+				list_append(t, &out, ref)
 				rest = rest[m.end:]
 				continue
 			}
 		}
 		txt := make_inline(il, .Text)
 		t.nodes[txt].text = rest
+		at := text_offset(il, rest)
+		inline_span(il, txt, at, at + len(rest))
 		list_append(t, &out, txt)
 		break
 	}
@@ -870,7 +1031,9 @@ uri_end_at :: #force_inline proc "contextless" (s: string, q: int) -> bool {
 	return is_urilast(c) || (is_uric(c) && q + 1 < len(s) && s[q + 1] == '>')
 }
 
-// Leftmost ``Inliner.patterns.uri`` match in ``s``.
+// Leftmost ``Inliner.patterns.uri`` match in ``s``.  An absolute URI needs
+// a ':' and an e-mail address an '@' after a run of scheme or local-part
+// characters: only the starts in such runs are tried (``next_uri_anchor``).
 @(private = "file")
 search_uri :: proc(
 	il: ^Inliner,
@@ -882,20 +1045,25 @@ search_uri :: proc(
 	found: bool,
 ) {
 	email_fail := -1 // e-mail local parts failing before this offset
-	for i := 0; i < len(s); i += 1 {
-		c := s[i]
-		if !(is_emailc(c) || (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z')) do continue
-		if i > 0 {
-			if il.charlevel {
-				if s[i - 1] == 0 do continue
-			} else {
-				r := rune_before(s, i)
-				if !(is_space(r) || is_start_prefix_char(r)) do continue
+	for from := 0; from < len(s); {
+		anchor, live := next_uri_anchor(s, from)
+		if anchor >= len(s) do return
+		for i in live ..< anchor {
+			c := s[i]
+			if !(is_emailc(c) || (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z')) do continue
+			if i > 0 {
+				if il.charlevel {
+					if s[i - 1] == 0 do continue
+				} else {
+					r := rune_before(s, i)
+					if !(is_space(r) || is_start_prefix_char(r)) do continue
+				}
+			}
+			if e, sc, email, ok := uri_whole_at(il, s, i, &email_fail); ok {
+				return i, e, sc, email, true
 			}
 		}
-		if e, sc, email, ok := uri_whole_at(il, s, i, &email_fail); ok {
-			return i, e, sc, email, true
-		}
+		from = anchor + 1
 	}
 	return
 }

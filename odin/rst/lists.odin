@@ -23,8 +23,9 @@ list_item :: proc(sm: ^State_Machine, indent: int) -> (item: Node, blank_finish:
 		r = get_first_known_indented(sm, indent_cp)
 	}
 	item = make_node(sm, .List_Item, lineno)
-	t.nodes[item].raw = join_lines(r.lines, sm.p.allocator)
+	t.nodes[item].raw = join_block(sm.p, r.lines)
 	if len(r.lines) > 0 do nested_parse(sm, r.lines, r.offset, item)
+	span_block(sm.p, item, line, r.lines)
 	return item, r.blank_finish
 }
 
@@ -52,6 +53,7 @@ body_bullet :: proc(sm: ^State_Machine, line: string, end: int) {
 		append_child(t, ul, it)
 		blank_finish = bf
 	}
+	span_children(sm.p, ul, 0)
 	if !blank_finish do append_child(t, sm.parent, unindent_warning(sm, "Bullet list"))
 }
 
@@ -264,6 +266,7 @@ body_enumerator :: proc(sm: ^State_Machine, line: string, m: Enum_Match) -> bool
 		previous_line(sm)
 		break
 	}
+	span_children(sm.p, el, 0)
 	if !blank_finish do append_child(t, sm.parent, unindent_warning(sm, "Enumerated list"))
 	return true
 }
@@ -312,6 +315,7 @@ body_field_marker :: proc(sm: ^State_Machine, line: string, name: string, end: i
 		append_child(t, fl, f2)
 		blank_finish = bf
 	}
+	span_children(sm.p, fl, 0)
 	if !blank_finish do append_child(t, sm.parent, unindent_warning(sm, "Field list"))
 }
 
@@ -337,10 +341,23 @@ field :: proc(
 	append_chain(t, fname, parse_inline(sm.p, name, lineno).first)
 	append_child(t, f, fname)
 	fbody := make_node(sm, .Field_Body, lineno)
-	t.nodes[fbody].raw = join_lines(r.lines, sm.p.allocator)
+	t.nodes[fbody].raw = join_block(sm.p, r.lines)
 	append_child(t, f, fbody)
 	if len(r.lines) > 0 do nested_parse(sm, r.lines, r.offset, fbody)
+	span_field(sm.p, f, line, len(name) + 2, r.lines)
 	return f, r.blank_finish
+}
+
+// The spans of a field: the marker (the name and its colons, ``marker``
+// bytes of ``line``) and the body.
+@(private = "file")
+span_field :: proc(p: ^Parser, f: Node, line: string, marker: int, body: []string) {
+	if p.spans == nil do return
+	t := &p.tree
+	name, fbody := t.nodes[f].first, t.nodes[f].last
+	span_string(p, name, line[:marker])
+	span_lines(p, fbody, body, span_end(p, name))
+	span_block(p, f, line, body)
 }
 
 // ``RFC2822Body.rfc2822``
@@ -369,6 +386,7 @@ rfc2822_field_list :: proc(sm: ^State_Machine, line: string, end: int) {
 		previous_line(sm)
 		break
 	}
+	span_children(sm.p, fl, 0)
 	if !blank_finish {
 		append_child(t, sm.parent, unindent_warning(sm, "RFC2822-style field list"))
 	}
@@ -394,9 +412,11 @@ rfc2822_field :: proc(
 	append_child(t, fname, txt)
 	append_child(t, f, fname)
 	fbody := make_node(sm, .Field_Body, lineno)
-	t.nodes[fbody].raw = join_lines(r.lines, sm.p.allocator)
+	t.nodes[fbody].raw = join_block(sm.p, r.lines)
 	append_child(t, f, fbody)
 	if len(r.lines) > 0 do nested_parse(sm, r.lines, r.offset, fbody)
+	span_string(sm.p, txt, name)
+	span_field(sm.p, f, line, len(name) + 1, r.lines)
 	return f, r.blank_finish
 }
 
@@ -442,6 +462,7 @@ body_option_marker :: proc(sm: ^State_Machine, line: string, end: int) -> bool {
 		previous_line(sm)
 		break
 	}
+	span_children(sm.p, ol, 0)
 	if !blank_finish do append_child(t, sm.parent, unindent_warning(sm, "Option list"))
 	return true
 }
@@ -472,11 +493,16 @@ option_list_item :: proc(
 	}
 	item = make_node(sm, .Option_List_Item, lineno)
 	desc := make_node(sm, .Description, lineno)
-	t.nodes[desc].raw = join_lines(r.lines, sm.p.allocator)
+	t.nodes[desc].raw = join_block(sm.p, r.lines)
 	append_child(t, item, group)
 	append_child(t, item, desc)
 	nested_parse(sm, r.lines, r.offset, desc)
 	t.nodes[item].cur_line = i32(sm.p.cur_line)
+	if sm.p.spans != nil {
+		span_string(sm.p, group, rstrip(line[:end]))
+		span_lines(sm.p, desc, r.lines, span_end(sm.p, group))
+		span_block(sm.p, item, line, r.lines)
+	}
 	return item, r.blank_finish, .Ok, ""
 }
 
@@ -536,6 +562,9 @@ parse_option :: proc(sm: ^State_Machine, optionstring: string, group: Node) -> (
 		inject_at(&tokens, 1, rest)
 		delimiter = ""
 	}
+	// the argument's first and last token (before they are joined)
+	arg_first, arg_last: string
+	if len(tokens) > 1 do arg_first, arg_last = tokens[1], tokens[len(tokens) - 1]
 	if len(tokens) > 1 &&
 	   strings.has_prefix(tokens[1], "<") &&
 	   strings.has_suffix(tokens[len(tokens) - 1], ">") {
@@ -549,14 +578,25 @@ parse_option :: proc(sm: ^State_Machine, optionstring: string, group: Node) -> (
 	os := make_node(sm, .Option_String, int(t.nodes[group].line))
 	t.nodes[os].text = tokens[0]
 	append_child(t, opt, os)
+	span_string(sm.p, opt, optionstring)
+	span_string(sm.p, os, tokens[0])
 	if len(tokens) > 1 {
 		arg := make_node(sm, .Option_Argument, int(t.nodes[group].line))
 		t.nodes[arg].text = tokens[1]
 		t.nodes[arg].name = delimiter
 		append_child(t, opt, arg)
+		span_option_argument(sm.p, arg, arg_first, arg_last)
 	}
 	append_child(t, group, opt)
 	return ""
+}
+
+// An option argument spans its tokens (``<a b>`` is several).
+@(private = "file")
+span_option_argument :: proc(p: ^Parser, arg: Node, first, last: string) {
+	sp := p.spans
+	if sp == nil do return
+	set_span(p, arg, source_offset(sp, first, 0), source_offset(sp, last, len(last)))
 }
 
 @(private = "file")
