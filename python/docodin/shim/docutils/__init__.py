@@ -1,6 +1,7 @@
 """Docutils implemented by docodin (drop-in for docutils 0.22).
 
-The reStructuredText parser is docodin's native engine; the rest of the
+The reStructuredText parser is docodin's native engine, with a pure Python
+state machine for extensions that change the grammar; the rest of the
 docutils API (nodes, transforms, writers, front end) is implemented here.
 """
 

@@ -1,8 +1,9 @@
 """Python implementation of the reStructuredText inline markup parser.
 
 docodin parses inline markup natively (see ``docodin.builder.OdinInliner``);
-this implementation serves inliners that extensions customize (subclasses or
-extra ``implicit_dispatch`` patterns) and direct users of `Inliner`.
+this implementation serves the Python state machine of `states`, inliners that
+extensions customize (subclasses or extra ``implicit_dispatch`` patterns) and
+direct users of `Inliner`.
 """
 
 from __future__ import annotations

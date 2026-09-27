@@ -1,8 +1,9 @@
 """Finite state machine for line-oriented input, and the `StringList` input list.
 
-reStructuredText itself is parsed by docodin's native engine; these classes
-serve directives and extensions that drive their own state machines and use
-``StringList``/``ViewList`` for source bookkeeping.
+These classes run the Python reStructuredText parser of
+``docutils.parsers.rst.states`` (when it stands in for docodin's native
+engine) and serve directives and extensions that drive their own state
+machines and use ``StringList``/``ViewList`` for source bookkeeping.
 """
 
 from __future__ import annotations
