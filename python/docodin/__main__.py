@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import sys
 
+import docodin
 import docutils.core
 
 from docodin.parser import Parser
@@ -22,7 +23,23 @@ WRITER_ALIASES = {
 
 
 def main(argv: list[str] | None = None) -> None:
+    """Run the docodin CLI front-end or delegated Sphinx build.
+
+    Args:
+        argv: Optional command-line argument list. Defaults to sys.argv[1:].
+    """
     args = list(sys.argv[1:] if argv is None else argv)
+
+    # Check for 'sphinx' subcommand: docodin sphinx [options] sourcedir outdir
+    if len(args) > 0 and args[0] == "sphinx":
+        try:
+            from sphinx.cmd.build import main as sphinx_main
+        except ImportError:
+            sys.stderr.write("docodin: sphinx is not installed in this environment.\n")
+            sys.exit(1)
+        docodin.patch_docutils()
+        sys.exit(sphinx_main(args[1:]))
+
     writer = "html5"
     rest = []
     i = 0

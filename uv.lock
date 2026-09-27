@@ -173,22 +173,20 @@ wheels = [
 name = "docodin"
 version = "0.2.0"
 source = { editable = "." }
-dependencies = [
-    { name = "docutils" },
-]
 
 [package.optional-dependencies]
 sphinx = [
     { name = "sphinx" },
 ]
 test = [
+    { name = "docutils" },
     { name = "pytest" },
     { name = "sphinx" },
 ]
 
 [package.metadata]
 requires-dist = [
-    { name = "docutils", specifier = ">=0.21" },
+    { name = "docutils", marker = "extra == 'test'", specifier = ">=0.22" },
     { name = "pytest", marker = "extra == 'test'", specifier = ">=8.0" },
     { name = "sphinx", marker = "extra == 'sphinx'", specifier = ">=8.0" },
     { name = "sphinx", marker = "extra == 'test'", specifier = ">=8.0" },

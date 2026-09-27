@@ -9,13 +9,11 @@ description = "Fast reStructuredText parser written in Odin: a drop-in parser fo
 readme = "README.md"
 requires-python = ">=3.12"
 license = { text = "MIT" }
-dependencies = [
-    "docutils>=0.21",
-]
+dependencies = []
 
 [project.optional-dependencies]
 sphinx = ["sphinx>=8.0"]
-test = ["pytest>=8.0", "sphinx>=8.0"]
+test = ["pytest>=8.0", "sphinx>=8.0", "docutils>=0.22"]
 
 [project.scripts]
 docodin = "docodin.__main__:main"

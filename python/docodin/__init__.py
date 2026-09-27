@@ -17,12 +17,18 @@ Ways to use it:
 * docutils front ends: ``rst2html --parser=docodin input.rst``.
 """
 
-from __future__ import annotations
-
+import sys
 from typing import Any
+
+try:
+    import docutils
+except ImportError:
+    from docodin.shim import install_shim
+    install_shim()
 
 from docodin._native import native
 from docodin.parser import Parser, is_patched, patch_docutils, unpatch_docutils
+from docodin.shim import install_shim, uninstall_shim
 
 __version__ = "0.2.0"
 
@@ -39,35 +45,79 @@ def _publish_kwargs(kwargs: dict[str, Any]) -> dict[str, Any]:
 
 
 def publish_doctree(source: str | bytes, source_path: str | None = None, **kwargs: Any) -> Any:
-    """Like :func:`docutils.core.publish_doctree`, parsing with docodin."""
+    """Publish a document tree from source text using the DocOdin parser.
+
+    Args:
+        source: Input reStructuredText string or bytes.
+        source_path: Path to the source file, if applicable.
+        **kwargs: Additional keyword arguments forwarded to docutils.
+
+    Returns:
+        The generated document tree.
+    """
     import docutils.core
 
     return docutils.core.publish_doctree(source, source_path=source_path, **_publish_kwargs(kwargs))
 
 
 def publish_string(source: str | bytes, source_path: str | None = None, **kwargs: Any) -> Any:
-    """Like :func:`docutils.core.publish_string`, parsing with docodin."""
+    """Publish formatted output from source text using the DocOdin parser.
+
+    Args:
+        source: Input reStructuredText string or bytes.
+        source_path: Path to the source file, if applicable.
+        **kwargs: Additional keyword arguments forwarded to docutils.
+
+    Returns:
+        Formatted document output as bytes or str.
+    """
     import docutils.core
 
     return docutils.core.publish_string(source, source_path=source_path, **_publish_kwargs(kwargs))
 
 
 def publish_parts(source: str | bytes, source_path: str | None = None, **kwargs: Any) -> dict[str, Any]:
-    """Like :func:`docutils.core.publish_parts`, parsing with docodin."""
+    """Publish dictionary of document parts from source text using the DocOdin parser.
+
+    Args:
+        source: Input reStructuredText string or bytes.
+        source_path: Path to the source file, if applicable.
+        **kwargs: Additional keyword arguments forwarded to docutils.
+
+    Returns:
+        Mapping of part names to rendered components.
+    """
     import docutils.core
 
     return docutils.core.publish_parts(source, source_path=source_path, **_publish_kwargs(kwargs))
 
 
 def publish_file(**kwargs: Any) -> Any:
-    """Like :func:`docutils.core.publish_file`, parsing with docodin."""
+    """Publish document output from file using the DocOdin parser.
+
+    Args:
+        **kwargs: Arguments forwarded to docutils.core.publish_file.
+
+    Returns:
+        Published output produced by the configured writer.
+    """
     import docutils.core
 
     return docutils.core.publish_file(**_publish_kwargs(kwargs))
 
 
 def parse(text: str, source: str = "<string>", settings: Any = None, **settings_overrides: Any) -> Any:
-    """Parse reST into a new docutils document *without* applying transforms."""
+    """Parse reST into a new docutils document without applying transforms.
+
+    Args:
+        text: Input reStructuredText markup string.
+        source: Source file or stream identifier. Defaults to "<string>".
+        settings: Runtime configuration settings. Defaults to None.
+        **settings_overrides: Configuration key-value overrides.
+
+    Returns:
+        The parsed document tree.
+    """
     import docutils.frontend
     import docutils.utils
 
@@ -81,7 +131,11 @@ def parse(text: str, source: str = "<string>", settings: Any = None, **settings_
 
 
 def version() -> str:
-    """Version string of the loaded native library."""
+    """Retrieve version string of the loaded native library.
+
+    Returns:
+        Version string of the native DocOdin engine.
+    """
     return native().version
 
 
@@ -89,6 +143,7 @@ __all__ = [
     "OdinRSTParser",
     "Parser",
     "__version__",
+    "install_shim",
     "is_patched",
     "parse",
     "patch_docutils",
@@ -96,6 +151,7 @@ __all__ = [
     "publish_file",
     "publish_parts",
     "publish_string",
+    "uninstall_shim",
     "unpatch_docutils",
     "version",
 ]
