@@ -1,88 +1,57 @@
-"""Python helpers of the reStructuredText ``Body`` state.
+"""Helpers of the reStructuredText ``Body`` state: block-level constructs.
 
-These are the parts of the ``Body`` state that directives and extensions
-call directly (directive block parsing, targets, tables, line blocks,
-attributions, fields); the markup itself is recognized by docodin's native
-parser.
+`BodyHelpers` holds the methods the ``Body`` transitions build their
+elements with (block quotes and attributions, list items, enumerators,
+fields, option lists, line blocks and tables).  Directives and extensions
+call several of them directly.
 """
 
 from __future__ import annotations
 
 import re
-from types import SimpleNamespace as Struct
 from typing import Any
 
-from docutils import ApplicationError, nodes, statemachine, utils
-from docutils.nodes import fully_normalize_name as normalize_name
-from docutils.nodes import unescape, whitespace_normalize_name
-from docutils.utils import split_escaped_whitespace
-
-from ._inliner import Inliner
+from docutils import ApplicationError, DataError, nodes, statemachine
+from docutils.parsers.rst import tableparser
+from docutils.utils import strip_combining_chars
+from docutils.utils._roman_numerals import InvalidRomanNumeralError, RomanNumeral
 
 FIELD_MARKER = r":(?![: ])([^:\\]|\\.|:(?!([ `]|$)))*(?<! ):( +|$)"
 
 
-class MarkupError(utils.DataError):
+class MarkupError(DataError):
     pass
 
 
-_TARGET_PATTERN = r"""
-    (
-      _               # anonymous target
-    |               # *OR*
-      (?!_)           # no underscore at the beginning
-      (?P<quote>`?)   # optional open quote
-      (?![ `])        # first char. not space or backquote
-      (?P<name>       # reference name
-        .+?
-      )
-      %(non_whitespace_escape_before)s
-      (?P=quote)      # close quote if open quote used
-    )
-    (?<!(?<!\x00):) # no unescaped colon at end
-    %(non_whitespace_escape_before)s
-    [ ]?            # optional space
-    :               # end of reference name
-    ([ ]+|$)        # followed by whitespace
-    """
+class ParserError(ApplicationError):
+    pass
 
-_REFERENCE_PATTERN = r"""
-    (
-      (?P<simple>%(simplename)s)_
-    |                  # *OR*
-      `                  # open backquote
-      (?![ ])            # not space
-      (?P<phrase>.+?)    # hyperlink phrase
-      %(non_whitespace_escape_before)s
-      `_                 # close backquote, reference mark
-    )
-    $                  # end of string
-    """
 
-_SUBSTITUTION_PATTERN = r"""
-    (
-      (?![ ])          # first char. not space
-      (?P<name>.+?)    # substitution text
-      %(non_whitespace_escape_before)s
-      \|               # close delimiter
-    )
-    ([ ]+|$)           # followed by whitespace
-    """
-
-_INLINER_ARGS = vars(Inliner)
+def _split_option_string(optionstring: str) -> tuple[list[str], str]:
+    """Tokens (option, argument) of one option and the delimiter between them."""
+    tokens = optionstring.split()
+    delimiter = " "
+    head = tokens[0]
+    option, equals, value = head.partition("=")
+    if equals:  # "--opt=value"
+        tokens[:1] = [option, value]
+        delimiter = "="
+    elif len(head) > 2 and (head.startswith("+")
+                            or (head.startswith("-") and not head.startswith("--"))):
+        tokens[:1] = [head[:2], head[2:]]  # "-ovalue"
+        delimiter = ""
+    if len(tokens) > 1 and tokens[1].startswith("<") and tokens[-1].endswith(">"):
+        tokens[1:] = [" ".join(tokens[1:])]  # "-o <value1 value2>"
+    return tokens, delimiter
 
 
 class BodyHelpers:
-    """Mix-in with the ``Body`` methods used by directives and extensions."""
+    """Mix-in of ``Body``: the methods that build block-level elements."""
 
-    explicit = Struct(patterns=Struct(
-        target=re.compile(_TARGET_PATTERN % _INLINER_ARGS, re.VERBOSE),
-        reference=re.compile(_REFERENCE_PATTERN % _INLINER_ARGS, re.VERBOSE),
-        substitution=re.compile(_SUBSTITUTION_PATTERN % _INLINER_ARGS, re.VERBOSE)))
     attribution_pattern = re.compile("(---?(?!-)|—) *(?=[^ \\n])")
-    double_width_pad_char = "\x00"
+    double_width_pad_char = tableparser.TableParser.double_width_pad_char
 
-    # --- block quotes and attributions ------------------------------------------------
+    # --- block quotes and attributions ---------------------------------------------
 
     def block_quote(self, indented: statemachine.StringList,
                     line_offset: int) -> list[nodes.Element]:
@@ -108,7 +77,11 @@ class BodyHelpers:
         return elements
 
     def split_attribution(self, indented: statemachine.StringList, line_offset: int) -> tuple:
-        """(quote lines, attribution lines, attribution offset, rest, rest offset)."""
+        """(quote lines, attribution lines, attribution offset, rest, rest offset).
+
+        An attribution starts with a dash after a blank line that follows quote
+        content; its further lines share one indentation.
+        """
         blank = None
         nonblank_seen = False
         for i in range(len(indented)):
@@ -133,18 +106,19 @@ class BodyHelpers:
                           attribution_start: int) -> tuple[int | None, int | None]:
         """(end, indent) of a consistently indented attribution, or (None, None)."""
         indent = None
-        i = attribution_start + 1
+        end = len(indented)
         for i in range(attribution_start + 1, len(indented)):
             line = indented[i].rstrip()
             if not line:
-                return i, indent or 0
+                end = i
+                break
             if indent is None:
                 indent = len(line) - len(line.lstrip())
             elif len(line) - len(line.lstrip()) != indent:
                 return None, None
         else:
-            i += 1
-        return i, indent or 0
+            end = max(len(indented), attribution_start + 2)
+        return end, indent or 0
 
     def parse_attribution(self, indented: statemachine.StringList,
                           line_offset: int) -> tuple[nodes.attribution, list]:
@@ -154,6 +128,110 @@ class BodyHelpers:
         node = nodes.attribution(text, "", *textnodes)
         node.source, node.line = self.state_machine.get_source_and_line(lineno)
         return node, messages
+
+    # --- list items and enumerators ------------------------------------------------
+
+    def list_item(self, indent: int) -> tuple[nodes.list_item, bool]:
+        """The list item whose text starts at column `indent` of the current line."""
+        src, srcline = self.state_machine.get_source_and_line()
+        if self.state_machine.line[indent:]:
+            indented, line_offset, blank_finish = (
+                self.state_machine.get_known_indented(indent))
+        else:
+            indented, indent, line_offset, blank_finish = (
+                self.state_machine.get_first_known_indented(indent))
+        listitem = nodes.list_item("\n".join(indented))
+        listitem.source, listitem.line = src, srcline
+        if indented:
+            self.nested_parse(indented, input_offset=line_offset, node=listitem)
+        return listitem, blank_finish
+
+    def parse_enumerator(self, match: re.Match[str],
+                         expected_sequence: str | None = None) -> tuple:
+        """(format, sequence, text, ordinal) of an enumerator match.
+
+        `expected_sequence` is tried first; otherwise "i"/"I" are Roman
+        numerals, and other text takes the first sequence it fits.  The ordinal
+        is None for an invalid Roman numeral.
+        """
+        groupdict = match.groupdict()
+        format = next((name for name in self.enum.formats if groupdict[name]), None)
+        if format is None:
+            raise ParserError("enumerator format not matched")
+        info = self.enum.formatinfo[format]
+        text = groupdict[format][info.start:info.end]
+        sequence = ""
+        if text == "#":
+            sequence = "#"
+        elif expected_sequence:
+            try:
+                if self.enum.sequenceregexps[expected_sequence].match(text):
+                    sequence = expected_sequence
+            except KeyError:
+                raise ParserError("unknown enumerator sequence: %s" % sequence) from None
+        elif text in ("i", "I"):
+            sequence = "lowerroman" if text == "i" else "upperroman"
+        if not sequence:
+            sequence = next((name for name in self.enum.sequences
+                             if self.enum.sequenceregexps[name].match(text)), "")
+            if not sequence:
+                raise ParserError("enumerator sequence not matched")
+        if sequence == "#":
+            return format, sequence, text, 1
+        try:
+            ordinal = int(self.enum.converters[sequence](text))
+        except InvalidRomanNumeralError:
+            ordinal = None
+        return format, sequence, text, ordinal
+
+    def is_enumerated_list_item(self, ordinal: int | None, sequence: str,
+                                format: str) -> int | None:
+        """Whether an enumerator starts a list item: its ordinal is valid and
+        the next line is blank, indented, or starts with the next enumerator."""
+        if ordinal is None:
+            return None
+        machine = self.state_machine
+        try:
+            next_line = machine.next_line()
+        except EOFError:
+            machine.previous_line()
+            return 1
+        machine.previous_line()
+        if not next_line[:1].strip():
+            return 1
+        result = self.make_enumerator(ordinal + 1, sequence, format)
+        if result and next_line.startswith(result):
+            return 1
+        return None
+
+    def make_enumerator(self, ordinal: int, sequence: str,
+                        format: str) -> tuple[str, str] | None:
+        """(next enumerator, auto-enumerator) for `ordinal`, or None when out of range."""
+        if sequence == "#":
+            enumerator = "#"
+        elif sequence == "arabic":
+            enumerator = str(ordinal)
+        else:
+            if sequence.endswith("alpha"):
+                if ordinal > 26:
+                    return None
+                enumerator = chr(ordinal + ord("a") - 1)
+            elif sequence.endswith("roman"):
+                try:
+                    enumerator = RomanNumeral(ordinal).to_uppercase()
+                except TypeError:
+                    return None
+            else:
+                raise ParserError('unknown enumerator sequence: "%s"' % sequence)
+            if sequence.startswith("lower"):
+                enumerator = enumerator.lower()
+            elif sequence.startswith("upper"):
+                enumerator = enumerator.upper()
+            else:
+                raise ParserError('unknown enumerator sequence: "%s"' % sequence)
+        info = self.enum.formatinfo[format]
+        return (info.prefix + enumerator + info.suffix + " ",
+                info.prefix + "#" + info.suffix + " ")
 
     # --- fields ---------------------------------------------------------------------
 
@@ -182,6 +260,38 @@ class BodyHelpers:
     def parse_field_body(self, indented: statemachine.StringList, offset: int,
                          node: nodes.Element) -> None:
         self.nested_parse(indented, input_offset=offset, node=node)
+
+    # --- option lists ------------------------------------------------------------------
+
+    def option_list_item(self, match: re.Match[str]) -> tuple[nodes.option_list_item, bool]:
+        offset = self.state_machine.abs_line_offset()
+        options = self.parse_option_marker(match)
+        indented, _indent, line_offset, blank_finish = (
+            self.state_machine.get_first_known_indented(match.end()))
+        if not indented:  # not an option list item
+            self.goto_line(offset)
+            raise statemachine.TransitionCorrection("text")
+        option_group = nodes.option_group("", *options)
+        description = nodes.description("\n".join(indented))
+        option_list_item = nodes.option_list_item("", option_group, description)
+        self.nested_parse(indented, input_offset=line_offset, node=description)
+        return option_list_item, blank_finish
+
+    def parse_option_marker(self, match: re.Match[str]) -> list[nodes.option]:
+        """The `nodes.option` elements of an option marker (MarkupError if invalid)."""
+        optlist = []
+        # split at ", " except inside < > (complex arguments)
+        for optionstring in re.split(r", (?![^<]*>)", match.group().rstrip()):
+            tokens, delimiter = _split_option_string(optionstring)
+            if not 0 < len(tokens) <= 2:
+                raise MarkupError('wrong number of option tokens (=%s), should be 1 or 2: "%s"'
+                                  % (len(tokens), optionstring))
+            option = nodes.option(optionstring)
+            option += nodes.option_string(tokens[0], tokens[0])
+            if len(tokens) > 1:
+                option += nodes.option_argument(tokens[1], tokens[1], delimiter=delimiter)
+            optlist.append(option)
+        return optlist
 
     # --- line blocks ------------------------------------------------------------------
 
@@ -222,6 +332,117 @@ class BodyHelpers:
         block[:] = new_items
 
     # --- tables -----------------------------------------------------------------------
+
+    def table_top(self, match: re.Match[str], context: Any, next_state: Any,
+                  isolate_function: Any, parser_class: type) -> tuple:
+        """Top border of a generic table."""
+        nodelist, blank_finish = self.table(isolate_function, parser_class)
+        self.parent += nodelist
+        if not blank_finish:
+            self.parent += self.reporter.warning(
+                "Blank line required after table.",
+                line=self.state_machine.abs_line_number() + 1)
+        return [], next_state, []
+
+    def table(self, isolate_function: Any, parser_class: type) -> tuple[list, bool]:
+        """Parse a table: (nodes, blank_finish)."""
+        block, messages, blank_finish = isolate_function()
+        if not block:
+            return messages, blank_finish
+        try:
+            tabledata = parser_class().parse(block)
+            tableline = self.state_machine.abs_line_number() - len(block) + 1
+            nodelist = [self.build_table(tabledata, tableline), *messages]
+        except tableparser.TableMarkupError as err:
+            nodelist = self.malformed_table(block, " ".join(err.args),
+                                            offset=err.offset) + messages
+        return nodelist, blank_finish
+
+    def isolate_grid_table(self) -> tuple:
+        """(table lines, messages, blank_finish) of a grid table."""
+        messages = []
+        blank_finish = True
+        machine = self.state_machine
+        try:
+            block = machine.get_text_block(flush_left=True)
+        except statemachine.UnexpectedIndentationError as err:
+            block, src, srcline = err.args
+            messages.append(self.reporter.error("Unexpected indentation.",
+                                                source=src, line=srcline))
+            blank_finish = False
+        block.disconnect()
+        block.pad_double_width(self.double_width_pad_char)
+        width = len(block[0].strip())
+        truncated = False
+        for i in range(len(block)):
+            block[i] = block[i].strip()
+            if block[i][0] not in "+|":  # left edge
+                blank_finish = False
+                truncated = True
+                machine.previous_line(len(block) - i)
+                del block[i:]
+                break
+        if not self.grid_table_top_pat.match(block[-1]):  # bottom border
+            bottom = self._grid_table_bottom(block)
+            if bottom is None:
+                # the line docutils reports: the third, or the last one scanned
+                offset = 2 if len(block) > 3 else len(block) - (not truncated)
+                messages.extend(self.malformed_table(
+                    block, "Bottom border missing or corrupt.", offset))
+                return [], messages, blank_finish
+            machine.previous_line(len(block) - bottom + 1)
+            del block[bottom + 1:]
+            blank_finish = False
+        for i in range(len(block)):  # right edge
+            if len(strip_combining_chars(block[i])) != width or block[i][-1] not in "+|":
+                messages.extend(self.malformed_table(
+                    block, "Right border not aligned or missing.", i))
+                return [], messages, blank_finish
+        return block, messages, blank_finish
+
+    def _grid_table_bottom(self, block: statemachine.StringList) -> int | None:
+        """The last border line from the second-last to the third line, if any."""
+        for i in range(len(block) - 2, 1, -1):
+            if self.grid_table_top_pat.match(block[i]):
+                return i
+        return None
+
+    def isolate_simple_table(self) -> tuple:
+        """(table lines, messages, blank_finish) of a simple table."""
+        machine = self.state_machine
+        start = machine.line_offset
+        lines = machine.input_lines
+        limit = len(lines) - 1
+        toplen = len(lines[start].strip())
+        found = 0
+        found_at = None
+        i = start + 1
+        while i <= limit:
+            line = lines[i]
+            if self.simple_table_border_pat.match(line):
+                if len(line.strip()) != toplen:
+                    machine.next_line(i - start)
+                    messages = self.malformed_table(
+                        lines[start:i + 1],
+                        "Bottom border or header rule does not match top border.", i - start)
+                    return [], messages, i == limit or not lines[i + 1].strip()
+                found += 1
+                found_at = i
+                if found == 2 or i == limit or not lines[i + 1].strip():
+                    machine.next_line(i - start)
+                    block = lines[start:i + 1]
+                    block.pad_double_width(self.double_width_pad_char)
+                    return block, [], i == limit or not lines[i + 1].strip()
+            i += 1
+        details = "No bottom table border found"
+        if found:
+            details += " or no blank line after table bottom"
+            machine.next_line(found_at - start)
+            block = lines[start:found_at + 1]
+        else:
+            machine.next_line(i - start - 1)
+            block = lines[start:]
+        return [], self.malformed_table(block, details + "."), not found
 
     def malformed_table(self, block: statemachine.StringList, detail: str = "",
                         offset: int = 0) -> list[nodes.system_message]:
@@ -276,149 +497,3 @@ class BodyHelpers:
             if "".join(cellblock):
                 self.nested_parse(cellblock, input_offset=tableline + offset, node=entry)
         return row
-
-    # --- hyperlink targets ---------------------------------------------------------------
-
-    def make_target(self, block: list[str], block_text: str, lineno: int,
-                    target_name: str) -> Any:
-        target_type, data = self.parse_target(block, block_text, lineno)
-        if target_type == "refname":
-            target = nodes.target(block_text, "", refname=normalize_name(data))
-            target.indirect_reference_name = data
-            self.add_target(target_name, "", target, lineno)
-            self.document.note_indirect_target(target)
-            return target
-        if target_type == "refuri":
-            target = nodes.target(block_text, "")
-            self.add_target(target_name, data, target, lineno)
-            return target
-        return data
-
-    def parse_target(self, block: list[str], block_text: str, lineno: int) -> tuple[str, str]:
-        """Determine the type of reference of a target: ("refname"|"refuri", data)."""
-        if block and block[-1].strip()[-1:] == "_":  # possible indirect target
-            reference = " ".join(line.strip() for line in block)
-            refname = self.is_reference(reference)
-            if refname:
-                return "refname", refname
-        ref_parts = split_escaped_whitespace(" ".join(block))
-        return "refuri", " ".join("".join(unescape(part).split()) for part in ref_parts)
-
-    def is_reference(self, reference: str) -> str | None:
-        match = self.explicit.patterns.reference.match(whitespace_normalize_name(reference))
-        if not match:
-            return None
-        return unescape(match.group("simple") or match.group("phrase"))
-
-    def add_target(self, targetname: str, refuri: str, target: nodes.target,
-                   lineno: int) -> None:
-        target.line = lineno
-        if not targetname:  # anonymous target
-            if refuri:
-                target["refuri"] = refuri
-            target["anonymous"] = True
-            self.document.note_anonymous_target(target)
-            return
-        target["names"].append(normalize_name(unescape(targetname)))
-        if refuri:
-            uri = self.inliner.adjust_uri(refuri)
-            if not uri:
-                raise ApplicationError("problem with URI: %r" % refuri)
-            target["refuri"] = uri
-        self.document.note_explicit_target(target, self.parent)
-
-    def disallowed_inside_substitution_definitions(self, node: nodes.Element) -> str:
-        if isinstance(node, nodes.reference) and node.get("anonymous"):
-            return "Anonymous references"
-        if isinstance(node, nodes.footnote_reference) and node.get("auto"):
-            return "References to auto-numbered and auto-symbol footnotes"
-        if node["names"] or node["ids"]:
-            return "Targets (names and identifiers)"
-        return ""
-
-    # --- directives ---------------------------------------------------------------------
-
-    def parse_directive_block(self, indented: statemachine.StringList, line_offset: int,
-                              directive: Any, option_presets: dict[str, Any]) -> tuple:
-        """Split a directive block into (arguments, options, content, content_offset)."""
-        if indented and not indented[0].strip():
-            indented.trim_start()
-            line_offset += 1
-        while indented and not indented[-1].strip():
-            indented.trim_end()
-        takes_args = directive.required_arguments or directive.optional_arguments
-        i = 0
-        if indented and (takes_args or directive.option_spec):
-            i = next((n for n, line in enumerate(indented) if not line.strip()), len(indented))
-            arg_block = indented[:i]
-            content = indented[i + 1:]
-            content_offset = line_offset + i + 1
-        else:
-            content = indented
-            content_offset = line_offset
-            arg_block = []
-        options: dict[str, Any] = {}
-        if directive.option_spec:
-            options, arg_block = self.parse_directive_options(option_presets,
-                                                              directive.option_spec, arg_block)
-        if arg_block and not takes_args:
-            content = arg_block + indented[i:]
-            content_offset = line_offset
-            arg_block = []
-        while content and not content[0].strip():
-            content.trim_start()
-            content_offset += 1
-        arguments = self.parse_directive_arguments(directive, arg_block) if takes_args else []
-        if content and not directive.has_content:
-            raise MarkupError("no content permitted")
-        return arguments, options, content, content_offset
-
-    def parse_directive_options(self, option_presets: dict[str, Any],
-                                option_spec: dict[str, Any], arg_block: Any) -> tuple:
-        options = option_presets.copy()
-        opt_block: Any = []
-        for i, line in enumerate(arg_block):
-            if re.match(FIELD_MARKER, line):
-                opt_block = arg_block[i:]
-                arg_block = arg_block[:i]
-                break
-        if opt_block:
-            success, data = self.parse_extension_options(option_spec, opt_block)
-            if not success:
-                raise MarkupError(data)
-            options.update(data)
-        return options, arg_block
-
-    def parse_directive_arguments(self, directive: Any, arg_block: Any) -> list[str]:
-        required = directive.required_arguments
-        optional = directive.optional_arguments
-        arg_text = "\n".join(arg_block)
-        arguments = arg_text.split()
-        if len(arguments) < required:
-            raise MarkupError("%s argument(s) required, %s supplied"
-                              % (required, len(arguments)))
-        if len(arguments) > required + optional:
-            if not directive.final_argument_whitespace:
-                raise MarkupError("maximum %s argument(s) allowed, %s supplied"
-                                  % (required + optional, len(arguments)))
-            arguments = arg_text.split(None, required + optional - 1)
-        return arguments
-
-    def parse_extension_options(self, option_spec: dict[str, Any], datalines: Any) -> tuple:
-        """(1, options) or (0, error text) for a directive option block."""
-        node = nodes.field_list()
-        newline_offset, blank_finish = self.nested_list_parse(
-            datalines, 0, node, initial_state="ExtensionOptions", blank_finish=True)
-        if newline_offset != len(datalines):  # incomplete parse of block
-            return 0, "invalid option block"
-        try:
-            options = utils.extract_extension_options(node, option_spec)
-        except KeyError as detail:
-            return 0, 'unknown option: "%s"' % detail.args[0]
-        except (ValueError, TypeError) as detail:
-            return 0, "invalid option value: %s" % " ".join(detail.args)
-        except utils.ExtensionOptionError as detail:
-            return 0, "invalid option data: %s" % " ".join(detail.args)
-        if blank_finish:
-            return 1, options
-        return 0, "option data incompletely parsed"

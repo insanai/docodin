@@ -80,23 +80,50 @@ class Parser(docutils.parsers.Parser):
         return [*super().get_transforms(), universal.SmartQuotes]
 
     def parse(self, inputstring: Any, document: nodes.document) -> None:
-        """Parse `inputstring` (str or StringList) and populate `document`."""
-        from docodin import builder
+        """Parse `inputstring` (str or StringList) and populate `document`.
 
+        The native engine parses unless the grammar differs from the stock one
+        (see `states.python_parser_needed`); then the Python state machine does.
+        """
         self.setup_parse(inputstring, document)
         document.settings.setdefault("tab_width", 8)
         document.settings.setdefault("syntax_highlight", "long")
-        rfc2822 = self.initial_state == "RFC2822Body"
-        if isinstance(inputstring, str):
-            builder.parse_string(inputstring, document, self.inliner, rfc2822=rfc2822)
+        if states.python_parser_needed(self.state_classes, self.initial_state, self.inliner):
+            self._parse_with_states(inputstring, document)
         else:
-            lines = inputstring
-            if not isinstance(lines, docutils.statemachine.StringList):
-                lines = docutils.statemachine.StringList(list(lines), document.get("source", ""))
-            builder.parse_string_list(lines, document, self.inliner, rfc2822=rfc2822)
+            self._parse_natively(inputstring, document)
         # restore the "default" default role after parsing a document
         roles._roles.pop("", None)
         self.finish_parse()
+
+    def _parse_natively(self, inputstring: Any, document: nodes.document) -> None:
+        from docodin import builder
+
+        rfc2822 = self.initial_state == "RFC2822Body"
+        if isinstance(inputstring, str):
+            builder.parse_string(inputstring, document, self.inliner, rfc2822=rfc2822)
+            return
+        lines = inputstring
+        if not isinstance(lines, docutils.statemachine.StringList):
+            lines = docutils.statemachine.StringList(list(lines), document.get("source", ""))
+        builder.parse_string_list(lines, document, self.inliner, rfc2822=rfc2822)
+
+    def _parse_with_states(self, inputstring: Any, document: nodes.document) -> None:
+        self.statemachine = states.RSTStateMachine(state_classes=self.state_classes,
+                                                   initial_state=self.initial_state,
+                                                   debug=document.reporter.debug_flag)
+        if isinstance(inputstring, str):
+            inputlines = docutils.statemachine.string2lines(
+                inputstring, tab_width=document.settings.tab_width, convert_whitespace=True)
+        else:
+            inputlines = inputstring
+        limit = document.settings.line_length_limit
+        for i, line in enumerate(inputlines):
+            if len(line) > limit:
+                document.append(document.reporter.error(
+                    "Line %d exceeds the line-length-limit." % (i + 1)))
+                return
+        self.statemachine.run(inputlines, document, inliner=self.inliner)
 
 
 class DirectiveError(Exception):

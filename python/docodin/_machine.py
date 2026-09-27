@@ -292,6 +292,7 @@ class OdinInliner(Inliner):
     """
 
     ctx: DocumentContext | None = None
+    docodin_native = True  # parses natively: no reason to leave the native engine
 
     def parse(self, text, lineno, memo, parent):
         self.document = memo.document
@@ -313,18 +314,18 @@ for _name, _value in vars(Inliner).items():
 del _name, _value
 
 
-# Only the shim's transitions can hand natively built nodes to a replacement
-# that wraps them (docutils' own would parse the input again).
-_REPLAYABLE = hasattr(states.Body, "_replayable")
+# The shim's states know their stock methods (a snapshot taken when the module
+# loads) and can hand natively built nodes to a replacement that wraps them;
+# docutils' own states would parse the input again.
+_REPLACEMENT = getattr(states, "_replacement", None)
 
 
 def patched_transition(cls: type, name: str) -> Any:
     """An extension's replacement of the transition method ``cls.name``, or None
     (sphinx-autodoc-typehints replaces ``Body.doctest`` and wraps ``Text.indent``)."""
-    method = getattr(cls, name)
-    if not _REPLAYABLE or getattr(method, "__module__", None) == states.__name__:
+    if _REPLACEMENT is None:
         return None
-    return method
+    return _REPLACEMENT(cls, name)
 
 
 def replay_transition(method: Any, cls: type, sm: OdinStateMachine, parent: nodes.Element,
