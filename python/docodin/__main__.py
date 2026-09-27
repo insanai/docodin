@@ -10,8 +10,10 @@ from __future__ import annotations
 
 import sys
 
-import docodin
+# isort: off
+import docodin  # enables the docutils shim when docutils is not installed
 import docutils.core
+# isort: on
 
 from docodin.parser import Parser
 
@@ -58,7 +60,8 @@ def main(argv: list[str] | None = None) -> None:
     writer = WRITER_ALIASES.get(writer, writer)
     docutils.core.publish_cmdline(
         parser=Parser(), writer=writer, argv=rest,
-        description="Process reStructuredText with the docodin parser. " + docutils.core.default_description,
+        description=("Process reStructuredText with the docodin parser. "
+                     + docutils.core.default_description),
     )
 
 

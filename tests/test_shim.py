@@ -1,138 +1,144 @@
-"""Tests for the DocOdin docutils compatibility shim.
+"""Tests of the docodin docutils shim (``python/docodin/shim/docutils``).
 
-Verifies that DocOdin can serve as a complete zero-dependency drop-in replacement
-for upstream docutils across nodes, core publisher, and writers.
+The shim replaces the docutils package: each test runs in a subprocess, so
+the other tests keep using whichever docutils the environment provides.
+Output is compared with real docutils when it is installed.
 """
 
 from __future__ import annotations
 
+import json
+import subprocess
 import sys
+from pathlib import Path
 from typing import Any
 
 import pytest
 
-import docodin
-from docodin.shim import install_shim, uninstall_shim
+ROOT = Path(__file__).resolve().parent.parent
+FUNCTIONAL = ROOT / "tests" / "conformance"
+
+DOCUMENT = """\
+==========
+ Document
+==========
+
+:Author: A. Writer
+:Version: 1
+
+.. contents::
+
+Section *one*
+=============
+
+Paragraph with **strong**, ``literal``, a reference_, [1]_ and |sub|.
+
+.. _reference: https://example.org
+.. [1] A footnote.
+.. |sub| replace:: substitution
+
+.. note:: An admonition with a list:
+
+   - item
+   - item
+
+.. table:: Grid
+
+   +-----+-----+
+   | a   | b   |
+   +=====+=====+
+   | 1   | 2   |
+   +-----+-----+
+
+.. csv-table:: CSV
+   :header: x, y
+
+   1, 2
+
+.. math:: a^2 + b^2 = c^2
+
+.. code:: python
+
+   print("hi")
+
+Section two
+===========
+
+term
+   definition
+
+-o, --option  description
+"""
+
+def _publish(mode: str, text: str) -> dict[str, Any]:
+    script = """\
+import json, sys
+if sys.argv[1] == "shim":
+    import docodin.shim
+    docodin.shim.install_shim(force=True)
+import docutils, docutils.core
+text = sys.stdin.read()
+out = {"shim": getattr(docutils, "__docodin_shim__", False)}
+for writer in ("pseudoxml", "xml", "html5", "html4", "latex", "xetex", "manpage"):
+    out[writer] = docutils.core.publish_string(
+        text, writer_name=writer,
+        settings_overrides={"_disable_config": True, "report_level": 5,
+                            "embed_stylesheet": False, "stylesheet_path": ""}).decode()
+print(json.dumps(out))
+"""
+    proc = subprocess.run([sys.executable, "-c", script, mode], input=text, capture_output=True,
+                          text=True, check=True, env={"PYTHONPATH": str(ROOT / "python")})
+    return json.loads(proc.stdout)
 
 
-def test_shim_installation_and_submodules() -> None:
-    """Verify that install_shim registers all required docutils submodules in sys.modules."""
-    install_shim(force=True)
-    try:
-        import docutils
-        import docutils.core
-        import docutils.frontend
-        import docutils.nodes
-        import docutils.parsers.rst
-        import docutils.parsers.rst.directives
-        import docutils.parsers.rst.roles
-        import docutils.parsers.rst.states
-        import docutils.statemachine
-        import docutils.transforms
-        import docutils.utils
-        import docutils.writers
-        import docutils.writers.html5_polyglot
-        import docutils.writers.latex2e
-
-        assert getattr(docutils, "_is_docodin_shim", False) is True
-        assert hasattr(docutils.nodes, "document")
-        assert hasattr(docutils.core, "Publisher")
-        assert hasattr(docutils.parsers.rst, "Directive")
-        assert hasattr(docutils.statemachine, "StringList")
-        assert hasattr(docutils.frontend, "get_default_settings")
-    finally:
-        uninstall_shim()
+def _real_docutils_available() -> bool:
+    proc = subprocess.run([sys.executable, "-c", "import docutils; print(docutils.__file__)"],
+                          capture_output=True, text=True, check=False)
+    return proc.returncode == 0 and "/shim/" not in proc.stdout
 
 
-def test_shim_publish_string_html_and_latex() -> None:
-    """Verify that docutils.core.publish_string generates valid HTML and LaTeX through DocOdin."""
-    install_shim(force=True)
-    try:
-        import docutils.core
-
-        content = "Title\n=====\n\nHello **world** from DocOdin!"
-        html = docutils.core.publish_string(content, writer_name="html5")
-        assert isinstance(html, (bytes, str))
-        html_str = html.decode("utf-8") if isinstance(html, bytes) else html
-        assert "<section" in html_str
-        assert "<h1>Title</h1>" in html_str
-        assert "<strong>world</strong>" in html_str
-
-        tex = docutils.core.publish_string(content, writer_name="latex")
-        assert isinstance(tex, (bytes, str))
-        tex_str = tex.decode("utf-8") if isinstance(tex, bytes) else tex
-        assert "\\documentclass{article}" in tex_str
-        assert "\\section{Title}" in tex_str
-        assert "\\textbf{world}" in tex_str
-    finally:
-        uninstall_shim()
+def test_install_shim_replaces_docutils() -> None:
+    script = """\
+import sys
+import docodin.shim
+docodin.shim.install_shim(force=True)
+import docutils, docutils.nodes, docutils.parsers.rst.states, docutils.writers.html5_polyglot
+assert docutils.__docodin_shim__ and docodin.shim.is_active()
+assert docutils.nodes.document.__module__ == "docutils.nodes"
+assert "shim" in docutils.__file__
+docodin.shim.uninstall_shim()
+assert "docutils" not in sys.modules
+print("ok")
+"""
+    proc = subprocess.run([sys.executable, "-c", script], capture_output=True, text=True,
+                          check=False, env={"PYTHONPATH": str(ROOT / "python")})
+    assert proc.stdout.strip() == "ok", proc.stderr
 
 
-def test_shim_nodes_and_visitor() -> None:
-    """Verify document tree construction, traversal, and formatting using shim nodes."""
-    from docodin.shim import nodes
-
-    doc = nodes.document()
-    sec = nodes.section(ids=["intro"])
-    tit = nodes.title("Introduction", "Introduction")
-    p = nodes.paragraph("", "Welcome to DocOdin.")
-    p += nodes.strong(" fast", " fast")
-
-    sec += tit
-    sec += p
-    doc += sec
-
-    assert len(doc) == 1
-    assert doc[0] is sec
-    assert sec.section_hierarchy() == [sec]
-    assert "intro" in sec.attributes["ids"]
-    assert "Welcome to DocOdin. fast" in p.astext()
-
-    formatted = doc.pformat()
-    assert "<document>" in formatted
-    assert "<section ids=['intro']>" in formatted
-    assert "<title>" in formatted
+def test_shim_publishes_all_writers() -> None:
+    out = _publish("shim", DOCUMENT)
+    assert out["shim"] is True
+    assert '<section id="section-one">' in out["html5"]
+    assert "\\section{Section \\emph{one}" in out["latex"]
+    assert "<footnote auto" not in out["pseudoxml"] and "<footnote" in out["pseudoxml"]
+    assert ".SH Author\nA. Writer" in out["manpage"]
 
 
-def test_native_rendering_html_and_latex() -> None:
-    """Verify direct native Odin HTML5 and LaTeX rendering functions."""
-    content = "Hello DocOdin\n=============\n\nThis is a *fast* test with **bold** text."
-
-    html_out = docodin.render_html(content, title="My Test", standalone=True)
-    assert "<!DOCTYPE html>" in html_out
-    assert "<title>My Test</title>" in html_out
-    assert '<h1 id="hello-docodin">Hello DocOdin</h1>' in html_out
-    assert "<em>fast</em>" in html_out
-    assert "<strong>bold</strong>" in html_out
-
-    tex_out = docodin.render_latex(content, title="My Test", standalone=True)
-    assert "\\documentclass[11pt,a4paper]{article}" in tex_out
-    assert "\\title{My Test}" in tex_out
-    assert "\\section{Hello DocOdin}" in tex_out
-    assert "\\emph{fast}" in tex_out
-    assert "\\textbf{bold}" in tex_out
+@pytest.mark.skipif(not _real_docutils_available(), reason="real docutils not installed")
+def test_shim_output_matches_docutils() -> None:
+    real, shim = _publish("real", DOCUMENT), _publish("shim", DOCUMENT)
+    assert shim["shim"] and not real["shim"]
+    for writer in ("pseudoxml", "xml", "html5", "html4", "latex", "xetex", "manpage"):
+        assert _masked(shim[writer]) == _masked(real[writer]), writer
 
 
-def test_native_statemachine_string2lines() -> None:
-    """Verify that shim string2lines delegates to the native Odin line splitter."""
-    install_shim(force=True)
-    try:
-        from docutils.statemachine import string2lines
-
-        text = "line 1\r\n\tline 2 with tab\nline 3"
-        lines = string2lines(text, tab_width=4)
-        assert len(lines) == 3
-        assert lines[0] == "line 1"
-        assert lines[1] == "    line 2 with tab"
-        assert lines[2] == "line 3"
-    finally:
-        uninstall_shim()
+def _masked(output: str) -> list[str]:
+    """Output lines without stylesheet links (they carry the installation paths)."""
+    return [line for line in output.splitlines() if 'rel="stylesheet"' not in line]
 
 
 def test_sphinx_conf_discovery_and_metadata(tmp_path: Any) -> None:
     """Verify Sphinx conf.py metadata extraction in python and the native CLI compiler."""
-    import subprocess
-    from pathlib import Path
     from docodin.conf import find_conf_py, get_metadata
 
     conf_dir = Path(tmp_path) / "docs"
