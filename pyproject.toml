@@ -1,0 +1,30 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "docodin"
+version = "0.2.0"
+description = "Fast reStructuredText parser written in Odin: a drop-in parser for docutils and Sphinx"
+readme = "README.md"
+requires-python = ">=3.12"
+license = { text = "MIT" }
+dependencies = [
+    "docutils>=0.21",
+]
+
+[project.optional-dependencies]
+sphinx = ["sphinx>=8.0"]
+test = ["pytest>=8.0", "sphinx>=8.0"]
+
+[project.scripts]
+docodin = "docodin.__main__:main"
+
+[tool.setuptools.packages.find]
+where = ["python"]
+
+[tool.setuptools.package-data]
+docodin = ["*.dylib", "*.so", "*.dll"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

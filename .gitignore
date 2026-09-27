@@ -1,0 +1,77 @@
+# Virtual Environments & Package Managers
+.venv/
+venv/
+ENV/
+env/
+wheels/
+*.egg-info/
+.eggs/
+dist/
+build/
+
+# Python Cache & Testing
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+
+# Native Odin Build Artifacts & Binaries
+bin/
+*.o
+*.obj
+*.dylib
+*.so
+*.dll
+python/docodin/*.dylib
+python/docodin/*.so
+python/docodin/*.dll
+odin/tests/test_runner
+*.dSYM/
+
+# Downloaded Sphinx Packages & Test Documentation
+tests/conformance/downloads/
+tests/conformance/docutils-*/
+tests/conformance/*.tar.gz
+tests/conformance/*.tgz
+tests/conformance/source/
+tests/conformance/output/
+tests/downloads/
+tests/fixtures/downloads/
+docs/_build/
+docs/build/
+_build/
+*flask*
+test_docs/
+downloaded_docs/
+*.pxml
+*.pseudoxml
+
+# TeX / LaTeX & PDF Compilation Artifacts
+*.aux
+*.log
+*.toc
+*.out
+*.pdf
+*.idx
+*.ilg
+*.ind
+*.fls
+*.fdb_latexmk
+*.synctex.gz
+
+# macOS & Editor Metadata
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+Thumbs.db
+*.swp
+*.swo
+*~
+.idea/
+.vscode/
