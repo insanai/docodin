@@ -177,9 +177,9 @@ The scalars are `autofootnote_start`, `symbol_footnote_start`, `decoration`, `cu
 
 ## Stages
 
-1. `doctree.build(parse_tree) -> Doc`: a port of `python/docodin/builder.py` (tree building, registration, section nesting) with the native directive and role registry.
+1. `reader.parse(text, settings, source_path) -> ^Doc` (`odin/reader`): `Parser.parse` into `new_document`. A port of `python/docodin/builder.py` (tree building, registration, section nesting, `document.current_line` bookkeeping, `include` insertions through a `StringList` port) with the native directive and role registry: the English directive and role names, `parse_directive_block` with the option converters, and the standard directives and roles. Images, figures, tables and `meta` are registered without an implementation yet.
 2. `transforms.apply(^Doc)`: the standard reader, parser and writer transforms in docutils priority order, with the same message texts and levels.
-3. `writers.pseudoxml`, `writers.html5`, `writers.latex`: ports of the docutils writers (template parts included).
+3. `writers.write(doc, writer, settings) -> (output, parts, err)` (`odin/writers`): ports of the docutils writers `pseudoxml`, `docutils_xml`, `html5_polyglot`, `latex2e` and `xetex`, with their `publish_parts` parts. `writers.settings_for(doc, writer)` reads the writer settings from `Doc.settings`, or from the dumped docutils settings of an interchange document. Where docutils raises, `err` names the Python exception.
 
 Features that need Python libraries fall back to docutils' behaviour when the library is missing, and a warning says so:
 - Pygments highlighting behaves as with `syntax_highlight: none`.
@@ -188,5 +188,5 @@ Features that need Python libraries fall back to docutils' behaviour when the li
 ## Verification
 
 - Pseudo-XML of each stage is compared with docutils on the conformance corpus and the fuzz generator (`tests/fuzz_differential.py`).
-- HTML5 and LaTeX output are compared on the docutils functional test inputs.
+- Writer output and parts are compared byte for byte by `tests/native_writers_differential.py`: the docutils functional tests with their settings (also against `test/functional/expected`), the functional inputs and `docs/**/*.rst` with several settings variants per writer, and generated documents. `odin test odin/writers/tests` checks the `output` fixtures of the interchange.
 - The stage tests run in CI, with `odin test` for units.
