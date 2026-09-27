@@ -53,6 +53,24 @@ def test_raw_lines_mode(lib):
     assert len(items) == 2
 
 
+def test_large_results_are_decoded_item_by_item(lib, monkeypatch):
+    text = "Title\n=====\n\n" + "".join(f"para {i}\n\n- item\n\n" for i in range(50))
+    expected = lib.parse(text)
+    monkeypatch.setattr(_native, "LAZY_MIN_SIZE", 0)
+    items, *rest = lib.parse_items(text)
+    assert isinstance(items, _native.WireItems)
+    assert len(items) == len(expected[0])
+    assert items[-1] == expected[0][-1] and items[1] == expected[0][1]
+    assert [items[0], *items] == [expected[0][0], *expected[0]]
+    assert (list(items), *rest) == expected  # iteration drops the decoded items
+    items.release()
+    items.release()
+    with pytest.raises(IndexError):
+        items[0]
+    with pytest.raises(IndexError):
+        items[len(items)]
+
+
 def test_parse_inline(lib):
     items = lib.parse_inline("*a* and ``b``", 1)
     assert items[0][0] == 48 and items[1] == " and " and items[2][0] == 50

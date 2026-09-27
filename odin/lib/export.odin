@@ -17,7 +17,7 @@ import text "../text"
 // * Results are heap buffers owned by the caller; release with
 //   ``docodin_free``.
 
-ABI_VERSION :: 5
+ABI_VERSION :: 6
 VERSION :: "0.1.0"
 
 @(thread_local, private = "file")
@@ -77,7 +77,8 @@ docodin_version :: proc "c" () -> cstring {
 	return VERSION
 }
 
-// Parse a (nested) block of reStructuredText.
+// Parse a (nested) block of reStructuredText; the result is laid out as
+// ``serialize_document`` describes (nil if it would exceed 2 GiB).
 //   input_offset:      absolute line offset of the first line
 //   raw_line_count:    >= 0: input holds that many '\n'-joined lines
 //                      (StringList); < 0: apply ``string2lines``
@@ -117,8 +118,13 @@ docodin_parse :: proc "c" (
 	doc, line_count, final_offset := rst.parse_text(
 		&p, text, input_offset, match_titles, raw_line_count,
 	)
-	capacity := input_len + input_len / 2
+	capacity := input_len * 3 + 256
 	w := serialize_document(&p.tree, doc, line_count, final_offset, p.cur_line, capacity)
+	if len(w.buf) > int(max(i32)) {
+		// the item offsets are marshal ints
+		delete(w.buf)
+		return nil
+	}
 	return finish(w, out_len)
 }
 

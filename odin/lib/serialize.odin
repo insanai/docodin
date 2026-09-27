@@ -52,7 +52,7 @@ MARSHAL_ASCII :: 'a'
 MARSHAL_UNICODE :: 'u'
 
 // Wire format version, bumped whenever the layout changes.
-WIRE_VERSION :: 3
+WIRE_VERSION :: 4
 
 Writer :: struct {
 	buf: [dynamic]u8,
@@ -312,9 +312,16 @@ write_block_node :: proc(w: ^Writer, t: ^rst.Tree, n: rst.Node, d: rst.Node_Data
 	}
 }
 
-// Top-level result: (WIRE_VERSION, children, line_count, final_offset,
-// cur_line), ``cur_line`` being docutils' ``document.current_line`` at the
-// end of the parse (``rst.Parser.cur_line``).
+// The result of a (nested) document parse: one marshal object
+//   (WIRE_VERSION, line_count, final_offset, cur_line, index_offset, [items])
+// followed by the index at index_offset: [end offset of each item].
+// ``cur_line`` is docutils' ``document.current_line`` at the end of the parse
+// (``rst.Parser.cur_line``).  The host decodes a small result at once
+// (``marshal.loads`` ignores trailing bytes) and a large one item by item, so
+// that only the tuples of one top-level item exist at a time, not those of
+// the whole document.  The header, up to the first item, has a fixed size.
+DOCUMENT_HEADER_SIZE :: 2 + 5 * 5 + 5
+
 serialize_document :: proc(
 	t: ^rst.Tree,
 	doc: rst.Node,
@@ -324,12 +331,27 @@ serialize_document :: proc(
 	size_hint: int,
 ) -> Writer {
 	w := writer_make(size_hint)
-	w_tuple(&w, 5)
+	w_tuple(&w, 6)
 	w_int(&w, WIRE_VERSION)
-	write_children(&w, t, doc)
 	w_int(&w, line_count)
 	w_int(&w, final_offset)
 	w_int(&w, cur_line)
+	w_int(&w, 0) // index_offset, set below
+	count := 0
+	for c := rst.first_child(t, doc); c != rst.NO_NODE; c = t.nodes[c].next do count += 1
+	w_list(&w, count)
+	ends := make([]int, count, context.temp_allocator)
+	c := rst.first_child(t, doc)
+	for &end in ends {
+		write_node(&w, t, c)
+		end = len(w.buf)
+		c = t.nodes[c].next
+	}
+	index_offset := len(w.buf)
+	w_list(&w, count)
+	for end in ends do w_int(&w, end)
+	patch := transmute([4]u8)u32le(u32(index_offset))
+	copy(w.buf[DOCUMENT_HEADER_SIZE - 9:], patch[:])
 	return w
 }
 

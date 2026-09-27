@@ -10,11 +10,11 @@ import os
 import struct
 import sys
 import threading
-from collections.abc import Callable, Sequence
+from collections.abc import Callable, Iterator, Sequence
 from typing import Any, NamedTuple
 
-ABI_VERSION = 5
-WIRE_VERSION = 3
+ABI_VERSION = 6
+WIRE_VERSION = 4
 
 # Parse_Flag bit positions (odin/rst/document.odin)
 MATCH_TITLES = 1 << 0
@@ -55,6 +55,74 @@ def _find_library() -> str:
     )
 
 
+_memory_view = ctypes.pythonapi.PyMemoryView_FromMemory
+_memory_view.restype = ctypes.py_object
+_memory_view.argtypes = (ctypes.c_void_p, ctypes.c_ssize_t, ctypes.c_int)
+_PYBUF_READ = 0x100
+
+
+def _view(ptr: int, size: int) -> memoryview:
+    """A read-only memoryview of the native buffer at ``ptr`` (no copy:
+    ``marshal.loads`` reads bytes-like objects), valid until it is freed."""
+    return _memory_view(ptr, size, _PYBUF_READ)
+
+
+# The fixed-size start of a document result, up to its first item
+# (odin/lib/serialize.odin): a 6-tuple of WIRE_VERSION, line_count,
+# final_offset, cur_line and index_offset (marshal ints), and the items' list
+_DOCUMENT_HEADER = struct.Struct("<2x" + "xi" * 5 + "5x")
+# Results from this size on are decoded item by item (``WireItems``)
+LAZY_MIN_SIZE = 64 * 1024
+
+
+class WireItems:
+    """The top-level items of a large ``docodin_parse`` result, decoded one at a time.
+
+    Each top-level item of the result is a separate marshal object: an item is
+    decoded when it is first needed and dropped once iteration has passed it,
+    so the tuples of the whole document never exist at once.  The native
+    buffer is released by :meth:`release`, or when the object dies.
+    """
+
+    __slots__ = ("_free", "_ptr", "_view", "_ends", "_cache")
+
+    def __init__(self, free: Callable[[int], None], ptr: int, view: memoryview,
+                 ends: list[int]) -> None:
+        self._free = free
+        self._ptr = ptr
+        self._view: memoryview | None = view
+        self._ends = ends
+        self._cache: dict[int, Any] = {}
+
+    def __len__(self) -> int:
+        return len(self._ends)
+
+    def __getitem__(self, index: int) -> Any:
+        item = self._cache.get(index)
+        if item is None:
+            if index < 0:
+                index += len(self._ends)
+            if not 0 <= index < len(self._ends) or self._view is None:
+                raise IndexError("wire item index out of range")
+            start = self._ends[index - 1] if index else _DOCUMENT_HEADER.size
+            item = self._cache[index] = marshal.loads(self._view[start:self._ends[index]])
+        return item
+
+    def __iter__(self) -> Iterator[Any]:
+        cache = self._cache
+        for index in range(len(self._ends)):
+            yield self[index]
+            cache.pop(index, None)
+
+    def release(self) -> None:
+        """Free the native buffer; items not decoded yet are lost."""
+        view, self._view = self._view, None
+        if view is not None:
+            view.release()
+            self._free(self._ptr)
+
+    __del__ = release
+
 
 _HOOK_TYPE = ctypes.CFUNCTYPE(
     ctypes.c_int32, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_ssize_t,
@@ -80,7 +148,7 @@ class _Hook:
         if self.error is not None:
             return 0
         try:
-            lines = self.function(marshal.loads(ctypes.string_at(item, item_len)))
+            lines = self.function(marshal.loads(_view(item, item_len)))
             if lines is None:
                 return 0
             buffer = ctypes.create_string_buffer("\n".join(lines).encode("utf-8", "surrogatepass"))
@@ -142,15 +210,19 @@ class NativeLibrary:
         if not ptr:
             raise MemoryError("docodin: native parser returned no result")
         try:
-            data = ctypes.string_at(ptr, size)
+            result = marshal.loads(_view(ptr, size))
         finally:
             self._free(ptr)
-        result = marshal.loads(data)
         if result[0] != WIRE_VERSION:
             raise RuntimeError(f"docodin: unexpected wire format version {result[0]}")
         return result
 
-    def parse(
+    def parse(self, text: str, **options: Any) -> tuple[list, int, int, int]:
+        """:meth:`parse_items` with the items decoded into a list."""
+        items, count, final_offset, current_line = self.parse_items(text, **options)
+        return list(items), count, final_offset, current_line
+
+    def parse_items(
         self,
         text: str,
         *,
@@ -161,7 +233,7 @@ class NativeLibrary:
         line_length_limit: int = 10_000,
         root_line: int = 0,
         include_hook: Callable[[tuple], list[str] | None] | None = None,
-    ) -> tuple[list, int, int, int]:
+    ) -> tuple[list | WireItems, int, int, int]:
         """Parse reStructuredText markup into an intermediate wire-format tree.
 
         Args:
@@ -170,14 +242,17 @@ class NativeLibrary:
             line_count: Number of pre-split lines if text is '\\n'-joined; -1 if raw text.
             flags: Bitmask flags controlling parse behavior (e.g. MATCH_TITLES, RFC2822).
             tab_width: Number of spaces per tab expansion. Defaults to 8.
-            line_length_limit: Maximum allowed characters per line before error. Defaults to 10,000.
+            line_length_limit: Maximum allowed characters per line before error.
+                Defaults to 10,000.
             root_line: Line number offset from top-level state machine. Defaults to 0.
             include_hook: Called with the wire tuple of each directive the parser finds in
                 input connected to the parsed lines; returns the lines to insert after the
                 directive (``insert_input``), which the parser then parses in place, or None.
 
         Returns:
-            Tuple of (items, number_of_lines, final_line_offset, current_line).
+            Tuple of (items, number_of_lines, final_line_offset, current_line); the items
+            of a large result (``WireItems``) are decoded on demand from the native
+            result, which lives as long as they do (or until ``items.release()``).
 
         Raises:
             MemoryError: If the native parser fails to allocate a result buffer.
@@ -191,10 +266,28 @@ class NativeLibrary:
             tab_width, max(0, min(line_length_limit, 2**31 - 1)), root_line,
             hook.pointer if hook else None, None, ctypes.byref(size),
         )
-        result = self._take(ptr, size.value)
+        del data
+        if not ptr:
+            raise MemoryError("docodin: native parser returned no result")
+        view = _view(ptr, size.value)
+        version, count, final_offset, current_line, index_offset = (
+            _DOCUMENT_HEADER.unpack_from(view))
+        items: list | WireItems
+        if version != WIRE_VERSION or size.value < LAZY_MIN_SIZE:
+            try:
+                result = marshal.loads(view)
+            finally:
+                view.release()
+                self._free(ptr)
+            if result[0] != WIRE_VERSION:
+                raise RuntimeError(f"docodin: unexpected wire format version {result[0]}")
+            items = result[5]
+        else:
+            items = WireItems(self._free, ptr, view, marshal.loads(view[index_offset:]))
         if hook is not None and hook.error is not None:
+            if isinstance(items, WireItems):
+                items.release()
             raise hook.error
-        _, items, count, final_offset, current_line = result
         return items, count, final_offset, current_line
 
     def split_lines(self, text: str, tab_width: int = 8) -> list[str]:

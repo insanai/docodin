@@ -16,6 +16,7 @@ the same order docutils does it:
 
 from __future__ import annotations
 
+from collections.abc import Sequence
 from types import FunctionType, MethodType
 from typing import Any
 
@@ -173,7 +174,7 @@ class DocumentContext:
         document = self.document
         sm = OdinStateMachine(self, None, 0, document, True, lazy_text=text)
         self._start(sm)
-        children, self.line_count, final_offset, _ = self.native.parse(
+        children, self.line_count, final_offset, _ = self.native.parse_items(
             text, flags=self.flags, tab_width=self.tab_width,
             line_length_limit=self._line_length_limit(), include_hook=IncludeHook(self, sm))
         self.builder.build_top(children, sm)
@@ -214,7 +215,7 @@ class DocumentContext:
         if root is not None and root is not sm:
             root_line = self.root_line or root.line_offset + root.input_offset + 1
         hook = IncludeHook(self, sm)
-        children, _count, final_offset, current_line = self.native.parse(
+        children, _count, final_offset, current_line = self.native.parse_items(
             "\n".join(data), input_offset=sm.input_offset, line_count=len(data), flags=flags,
             tab_width=self.tab_width,
             line_length_limit=0,  # only Parser.parse (string input) checks it
@@ -271,7 +272,7 @@ class DocumentContext:
         out = self.builder.inline(items, lineno, container, msgs)
         return out, msgs
 
-def _reported_early(items: list, index: int, line_delta: int) -> bool:
+def _reported_early(items: Sequence, index: int, line_delta: int) -> bool:
     """Is ``items[index + 1]`` a message docutils reports before parsing the
     construct ``items[index]`` (see ``TreeBuilder._early_message``)?"""
     construct, following = items[index], items[index + 1]
@@ -341,7 +342,7 @@ class TreeBuilder:
 
     # -- traversal -----------------------------------------------------------
 
-    def _early_message(self, items: list, index: int,
+    def _early_message(self, items: Sequence, index: int,
                        sm: OdinStateMachine) -> nodes.system_message | None:
         """A message docutils reports before the construct at ``items[index]``
         is parsed, but attaches after it (see ``_EARLY_MESSAGE_KINDS``):
@@ -382,9 +383,9 @@ class TreeBuilder:
         if msgs:
             _extend(parent, msgs)
 
-    def build_top(self, items: list, sm: OdinStateMachine) -> None:
-        """Items at the top level of a (nested) parse: appended to ``sm.node``,
-        which section titles may move."""
+    def build_top(self, items: Sequence, sm: OdinStateMachine) -> None:
+        """Items at the top level of a (nested) parse (a list or ``WireItems``,
+        iterated once): appended to ``sm.node``, which section titles may move."""
         block = self.block
         document = self.document
         skip_unindent = False
