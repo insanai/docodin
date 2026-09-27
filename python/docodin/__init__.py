@@ -39,6 +39,8 @@ _LAZY = {
     "unpatch_docutils": ("docodin.parser", "unpatch_docutils"),
     "is_patched": ("docodin.parser", "is_patched"),
     "native": ("docodin._native", "native"),
+    "NeedsPythonError": ("docodin._publish", "NeedsPythonError"),
+    "PythonNeed": ("docodin._native", "PythonNeed"),
 }
 
 
@@ -115,35 +117,42 @@ def version() -> str:
 
 def publish_native(source: str | bytes, source_path: str | None = None, writer: str = "html5",
                    settings_overrides: dict[str, Any] | None = None, *, parts: bool = False,
-                   docutils_dir: str | None = None) -> Any:
+                   docutils_dir: str | None = None, native_only: bool = False) -> Any:
     """``docutils.core.publish_string`` (``publish_parts`` with ``parts``) without Python:
     the native reader, transforms and writers (pseudoxml, xml, html5, latex, xetex), with
-    docutils' output, messages and exceptions.  See :mod:`docodin._publish`."""
+    docutils' output, messages and exceptions.  Documents for which docutils would use a
+    Python library (Pygments, PIL, ...) are published with docutils, unless
+    ``native_only`` is set (then :class:`NeedsPythonError` is raised).  See
+    :mod:`docodin._publish`."""
     from docodin._publish import publish_native as _publish_native
 
     return _publish_native(source, source_path, writer, settings_overrides, parts=parts,
-                           docutils_dir=docutils_dir)
+                           docutils_dir=docutils_dir, native_only=native_only)
 
 
-def render_html(source: str, *, standalone: bool = True, **settings_overrides: Any) -> str:
-    """HTML5 of reStructuredText, natively: the whole document, or the body of
-    ``publish_parts`` (``standalone=False``)."""
+def render_html(source: str, *, standalone: bool = True, native_only: bool = False,
+                **settings_overrides: Any) -> str:
+    """HTML5 of reStructuredText, natively (see :func:`publish_native`): the whole document,
+    or the body of ``publish_parts`` (``standalone=False``)."""
     result = publish_native(source, writer="html5", settings_overrides=settings_overrides,
-                            parts=True)
+                            parts=True, native_only=native_only)
     return result["whole"] if standalone else result["body"]
 
 
-def render_latex(source: str, *, standalone: bool = True, **settings_overrides: Any) -> str:
-    """LaTeX of reStructuredText, natively: the whole document, or the body of
-    ``publish_parts`` (``standalone=False``)."""
+def render_latex(source: str, *, standalone: bool = True, native_only: bool = False,
+                 **settings_overrides: Any) -> str:
+    """LaTeX of reStructuredText, natively (see :func:`publish_native`): the whole document,
+    or the body of ``publish_parts`` (``standalone=False``)."""
     result = publish_native(source, writer="latex", settings_overrides=settings_overrides,
-                            parts=True)
+                            parts=True, native_only=native_only)
     return result["whole"] if standalone else result["body"]
 
 
 __all__ = [
+    "NeedsPythonError",
     "OdinRSTParser",
     "Parser",
+    "PythonNeed",
     "__version__",
     "install_shim",
     "is_patched",
