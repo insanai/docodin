@@ -169,15 +169,20 @@ class SmartQuotes(Transform):
     def __init__(self, document: Any, startnode: Any) -> None:
         Transform.__init__(self, document, startnode=startnode)
         self.unsupported_languages: set[str] = set()
+        self._codes: dict[int, str] = {}  # language code per element (id), during `apply`
+        self._tags: dict[str, str] = {}  # smart quotes language per language code
 
     def get_tokens(self, txtnodes: Iterable[nodes.Text]) -> Iterator[tuple[str, str]]:
+        literal_nodes = self.literal_nodes
         for node in txtnodes:
-            if (isinstance(node.parent, self.literal_nodes)
-                    or isinstance(node.parent.parent, self.literal_nodes)):
+            parent = node.parent
+            if isinstance(parent, literal_nodes) or isinstance(parent.parent, literal_nodes):
                 yield "literal", str(node)
-            else:
+            elif "\x00" in node:
                 # escaped quotes and dashes stay literal: restore the backslash
-                yield "plain", re.sub(r"(?<=\x00)([-\\'\".`])", r"\\\1", str(node))
+                yield "plain", _ESCAPED_ACTIVE.sub(r"\\\1", str(node))
+            else:
+                yield "plain", str(node)
 
     def apply(self) -> None:
         smart_quotes = self.document.settings.setdefault("smart_quotes", False)
@@ -187,23 +192,104 @@ class SmartQuotes(Transform):
         lc_smartquotes = self.document.settings.smartquotes_locales
         if lc_smartquotes:
             smartquotes.smartchars.quotes.update(dict(lc_smartquotes))
-        for node in self.document.findall(nodes.TextElement):
-            if isinstance(node, self.nodes_to_skip) or isinstance(node.parent, nodes.TextElement):
-                continue
-            self._educate(node, alternative)
+        _PLAIN_REPLACE.clear()
+        # every TextElement (a "text block", processed as a unit to keep the
+        # context around inline nodes) whose parent is no TextElement, in
+        # document order; text nodes are collected when their block is educated
+        for node in self._blocks(self.document):
+            nested: list[nodes.Element] = []
+            self._educate(node, alternative, self._text_nodes(node, nested))
+            for block in nested:
+                self._educate(block, alternative, self._text_nodes(block, None))
         self.unsupported_languages.clear()
+        self._codes.clear()
+        self._tags.clear()
 
-    def _educate(self, node: nodes.TextElement, alternative: bool) -> None:
-        txtnodes = [txtnode for txtnode in node.findall(nodes.Text)
-                    if not isinstance(txtnode.parent, nodes.option_string)]
+    def _is_block(self, node: nodes.Node) -> bool:
+        return (isinstance(node, nodes.TextElement) and not isinstance(node, self.nodes_to_skip)
+                and not isinstance(node.parent, nodes.TextElement))
+
+    def _blocks(self, root: nodes.Element) -> Iterator[nodes.Element]:
+        """The text blocks outside other text blocks, in pre-order (blocks
+        are not entered: see `_text_nodes`)."""
+        stack = [iter(root.children)]
+        while stack:
+            for node in stack[-1]:
+                if self._is_block(node):
+                    yield node
+                elif node.children:
+                    stack.append(iter(node.children))
+                    break
+            else:
+                stack.pop()
+
+    def _text_nodes(self, block: nodes.Element,
+                    nested: list[nodes.Element] | None) -> list[nodes.Text]:
+        """The Text nodes in `block` (not in option strings), in document
+        order; the text blocks inside `block` are appended to `nested`."""
+        txtnodes = []
+        stack = [iter(block.children)]
+        while stack:
+            for node in stack[-1]:
+                if isinstance(node, nodes.Text):
+                    if not isinstance(node.parent, nodes.option_string):
+                        txtnodes.append(node)
+                    continue
+                if (nested is not None and isinstance(node, nodes.TextElement)
+                        and not isinstance(node.parent, nodes.TextElement)
+                        and not isinstance(node, self.nodes_to_skip)):
+                    nested.append(node)
+                if node.children:
+                    stack.append(iter(node.children))
+                    break
+            else:
+                stack.pop()
+        return txtnodes
+
+    def _educate(self, node: nodes.TextElement, alternative: bool,
+                 txtnodes: list[nodes.Text]) -> None:
         lang = self._language(node, alternative)
         teacher = smartquotes.educate_tokens(self.get_tokens(txtnodes),
                                              attr=self.smartquotes_action, language=lang)
         for txtnode, newtext in zip(txtnodes, teacher, strict=False):
-            txtnode.parent.replace(txtnode, nodes.Text(newtext))
+            _replace_text(txtnode.parent, txtnode, nodes.Text(newtext))
 
     def _language(self, node: nodes.TextElement, alternative: bool) -> str:
-        lang = node.get_language_code(self.document.settings.language_code)
+        lang = self._language_code(node, self.document.settings.language_code)
+        tag = self._tags.get(lang)
+        if tag is None:
+            tag = self._tags[lang] = self._quotes_language(node, lang, alternative)
+        return tag
+
+    def _language_code(self, node: nodes.Element, fallback: str) -> str:
+        """`node.get_language_code(fallback)`, remembering the ancestors' codes."""
+        codes = self._codes
+        chain = []
+        ancestor: Any = node
+        while True:
+            code = codes.get(id(ancestor))
+            if code is not None:
+                break
+            if getattr(type(ancestor), "get_language_code", None) is not _ELEMENT_LANGUAGE_CODE:
+                try:
+                    code = ancestor.get_language_code(fallback)
+                except AttributeError:
+                    code = fallback
+                break
+            code = next((cls.removeprefix("language-") for cls in ancestor.get("classes", [])
+                         if cls.startswith("language-")), None)
+            chain.append(ancestor)
+            if code is not None:
+                break
+            ancestor = ancestor.parent
+            if ancestor is None:
+                code = fallback
+                break
+        for element in chain:
+            codes[id(element)] = code
+        return code
+
+    def _quotes_language(self, node: nodes.TextElement, lang: str, alternative: bool) -> str:
         if alternative:
             lang = lang.replace("-x-altquot", "") if "-x-altquot" in lang else lang + "-x-altquot"
         for tag in utils.normalize_language_tag(lang):
@@ -214,6 +300,37 @@ class SmartQuotes(Transform):
                                            base_node=node)
         self.unsupported_languages.add(lang)
         return ""
+
+
+_ELEMENT_LANGUAGE_CODE = nodes.Element.get_language_code
+# a null-escaped active character of smart quotes
+_ESCAPED_ACTIVE = re.compile(r"(?<=\x00)([-\\'\".`])")
+
+
+def _replace_text(parent: nodes.Element, old: nodes.Text, new: nodes.Text) -> None:
+    """`parent.replace(old, new)`: replaces the first child equal to `old`."""
+    plain = _PLAIN_REPLACE.get(type(parent))
+    if plain is None:
+        plain = _PLAIN_REPLACE[type(parent)] = all(
+            getattr(type(parent), name) is getattr(nodes.Element, name)
+            for name in ("replace", "index", "__setitem__", "setup_child"))
+    if not plain:
+        parent.replace(old, new)
+        return
+    children = parent.children
+    index = children.index(old)
+    # `parent.setup_child(new)` for a new Text node
+    new.parent = parent
+    document = parent.document
+    if document:
+        new.document = document
+        new.source = document.current_source
+        new.line = document.current_line
+    children[index] = new
+
+
+# whether `Element.replace` of a node class is the (inlined) default
+_PLAIN_REPLACE: dict[type, bool] = {}
 
 
 class Validate(Transform):
