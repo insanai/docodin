@@ -113,8 +113,8 @@ output, as ruff server does:
 - **Documents.** The text is kept on the heap and edited in place (full and
   incremental changes, UTF-16 or UTF-8 positions). Each version gets a
   snapshot in its own arena, built on first use: the whole file is parsed
-  again. `Line_Index` converts between LSP positions and the parser's
-  coordinates (lines, byte columns of the tab-expanded lines).
+  again. Positions are byte offsets into the text; `rst.Line_Index`
+  converts them to and from LSP positions.
 - **Analysis.** One walk of the reader's parse tree (`reader.parse_document`
   keeps it when given a `tree_allocator`; the document is parsed once per
   change) fills flat tables of items (definitions and uses of names),
@@ -122,9 +122,9 @@ output, as ruff server does:
   whose `include` inserted lines is parsed again for the analysis.
   The reST content of standard directives is parsed as the directives parse
   it. Names are matched with `fully_normalize_name`; anonymous references,
-  auto-numbered and auto-symbol footnotes are matched in order. Until the
-  parse tree carries spans, positions come from the node lines and a search
-  of each construct's source text (`locate_text`, the one place to change).
+  auto-numbered and auto-symbol footnotes are matched in order. Positions
+  are the nodes' source spans (`Parse_Flag.Spans`, which the reader turns
+  on for a kept tree), and lines are the tree's line table.
 - **Diagnostics.** `publish.read_document` runs the reader and the
   standard transforms as `publish` does, without a writer (`report_level` 1,
   `halt_level` 5), and returns structured messages, so the texts, levels
