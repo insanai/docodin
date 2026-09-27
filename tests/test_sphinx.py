@@ -8,8 +8,8 @@ from pathlib import Path
 import pytest
 
 sphinx = pytest.importorskip("sphinx")
-import docodin
-from sphinx.cmd.build import build_main
+import docodin  # noqa: E402 - only when Sphinx is installed
+from sphinx.cmd.build import build_main  # noqa: E402
 
 INDEX = """\
 Project

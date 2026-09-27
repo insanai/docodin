@@ -1,6 +1,7 @@
 """Run the upstream docutils reST parser test suite against docodin.
 
-Usage: python tests/conformance/run_docutils_suite.py <docutils-source-dir> [--native-only] [-v] [-k pattern]
+Usage: python tests/conformance/run_docutils_suite.py <docutils-source-dir>
+       [--native-only] [-v] [-k pattern]
 
 The docutils source distribution (sdist) ships ``test/test_parsers`` with
 input/expected pseudo-XML pairs.  This runner patches docutils so that every

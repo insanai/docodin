@@ -45,7 +45,11 @@ def test_generated(tmp_path):
 def test_exit_status_and_levels(tmp_path):
     path = tmp_path / "bad.rst"
     path.write_text("Text *x\n\n.. [1] a\n.. [1] b\n", encoding="utf-8")
-    run = lambda *args: subprocess.run([L.BINARY, *args, str(path)], capture_output=True, text=True, check=False)
+
+    def run(*args: str) -> subprocess.CompletedProcess:
+        return subprocess.run([L.BINARY, *args, str(path)], capture_output=True, text=True,
+                              check=False)
+
     assert run().returncode == 0  # warnings only (exit level: error)
     assert run("--exit-status=warning").returncode == 1
     assert run("--report=none").stderr == ""
@@ -74,6 +78,7 @@ def test_stdin_and_missing_file(tmp_path):
     proc = subprocess.run([L.BINARY, "--error-format=docutils", "-"], input="*x\n", capture_output=True,
                           text=True, check=False)
     assert proc.stderr.startswith("<stdin>:1: (WARNING/2) Inline emphasis")
-    proc = subprocess.run([L.BINARY, str(tmp_path / "missing.rst")], capture_output=True, text=True, check=False)
+    proc = subprocess.run([L.BINARY, str(tmp_path / "missing.rst")], capture_output=True, text=True,
+                          check=False)
     assert proc.returncode == 1 and "cannot read" in proc.stderr
     assert subprocess.run([L.BINARY, "--bogus"], capture_output=True, check=False).returncode == 2

@@ -37,12 +37,13 @@ HOST_MESSAGE = re.compile(
     r'|No role entry|No directive entry|Trying ".*" as canonical|Problems with ".*"'
     r'|Cannot analyze code|(PEP|RFC) number must be')
 
-MESSAGE_START = re.compile(r"^(?:<[^>]*>|[^:\n]*):(\d*): \((DEBUG|INFO|WARNING|ERROR|SEVERE)/(\d)\) ", re.MULTILINE)
+MESSAGE_START = re.compile(r"^(?:<[^>]*>|[^:\n]*):(\d*): \((DEBUG|INFO|WARNING|ERROR|SEVERE)/(\d)\) ",
+                           re.MULTILINE)
 
 
 def split_messages(text: str) -> list[str]:
     starts = [m.start() for m in MESSAGE_START.finditer(text)]
-    return [text[a:b].rstrip("\n") for a, b in zip(starts, starts[1:] + [len(text)])]
+    return [text[a:b].rstrip("\n") for a, b in zip(starts, [*starts[1:], len(text)], strict=False)]
 
 
 def docutils_messages(text: str, path: str) -> list[str]:
@@ -57,8 +58,8 @@ def docutils_messages(text: str, path: str) -> list[str]:
 
 
 def native_messages(path: str) -> list[str]:
-    proc = subprocess.run([BINARY, "--error-format=docutils", "--report=warning", "--exit-status=none", path],
-                          capture_output=True, text=True, check=False)
+    proc = subprocess.run([BINARY, "--error-format=docutils", "--report=warning",
+                           "--exit-status=none", path], capture_output=True, text=True, check=False)
     if proc.returncode != 0:
         raise RuntimeError(f"exit status {proc.returncode}: {proc.stderr}")
     return split_messages(proc.stderr)

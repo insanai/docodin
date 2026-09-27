@@ -14,21 +14,25 @@ CASES = {
     "phrase_refs": "`name <http://u>`_ `alias <tgt_>`_ `<http://only>`_ `anon <http://a>`__ `x`__\n",
     "unclosed": "*unclosed **also ``lit `interp |sub _`t\n",
     "bullet_lists": "- a\n- b\n\n  nested\n\n  - deep\n\n+ other bullet\n",
-    "enumerated": "1. a\n2. b\n\n(a) x\n(b) y\n\ni. roman\nii. roman\n\n#. auto\n#. auto\n\n3. starts at 3\n",
+    "enumerated": ("1. a\n2. b\n\n(a) x\n(b) y\n\ni. roman\nii. roman\n\n#. auto\n#. auto\n\n"
+                   "3. starts at 3\n"),
     "definition_lists": "Term\n  Def\n\nTerm : classifier : two\n  Def\n\nNot term::\n  x\n",
     "field_lists": ":a: b\n:long field: body\n  continued\n\n  second para\n:empty:\n",
-    "option_lists": "-a            short\n--long=ARG    long\n-b FILE, --bee=FILE  both\n/V            dos\n",
+    "option_lists": ("-a            short\n--long=ARG    long\n-b FILE, --bee=FILE  both\n"
+                     "/V            dos\n"),
     "literal_blocks": "Para::\n\n  code\n\n::\n\n  more\n\nQuoted::\n\n> a\n> b\n",
     "doctest": ">>> 1 + 1\n2\n",
     "line_blocks": "| a\n|   b\n|     c\n| d\n",
     "block_quotes": "Para\n\n  quote\n\n  -- attribution\n\n  another\n",
     "transitions": "Para\n\n----\n\nPara\n",
-    "grid_table": "+-----+-----+\n| a   | b   |\n+=====+=====+\n| c   | d   |\n+-----+-----+\n| span      |\n+-----------+\n",
+    "grid_table": ("+-----+-----+\n| a   | b   |\n+=====+=====+\n| c   | d   |\n+-----+-----+\n"
+                   "| span      |\n+-----------+\n"),
     "simple_table": "=====  =====\nA      B\n=====  =====\n1      2\n3      spans\n=====  =====\n",
     "east_asian_table": "=====  ======\nダイ1  ダイ2\n=====  ======\n",
     "explicit": (".. [1] fn\n.. [#auto] auto\n.. [*] sym\n.. [CIT] cit\n.. _tgt: http://x\n"
                  ".. _indirect: tgt_\n.. __: http://anon\n.. |sub| replace:: text\n.. comment\n..\n"),
-    "directives": ".. note:: body\n\n.. image:: pic.png\n   :alt: x\n\n.. unknown:: arg\n\n.. topic:: T\n\n   text\n",
+    "directives": (".. note:: body\n\n.. image:: pic.png\n   :alt: x\n\n.. unknown:: arg\n\n"
+                   ".. topic:: T\n\n   text\n"),
     "malformed": ".. _bad\n\n.. |bad|\n\n+--+\n| x\n\n=== ===\nnot closed\n",
     "unicode": "Ünïcödé Title\n=============\n\n— attribution-ish ✓ テキスト\n",
     "tabs_and_whitespace": "\tTab\tindented\n\nPara\x0bwith\x0cws\r\nline\n",
@@ -63,7 +67,6 @@ def test_line_length_limit(assert_parity):
 def test_deep_nesting_is_bounded():
     """docutils fails with RecursionError past ~150 levels; docodin reports."""
     import docodin
-
     from conftest import parse_pformat
 
     text = "".join(" " * i + "para\n\n" for i in range(400))
