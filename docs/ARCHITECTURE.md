@@ -94,7 +94,7 @@ docodin replaces docutils 0.22 in two ways:
 | `odin/writers` | The pseudoxml, xml, html5, latex and xetex writers with their parts. They use output buffers, dispatch tables indexed by `doctree.Tag`, and templates and stylesheets embedded with `#load`. |
 | `odin/math` (`texmath`) | `math2html` and `latex2mathml`, with docutils' exact output, trace messages and errors. |
 | `odin/text` | Smart quotes (`educate_tokens`), all languages and attribute modes. |
-| `odin/publish` | `publish()`: settings with docutils' validators, reader, transforms, writer, reporter and halting, the exit status of `publish_cmdline`, and the Python needs of the document. |
+| `odin/publish` | `publish()`: settings with docutils' validators, reader, transforms, writer, reporter and halting, the exit status of `publish_cmdline`, and the Python needs of the document. `read_document()` stops before the writer and returns the document, its messages (level, source, line, text, node) and optionally the parse tree. |
 | `odin/lib` | The C ABI for Python: `docodin_parse` (with an include callback), `docodin_parse_inline`, `docodin_split_lines`, `docodin_educate`, `docodin_publish`, `docodin_free`, and the version and init functions. Results use CPython's `marshal` format, so `marshal.loads` builds them in C. |
 | `cmd/docodin` | The native `docodin` command (docutils front-end options, `check`, `pdf`), which runs documents that need Python through `python -m docodin`. |
 | `cmd/docodin-check` | The parallel checker. |
@@ -115,19 +115,23 @@ output, as ruff server does:
   snapshot in its own arena, built on first use: the whole file is parsed
   again. `Line_Index` converts between LSP positions and the parser's
   coordinates (lines, byte columns of the tab-expanded lines).
-- **Analysis.** One walk of the `odin/rst` parse tree fills flat tables of
-  items (definitions and uses of names), semantic tokens and folding ranges.
+- **Analysis.** One walk of the reader's parse tree (`reader.parse_document`
+  keeps it when given a `tree_allocator`; the document is parsed once per
+  change) fills flat tables of items (definitions and uses of names),
+  semantic tokens, folding ranges and inline markup problems. A document
+  whose `include` inserted lines is parsed again for the analysis.
   The reST content of standard directives is parsed as the directives parse
   it. Names are matched with `fully_normalize_name`; anonymous references,
   auto-numbered and auto-symbol footnotes are matched in order. Until the
   parse tree carries spans, positions come from the node lines and a search
   of each construct's source text (`locate_text`, the one place to change).
-- **Diagnostics.** The reader and the standard transforms run as `publish`
-  runs them (`report_level` 1, `halt_level` 5), so the texts, levels and
-  lines are docutils'. The checker adds the column of inline markup errors,
-  the Elm title (the diagnostic's `code`) and hint; mechanical hints come
-  with a quick fix. docutils' level and line travel in the diagnostic's
-  `data`.
+- **Diagnostics.** `publish.read_document` runs the reader and the
+  standard transforms as `publish` does, without a writer (`report_level` 1,
+  `halt_level` 5), and returns structured messages, so the texts, levels
+  and lines are docutils'. The parse tree's problematic nodes give the
+  column of inline markup errors; the checker gives the Elm title (the
+  diagnostic's `code`) and hint, and mechanical hints come with a quick fix.
+  docutils' level and line travel in the diagnostic's `data`.
 - **Verification.** `odin test odin/lsp/tests` (protocol and features) and
   `tests/test_lsp.py`, which drives the binary and compares its diagnostics
   with docutils' messages, on fixed cases and generated documents.
