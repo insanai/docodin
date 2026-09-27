@@ -390,9 +390,17 @@ note_substitution_ref :: proc(doc: ^Doc, subref: Node, refname: string) {
 // (``Transformer.add_pending``); ``priority`` defaults to the transform's
 // ``default_priority``.
 note_pending :: proc(doc: ^Doc, pending: Node, priority: Maybe(int) = nil) {
-	p := priority.? or_else pending_of(doc, pending).default_priority
+	data := pending_of(doc, pending)
 	doc.transform_serial += 1
-	append(&doc.pending_queue, Queued_Pending{p, doc.transform_serial, pending})
+	append(
+		&doc.pending_queue,
+		Queued_Pending {
+			priority = priority.? or_else data.default_priority,
+			serial = doc.transform_serial,
+			node = pending,
+			transform = data.transform,
+		},
+	)
 }
 
 note_parse_message :: proc(doc: ^Doc, message: Node) {

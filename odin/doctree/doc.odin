@@ -113,11 +113,36 @@ Pending :: struct {
 	details:          [dynamic]Detail,
 }
 
-// An entry of ``Transformer.transforms`` queued by ``note_pending``.
+// An entry of ``Transformer.transforms``: ``(priority string, transform
+// class, pending node, kwargs)``.  ``note_pending`` queues the transform of
+// a ``pending`` element; the transforms of the reader, parser and writer
+// (``populate_from_components``) have no node.  ``transform`` is the
+// qualified class name; the priority string is ``"%03d-%03d" % (priority,
+// serial)``.
 Queued_Pending :: struct {
-	priority: int,
-	serial:   int,
-	node:     Node,
+	priority:  int,
+	serial:    int,
+	node:      Node, // the ``pending`` element, 0: none
+	transform: string,
+	kwargs:    [dynamic]Detail, // keyword arguments of ``Transform.apply``
+}
+
+// A name (or id) mapped to a node.
+Name_Ref :: struct {
+	name: Str,
+	node: Node,
+}
+
+// Python instance state of a node outside ``attributes``: ``line.indent``
+// (parser), ``indirect_reference_name`` of targets and references (parser,
+// used by the reference transforms) and the ``expect_referenced_by_id`` and
+// ``expect_referenced_by_name`` maps that ``PropagateTargets`` gives the
+// node after a target.  Empty maps are the same as missing ones.
+Node_Internals :: struct {
+	indent:                    Maybe(int),
+	indirect_reference_name:   Maybe(string),
+	expect_referenced_by_id:   [dynamic]Name_Ref,
+	expect_referenced_by_name: [dynamic]Name_Ref,
 }
 
 // Insertion-ordered map with ``Str`` keys (a Python ``dict``).
@@ -169,8 +194,10 @@ Doc :: struct {
 	id_counter:           Ordered_Map(int),
 	parse_messages:       [dynamic]Node,
 	transform_messages:   [dynamic]Node,
-	pending_queue:        [dynamic]Queued_Pending,
+	pending_queue:        [dynamic]Queued_Pending, // ``Transformer.transforms``
 	transform_serial:     int, // ``Transformer.serialno``
+	internals:            map[Node]Node_Internals,
+	interchange:          Interchange, // what a JSON dump carries besides the document
 }
 
 // Interned at fixed ids by ``make_doc``.
@@ -276,6 +303,7 @@ init_registry :: proc(doc: ^Doc) {
 	}
 	for l in lists do l^ = make([dynamic]Node, a)
 	doc.pending_queue = make([dynamic]Queued_Pending, a)
+	doc.internals = make(map[Node]Node_Internals, a)
 }
 
 // Free everything the document owns.

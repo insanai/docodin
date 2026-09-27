@@ -171,8 +171,7 @@ dump_pending :: proc(b: ^strings.Builder, doc: ^dt.Doc) {
 	strings.write_string(b, "pending: [")
 	for q, i in doc.pending_queue {
 		if i > 0 do strings.write_string(b, ", ")
-		p := dt.pending_of(doc, q.node)
-		fmt.sbprintf(b, "%03d-%03d %s %s", q.priority, q.serial, p.transform, desc(doc, q.node))
+		fmt.sbprintf(b, "%03d-%03d %s %s", q.priority, q.serial, q.transform, desc(doc, q.node))
 	}
 	strings.write_string(b, "]\ncurrent: ")
 	if s, ok := doc.current_source.?; ok do strings.write_string(b, s)
