@@ -109,7 +109,13 @@ Excerpt :: struct {
 	mark_start, mark_end: int,
 }
 
-format_elm :: proc(b: ^strings.Builder, source: string, src: Source_Lines, m: Message, color: bool) {
+format_elm :: proc(
+	b: ^strings.Builder,
+	source: string,
+	src: Source_Lines,
+	m: Message,
+	color: bool,
+) {
 	d := lookup_diagnostic(m.text)
 	pal := palette(color, m.level)
 	ex := excerpt(src, m, d.mark)

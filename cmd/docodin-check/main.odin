@@ -293,7 +293,8 @@ check_file :: proc(job: ^Job, opts: ^Options, scratch: runtime.Allocator) {
 		data, err = os.read_entire_file(job.path, scratch)
 	}
 	if err != nil {
-		job.output = fmt.aprintfln("docodin-check: cannot read %s: %v", source, os.error_string(err),
+		reason := os.error_string(err)
+		job.output = fmt.aprintfln("docodin-check: cannot read %s: %v", source, reason,
 			allocator = heap)
 		job.failed = true
 		return

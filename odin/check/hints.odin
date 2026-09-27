@@ -34,15 +34,18 @@ DIAGNOSTICS := [?]Diagnostic {
 	{"Inline emphasis start-string", .Prefix, "UNCLOSED EMPHASIS",
 	 "Close the emphasis with a matching `*`, or write `\\*` for a literal asterisk.", .Line},
 	{"Inline strong start-string", .Prefix, "UNCLOSED STRONG EMPHASIS",
-	 "Close the strong emphasis with a matching `**`, or write `\\*\\*` for literal asterisks.", .Line},
+	 "Close the strong emphasis with a matching `**`, or write `\\*\\*` for literal " +
+	 "asterisks.", .Line},
 	{"Inline literal start-string", .Prefix, "UNCLOSED INLINE LITERAL",
 	 "Close the inline literal with a matching double backquote, or escape the backquotes with " +
 	 "backslashes.", .Line},
-	{"Inline interpreted text or phrase reference start-string", .Prefix, "UNCLOSED INTERPRETED TEXT",
+	{"Inline interpreted text or phrase reference start-string", .Prefix,
+	 "UNCLOSED INTERPRETED TEXT",
 	 "Close it with a matching backquote. Inline code takes double backquotes: ``code``. " +
 	 "Write `\\`` for a literal backquote.", .Line},
 	{"Inline substitution_reference start-string", .Prefix, "UNCLOSED SUBSTITUTION REFERENCE",
-	 "Close the substitution reference with `|` (as in `|name|`), or write `\\|` for a literal bar.",
+	 "Close the substitution reference with `|` (as in `|name|`), or write `\\|` for a " +
+	 "literal bar.",
 	 .Line},
 	{"Inline target start-string", .Prefix, "UNCLOSED INLINE TARGET",
 	 "Close the inline target with a backquote, as in _`target text`.", .Line},
@@ -56,15 +59,16 @@ DIAGNOSTICS := [?]Diagnostic {
 	{"Line block ends without a blank line.", .Prefix, "MISSING BLANK LINE",
 	 "Put a blank line after the line block, or start this line with `| ` to continue it.",
 	 .Context_Line},
-	{"ends without a blank line; unexpected unindent.", .Contains, "MISSING BLANK LINE", "", .Context_Line},
+	{"ends without a blank line; unexpected unindent.", .Contains, "MISSING BLANK LINE", "",
+	 .Context_Line},
 	{"Unexpected indentation.", .Prefix, "UNEXPECTED INDENTATION",
-	 "Remove the extra indentation, or separate the indented text with a blank line to make it a " +
-	 "block quote.", .Context_Line},
+	 "Remove the extra indentation, or separate the indented text with a blank line to make " +
+	 "it a block quote.", .Context_Line},
 	{"Blank line required after table.", .Prefix, "MISSING BLANK LINE",
 	 "Put a blank line after the bottom border of the table.", .Context_Line},
 	{"Literal block expected; none found.", .Prefix, "MISSING LITERAL BLOCK",
-	 "A paragraph ending in `::` introduces a literal block: add it after a blank line, indented. " +
-	 "End the paragraph with a single `:` if no literal block follows.", .Context_Line},
+	 "A paragraph ending in `::` introduces a literal block: add it after a blank line, " +
+	 "indented. End the paragraph with a single `:` if no literal block follows.", .Context_Line},
 	{"Inconsistent literal block quoting.", .Prefix, "INCONSISTENT QUOTED LITERAL BLOCK",
 	 "Every line of an unindented (quoted) literal block must start with the same punctuation " +
 	 "character.", .Line},
@@ -80,8 +84,8 @@ DIAGNOSTICS := [?]Diagnostic {
 	{"Incomplete section title.", .Prefix, "INCOMPLETE SECTION TITLE",
 	 "A title with an overline needs the title text and a matching underline below it.", .None},
 	{"Unexpected section title or transition.", .Prefix, "UNEXPECTED TRANSITION",
-	 "Sections and transitions cannot be nested in lists, block quotes or directives. Move it to " +
-	 "the top level, or add a blank line above the line of punctuation if it is not a title.",
+	 "Sections and transitions cannot be nested in lists, block quotes or directives. Move it " +
+	 "to the top level, or add a blank line above the line of punctuation if it is not a title.",
 	 .Last_Line},
 	{"Unexpected section title.", .Prefix, "UNEXPECTED SECTION TITLE",
 	 "Sections cannot be nested in lists, block quotes or directives. Move the title to the top " +
@@ -104,18 +108,19 @@ DIAGNOSTICS := [?]Diagnostic {
 	 "A title with an overline needs the title text and a matching underline below it.", .Line},
 	// tables
 	{"Malformed table.", .Prefix, "MALFORMED TABLE",
-	 "Check that every row has the same column boundaries and that the border lines are complete " +
-	 "and aligned with the `+` and `|` characters.", .None},
+	 "Check that every row has the same column boundaries and that the border lines are " +
+	 "complete and aligned with the `+` and `|` characters.", .None},
 	// lists and explicit markup
 	{"Enumerated list start value not ordinal-1", .Prefix, "ENUMERATED LIST START",
-	 "The list starts at the given ordinal. Start it at 1 (or a, A, i, I) if that was not intended.",
+	 "The list starts at the given ordinal. Start it at 1 (or a, A, i, I) if that was not " +
+	 "intended.",
 	 .Line},
 	{"Invalid option list marker", .Prefix, "INVALID OPTION",
 	 "Option lists take options like `-a`, `--long` or `/V`, optionally with an argument " +
 	 "(`--file=PATH`); separate the description by at least two spaces.", .Line},
 	{"malformed hyperlink target.", .Prefix, "MALFORMED HYPERLINK TARGET",
-	 "Write hyperlink targets as `.. _name: URL` or `.. _name:`; escape colons in the name with a " +
-	 "backslash.", .Line},
+	 "Write hyperlink targets as `.. _name: URL` or `.. _name:`; escape colons in the name " +
+	 "with a backslash.", .Line},
 	{"malformed substitution definition.", .Prefix, "MALFORMED SUBSTITUTION DEFINITION",
 	 "Write substitution definitions as `.. |name| directive:: arguments`, for example " +
 	 "`.. |logo| image:: logo.png`.", .Line},
@@ -147,7 +152,9 @@ hint_text :: proc(d: Diagnostic, m: Message) -> string {
 	case "TITLE UNDERLINE TOO SHORT":
 		lines := strings.split_lines(m.literal)
 		width := utf8.rune_count(strings.trim_space(lines[0])) if len(lines) > 0 else 0
-		return fmt.aprintf("Make the underline at least as long as the title text (%d characters).", width)
+		return fmt.aprintf(
+			"Make the underline at least as long as the title text (%d characters).", width,
+		)
 	case "MISSING BLANK LINE":
 		if d.hint != "" do return d.hint
 		construct := m.text[:strings.index(m.text, " ends without")]
