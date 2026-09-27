@@ -136,7 +136,7 @@ Option_Value :: struct {
 // ``Body.parse_directive_block``; ``ok`` is false where docutils raises a
 // MarkupError (the directive is not run).
 parse_directive_block :: proc(
-	info: ^rst.Directive_Info,
+	info: rst.Directive_Info,
 	spec: Directive_Spec,
 ) -> (
 	b: Directive_Block,
@@ -184,7 +184,7 @@ parse_directive_block :: proc(
 
 // The directive block without a leading blank line and trailing blank lines.
 @(private = "file")
-trimmed_block :: proc(info: ^rst.Directive_Info) -> (indented: []string, line_offset: int) {
+trimmed_block :: proc(info: rst.Directive_Info) -> (indented: []string, line_offset: int) {
 	indented = info.lines
 	line_offset = info.line_offset
 	if len(indented) > 0 && is_blank(indented[0]) {

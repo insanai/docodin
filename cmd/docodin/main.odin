@@ -328,7 +328,7 @@ find_tex_binary :: proc(preferred: string) -> (path: string, ok: bool) {
 	return "pdflatex", true
 }
 
-compile_pdf :: proc(doc: ^rst.Node, p: ^rst.Parser, cfg: ^Config) {
+compile_pdf :: proc(doc: rst.Node, p: ^rst.Parser, cfg: ^Config) {
 	out_pdf := cfg.output_path
 	if len(out_pdf) == 0 {
 		ext := filepath.ext(cfg.input_path)

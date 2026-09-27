@@ -56,11 +56,13 @@ parse_text :: proc(
 	match_titles: bool,
 	raw_line_count := -1,
 ) -> (
-	doc: ^Node,
+	doc: Node,
 	line_count: int,
 	final_offset: int,
 ) {
-	doc = new_node(.Document, 0, p.allocator)
+	tree_init(&p.tree, p.allocator, estimated_node_count(len(text)))
+	t := &p.tree
+	doc = new_node(t, .Document, 0)
 	lines: []string
 	if raw_line_count >= 0 {
 		lines = split_raw_lines(text, raw_line_count, p.allocator)
@@ -73,7 +75,7 @@ parse_text :: proc(
 			lineno := int_str(bad, p.allocator)
 			parts := []string{"Line ", lineno, " exceeds the line-length-limit."}
 			msg := strings.concatenate(parts, p.allocator)
-			append_child(doc, make_message(p, ERROR, msg, 0))
+			append_child(t, doc, make_message(p, ERROR, msg, 0))
 			final_offset = -1
 			return
 		}
@@ -88,4 +90,13 @@ parse_text :: proc(
 	}
 	final_offset = sm.line_offset
 	return
+}
+
+// Initial node capacity for ``text_len`` bytes of input.  Documents produce a
+// node per 12 to 40 bytes (about 25 on average): reserving for the dense end
+// means the tree almost never grows (growing copies it, and an arena keeps
+// the old copy), while the unused capacity is never touched.
+@(private = "file")
+estimated_node_count :: #force_inline proc "contextless" (text_len: int) -> int {
+	return text_len / 10 + 16
 }

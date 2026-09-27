@@ -114,195 +114,195 @@ w_list :: proc(w: ^Writer, n: int) {
 	w_u32(w, u32(n))
 }
 
-write_children :: proc(w: ^Writer, n: ^rst.Node) {
-	w_list(w, rst.child_count(n))
-	for c := n.first; c != nil; c = c.next do write_node(w, c)
+write_children :: proc(w: ^Writer, t: ^rst.Tree, n: rst.Node) {
+	write_chain(w, t, rst.first_child(t, n))
 }
 
-write_chain :: proc(w: ^Writer, first: ^rst.Node) {
+write_chain :: proc(w: ^Writer, t: ^rst.Tree, first: rst.Node) {
 	count := 0
-	for c := first; c != nil; c = c.next do count += 1
+	for c := first; c != rst.NO_NODE; c = t.nodes[c].next do count += 1
 	w_list(w, count)
-	for c := first; c != nil; c = c.next do write_node(w, c)
+	for c := first; c != rst.NO_NODE; c = t.nodes[c].next do write_node(w, t, c)
 }
 
-write_node :: proc(w: ^Writer, n: ^rst.Node) {
-	#partial switch n.kind {
+write_node :: proc(w: ^Writer, t: ^rst.Tree, n: rst.Node) {
+	d := rst.node_data(t, n)
+	#partial switch d.kind {
 	case .Text, .Emphasis, .Strong, .Literal, .Inline_Target, .Substitution_Reference, .Reference,
 	     .Footnote_Reference, .Citation_Reference, .Interpreted, .Problematic:
-		write_inline_node(w, n)
+		write_inline_node(w, t, n, d)
 	case .System_Message, .Section_Title, .Directive, .Target:
-		write_parser_node(w, n)
+		write_parser_node(w, t, n, d)
 	case:
-		write_block_node(w, n)
+		write_block_node(w, t, n, d)
 	}
 }
 
 // Inline nodes (see the wire layout above).
 @(private = "file")
-write_inline_node :: proc(w: ^Writer, n: ^rst.Node) {
-	k := int(n.kind)
-	#partial switch n.kind {
+write_inline_node :: proc(w: ^Writer, t: ^rst.Tree, n: rst.Node, d: rst.Node_Data) {
+	k := int(d.kind)
+	#partial switch d.kind {
 	case .Text:
-		w_str(w, n.text)
+		w_str(w, d.text)
 
 	case .Emphasis, .Strong, .Literal, .Inline_Target:
-		w_tuple(w, 3); w_int(w, k); w_str(w, n.raw); w_str(w, n.text)
+		w_tuple(w, 3); w_int(w, k); w_str(w, d.raw); w_str(w, d.text)
 
 	case .Substitution_Reference:
-		w_tuple(w, 4); w_int(w, k); w_str(w, n.raw); w_str(w, n.text)
-		w_int(w, int(n.num[0]))
+		w_tuple(w, 4); w_int(w, k); w_str(w, d.raw); w_str(w, d.text)
+		w_int(w, int(d.num[0]))
 
 	case .Reference:
-		w_tuple(w, 6); w_int(w, k); w_int(w, int(n.num[0])); w_str(w, n.raw); w_str(w, n.text)
-		write_reference_target(w, n)
+		w_tuple(w, 6); w_int(w, k); w_int(w, int(d.num[0])); w_str(w, d.raw); w_str(w, d.text)
+		write_reference_target(w, t, n, d)
 
 	case .Footnote_Reference, .Citation_Reference:
-		w_tuple(w, 2); w_int(w, k); w_str(w, n.text)
+		w_tuple(w, 2); w_int(w, k); w_str(w, d.text)
 
 	case .Interpreted:
-		w_tuple(w, 4); w_int(w, k); w_str(w, n.raw); w_str(w, n.text); w_str(w, n.name)
+		w_tuple(w, 4); w_int(w, k); w_str(w, d.raw); w_str(w, d.text); w_str(w, d.name)
 
 	case .Problematic:
-		w_tuple(w, 4); w_int(w, k); w_str(w, n.text); w_int(w, int(n.num[0])); w_str(w, n.name)
+		w_tuple(w, 4); w_int(w, k); w_str(w, d.text); w_int(w, int(d.num[0])); w_str(w, d.name)
 	}
 }
 
 // The ``x, y`` fields of a Reference.
 @(private = "file")
-write_reference_target :: proc(w: ^Writer, n: ^rst.Node) {
-	switch rst.Ref_Kind(n.num[0]) {
+write_reference_target :: proc(w: ^Writer, t: ^rst.Tree, n: rst.Node, d: rst.Node_Data) {
+	switch rst.Ref_Kind(d.num[0]) {
 	case .Simple:
-		w_bool(w, n.num[1] != 0); w_none(w)
+		w_bool(w, d.num[1] != 0); w_none(w)
 	case .Phrase:
-		if info, ok := n.extra.(^rst.Phrase_Info); ok && info != nil {
+		if info, ok := rst.phrase_info(t, n); ok {
 			w_int(w, int(info.alias_type))
 			w_tuple(w, 2); w_str(w, info.alias); w_str(w, info.target_raw)
 		} else {
 			w_int(w, 0); w_none(w)
 		}
 	case .Uri, .Pep, .Rfc:
-		w_str(w, n.name); w_none(w)
+		w_str(w, d.name); w_none(w)
 	}
 }
 
 // Messages, titles, directives and targets: records the host finishes.
 @(private = "file")
-write_parser_node :: proc(w: ^Writer, n: ^rst.Node) {
-	k := int(n.kind)
-	line := int(n.line)
-	#partial switch n.kind {
+write_parser_node :: proc(w: ^Writer, t: ^rst.Tree, n: rst.Node, d: rst.Node_Data) {
+	k := int(d.kind)
+	line := int(d.line)
+	#partial switch d.kind {
 	case .System_Message:
-		w_tuple(w, 6); w_int(w, k); w_int(w, line); w_int(w, int(n.num[0])); w_str(w, n.text)
-		write_children(w, n)
-		w_int(w, int(n.cur_line))
+		w_tuple(w, 6); w_int(w, k); w_int(w, line); w_int(w, int(d.num[0])); w_str(w, d.text)
+		write_children(w, t, n)
+		w_int(w, int(d.cur_line))
 
 	case .Section_Title:
 		w_tuple(w, 8); w_int(w, k); w_int(w, line)
-		w_str(w, n.name); w_str(w, n.text); w_str(w, n.raw)
-		title := n.first
-		if title != nil {
-			write_children(w, title)
-			write_chain(w, title.next)
-			w_int(w, int(title.num[1]))
+		w_str(w, d.name); w_str(w, d.text); w_str(w, d.raw)
+		if title := d.first; title != rst.NO_NODE {
+			write_children(w, t, title)
+			write_chain(w, t, rst.next_sibling(t, title))
+			w_int(w, int(rst.node_num(t, title)[1]))
 		} else {
 			w_list(w, 0); w_list(w, 0); w_int(w, 0)
 		}
 
 	case .Directive:
-		info := n.extra.(^rst.Directive_Info)
-		w_tuple(w, 8); w_int(w, k); w_int(w, line); w_str(w, n.name); w_str(w, n.raw)
+		info, _ := rst.directive_info(t, n)
+		w_tuple(w, 8); w_int(w, k); w_int(w, line); w_str(w, d.name); w_str(w, d.raw)
 		w_list(w, len(info.lines))
 		for l in info.lines do w_str(w, l)
 		w_int(w, info.line_offset); w_int(w, info.end_offset); w_bool(w, info.blank_finish)
 
 	case .Target:
-		w_tuple(w, 7); w_int(w, k); w_int(w, line); w_str(w, n.raw); w_str(w, n.name)
-		w_int(w, int(n.num[0])); w_str(w, n.text); w_int(w, int(n.cur_line))
+		w_tuple(w, 7); w_int(w, k); w_int(w, line); w_str(w, d.raw); w_str(w, d.name)
+		w_int(w, int(d.num[0])); w_str(w, d.text); w_int(w, int(d.cur_line))
 	}
 }
 
 // Body elements (see the wire layout above).
 @(private = "file")
-write_block_node :: proc(w: ^Writer, n: ^rst.Node) {
-	k := int(n.kind)
-	line := int(n.line)
-	#partial switch n.kind {
+write_block_node :: proc(w: ^Writer, t: ^rst.Tree, n: rst.Node, d: rst.Node_Data) {
+	k := int(d.kind)
+	line := int(d.line)
+	#partial switch d.kind {
 	case .Paragraph, .Term, .Field_Name, .Line, .Attribution:
 		// num[1]: reporter's current line while the inline text was parsed
-		w_tuple(w, 6); w_int(w, k); w_int(w, line); w_str(w, n.raw); write_children(w, n)
-		w_int(w, int(n.num[1])); w_int(w, int(n.cur_line))
+		w_tuple(w, 6); w_int(w, k); w_int(w, line); w_str(w, d.raw); write_children(w, t, n)
+		w_int(w, int(d.num[1])); w_int(w, int(d.cur_line))
 
 	case .Classifier, .Option, .Title:
-		w_tuple(w, 4); w_int(w, k); w_int(w, line); w_str(w, n.raw); write_children(w, n)
+		w_tuple(w, 4); w_int(w, k); w_int(w, line); w_str(w, d.raw); write_children(w, t, n)
 
 	case .Literal_Block, .Doctest_Block, .Label, .Option_String:
-		w_tuple(w, 3); w_int(w, k); w_int(w, line); w_str(w, n.text)
+		w_tuple(w, 3); w_int(w, k); w_int(w, line); w_str(w, d.text)
 
 	case .Comment:
-		w_tuple(w, 4); w_int(w, k); w_int(w, line); w_str(w, n.text); w_int(w, int(n.cur_line))
+		w_tuple(w, 4); w_int(w, k); w_int(w, line); w_str(w, d.text); w_int(w, int(d.cur_line))
 
 	case .Option_List_Item, .Line_Block:
 		// cur_line: docutils ``document.current_line`` when the node is attached
-		w_tuple(w, 4); w_int(w, k); w_int(w, line); write_children(w, n)
-		w_int(w, int(n.cur_line))
+		w_tuple(w, 4); w_int(w, k); w_int(w, line); write_children(w, t, n)
+		w_int(w, int(d.cur_line))
 
 	case .Table:
 		// num[0]: line delta of the cells (see rst.build_table)
-		w_tuple(w, 5); w_int(w, k); w_int(w, line); write_children(w, n)
-		w_int(w, int(n.cur_line)); w_int(w, int(n.num[0]))
+		w_tuple(w, 5); w_int(w, k); w_int(w, line); write_children(w, t, n)
+		w_int(w, int(d.cur_line)); w_int(w, int(d.num[0]))
 
 	case .Transition:
-		w_tuple(w, 3); w_int(w, k); w_int(w, line); w_str(w, n.raw)
+		w_tuple(w, 3); w_int(w, k); w_int(w, line); w_str(w, d.raw)
 
 	case .Include_End:
 		w_tuple(w, 2); w_int(w, k); w_int(w, line)
 
 	case .Option_Argument:
-		w_tuple(w, 4); w_int(w, k); w_int(w, line); w_str(w, n.text); w_str(w, n.name)
+		w_tuple(w, 4); w_int(w, k); w_int(w, line); w_str(w, d.text); w_str(w, d.name)
 
 	case .Bullet_List, .Field_List:
-		w_tuple(w, 4); w_int(w, k); w_int(w, line); w_str(w, n.name); write_children(w, n)
+		w_tuple(w, 4); w_int(w, k); w_int(w, line); w_str(w, d.name); write_children(w, t, n)
 
 	case .Footnote, .Citation:
-		w_tuple(w, 6); w_int(w, k); w_int(w, line); w_str(w, n.name); w_str(w, n.raw)
-		write_children(w, n)
-		w_int(w, int(n.cur_line))
+		w_tuple(w, 6); w_int(w, k); w_int(w, line); w_str(w, d.name); w_str(w, d.raw)
+		write_children(w, t, n)
+		w_int(w, int(d.cur_line))
 
 	case .List_Item, .Field_Body, .Description, .Definition_List_Item:
-		w_tuple(w, 4); w_int(w, k); w_int(w, line); w_str(w, n.raw); write_children(w, n)
+		w_tuple(w, 4); w_int(w, k); w_int(w, line); w_str(w, d.raw); write_children(w, t, n)
 
 	case .Block_Quote:
-		w_tuple(w, 5); w_int(w, k); w_int(w, line); w_str(w, n.raw); write_children(w, n)
-		w_int(w, int(n.cur_line))
+		w_tuple(w, 5); w_int(w, k); w_int(w, line); w_str(w, d.raw); write_children(w, t, n)
+		w_int(w, int(d.cur_line))
 
 	case .Substitution_Definition:
 		// num[0]: source-line minus absolute-line offset inside the definition
-		w_tuple(w, 7); w_int(w, k); w_int(w, line); w_str(w, n.raw); w_str(w, n.name)
-		write_children(w, n)
-		w_int(w, int(n.num[0])); w_int(w, int(n.cur_line))
+		w_tuple(w, 7); w_int(w, k); w_int(w, line); w_str(w, d.raw); w_str(w, d.name)
+		write_children(w, t, n)
+		w_int(w, int(d.num[0])); w_int(w, int(d.cur_line))
 
 	case .Enumerated_List:
 		w_tuple(w, 7); w_int(w, k); w_int(w, line)
-		w_str(w, n.name); w_str(w, n.text); w_str(w, n.raw)
-		if n.num[1] != 0 {
-			w_int(w, int(n.num[0]))
+		w_str(w, d.name); w_str(w, d.text); w_str(w, d.raw)
+		if d.num[1] != 0 {
+			w_int(w, int(d.num[0]))
 		} else {
 			w_none(w)
 		}
-		write_children(w, n)
+		write_children(w, t, n)
 
 	case .TGroup, .Colspec:
-		w_tuple(w, 4); w_int(w, k); w_int(w, line); w_int(w, int(n.num[0])); write_children(w, n)
+		w_tuple(w, 4); w_int(w, k); w_int(w, line); w_int(w, int(d.num[0]))
+		write_children(w, t, n)
 
 	case .Entry:
 		w_tuple(w, 5); w_int(w, k); w_int(w, line)
-		w_int(w, int(n.num[0])); w_int(w, int(n.num[1])); write_children(w, n)
+		w_int(w, int(d.num[0])); w_int(w, int(d.num[1])); write_children(w, t, n)
 
 	case:
 		// structural elements without payload (the parser only produces
 		// kinds listed above; others use this generic layout)
-		w_tuple(w, 3); w_int(w, k); w_int(w, line); write_children(w, n)
+		w_tuple(w, 3); w_int(w, k); w_int(w, line); write_children(w, t, n)
 	}
 }
 
@@ -310,7 +310,8 @@ write_block_node :: proc(w: ^Writer, n: ^rst.Node) {
 // cur_line), ``cur_line`` being docutils' ``document.current_line`` at the
 // end of the parse (``rst.Parser.cur_line``).
 serialize_document :: proc(
-	doc: ^rst.Node,
+	t: ^rst.Tree,
+	doc: rst.Node,
 	line_count: int,
 	final_offset: int,
 	cur_line: int,
@@ -319,17 +320,17 @@ serialize_document :: proc(
 	w := writer_make(size_hint)
 	w_tuple(&w, 5)
 	w_int(&w, WIRE_VERSION)
-	write_children(&w, doc)
+	write_children(&w, t, doc)
 	w_int(&w, line_count)
 	w_int(&w, final_offset)
 	w_int(&w, cur_line)
 	return w
 }
 
-serialize_inline :: proc(nodes: rst.Node_List, size_hint: int) -> Writer {
+serialize_inline :: proc(t: ^rst.Tree, nodes: rst.Node_List, size_hint: int) -> Writer {
 	w := writer_make(size_hint)
 	w_tuple(&w, 2)
 	w_int(&w, WIRE_VERSION)
-	write_chain(&w, nodes.first)
+	write_chain(&w, t, nodes.first)
 	return w
 }

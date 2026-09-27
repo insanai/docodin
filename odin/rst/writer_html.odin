@@ -141,7 +141,8 @@ escape_html_text :: proc(b: ^strings.Builder, s: string) {
 	}
 }
 
-write_html :: proc(doc: ^Node, p: ^Parser, config: Html_Config) -> string {
+write_html :: proc(doc: Node, p: ^Parser, config: Html_Config) -> string {
+	t := &p.tree
 	w := Html_Writer{
 		p            = p,
 		config       = config,
@@ -152,9 +153,9 @@ write_html :: proc(doc: ^Node, p: ^Parser, config: Html_Config) -> string {
 	title := config.title
 	if len(title) == 0 {
 		// look for first Title in doc
-		for n := doc.first; n != nil; n = n.next {
-			if n.kind == .Section_Title && n.first != nil {
-				title = n.first.raw if len(n.first.raw) > 0 else n.first.text
+		for n := t.nodes[doc].first; n != NO_NODE; n = t.nodes[n].next {
+			if t.nodes[n].kind == .Section_Title && t.nodes[n].first != NO_NODE {
+				title = t.nodes[t.nodes[n].first].raw if len(t.nodes[t.nodes[n].first].raw) > 0 else t.nodes[t.nodes[n].first].text
 				break
 			}
 		}
@@ -175,7 +176,7 @@ write_html :: proc(doc: ^Node, p: ^Parser, config: Html_Config) -> string {
 		strings.write_string(&w.buf, "</head>\n<body>\n<main class=\"document\">\n")
 	}
 
-	for n := doc.first; n != nil; n = n.next {
+	for n := t.nodes[doc].first; n != NO_NODE; n = t.nodes[n].next {
 		html_render_block(&w, n)
 	}
 
@@ -187,37 +188,38 @@ write_html :: proc(doc: ^Node, p: ^Parser, config: Html_Config) -> string {
 }
 
 @(private = "file")
-html_render_block :: proc(w: ^Html_Writer, n: ^Node) {
-	#partial switch n.kind {
+html_render_block :: proc(w: ^Html_Writer, n: Node) {
+	t := &w.p.tree
+	#partial switch t.nodes[n].kind {
 	case .Section_Title:
 		html_section_title(w, n)
 
 	case .Paragraph:
 		strings.write_string(&w.buf, "<p>")
-		for ch := n.first; ch != nil; ch = ch.next {
+		for ch := t.nodes[n].first; ch != NO_NODE; ch = t.nodes[ch].next {
 			html_render_inline(w, ch)
 		}
 		strings.write_string(&w.buf, "</p>\n")
 
 	case .Bullet_List:
 		strings.write_string(&w.buf, "<ul>\n")
-		for ch := n.first; ch != nil; ch = ch.next {
+		for ch := t.nodes[n].first; ch != NO_NODE; ch = t.nodes[ch].next {
 			html_render_block(w, ch)
 		}
 		strings.write_string(&w.buf, "</ul>\n")
 
 	case .Enumerated_List:
 		strings.write_string(&w.buf, "<ol>\n")
-		for ch := n.first; ch != nil; ch = ch.next {
+		for ch := t.nodes[n].first; ch != NO_NODE; ch = t.nodes[ch].next {
 			html_render_block(w, ch)
 		}
 		strings.write_string(&w.buf, "</ol>\n")
 
 	case .List_Item:
 		strings.write_string(&w.buf, "<li>")
-		for ch := n.first; ch != nil; ch = ch.next {
-			if ch.kind == .Paragraph && n.first == n.last {
-				for p_ch := ch.first; p_ch != nil; p_ch = p_ch.next {
+		for ch := t.nodes[n].first; ch != NO_NODE; ch = t.nodes[ch].next {
+			if t.nodes[ch].kind == .Paragraph && t.nodes[n].first == t.nodes[n].last {
+				for p_ch := t.nodes[ch].first; p_ch != NO_NODE; p_ch = t.nodes[p_ch].next {
 					html_render_inline(w, p_ch)
 				}
 			} else {
@@ -228,25 +230,25 @@ html_render_block :: proc(w: ^Html_Writer, n: ^Node) {
 
 	case .Definition_List:
 		strings.write_string(&w.buf, "<dl class=\"docutils\">\n")
-		for ch := n.first; ch != nil; ch = ch.next {
+		for ch := t.nodes[n].first; ch != NO_NODE; ch = t.nodes[ch].next {
 			html_render_block(w, ch)
 		}
 		strings.write_string(&w.buf, "</dl>\n")
 
 	case .Definition_List_Item:
-		for ch := n.first; ch != nil; ch = ch.next {
-			#partial switch ch.kind {
+		for ch := t.nodes[n].first; ch != NO_NODE; ch = t.nodes[ch].next {
+			#partial switch t.nodes[ch].kind {
 			case .Term:
 				strings.write_string(&w.buf, "<dt>")
-				for t := ch.first; t != nil; t = t.next do html_render_inline(w, t)
+				for tc := t.nodes[ch].first; tc != NO_NODE; tc = t.nodes[tc].next do html_render_inline(w, tc)
 				strings.write_string(&w.buf, "</dt>\n")
 			case .Classifier:
 				strings.write_string(&w.buf, " <span class=\"classifier\">")
-				for t := ch.first; t != nil; t = t.next do html_render_inline(w, t)
+				for tc := t.nodes[ch].first; tc != NO_NODE; tc = t.nodes[tc].next do html_render_inline(w, tc)
 				strings.write_string(&w.buf, "</span>")
 			case .Definition:
 				strings.write_string(&w.buf, "<dd>\n")
-				for d := ch.first; d != nil; d = d.next do html_render_block(w, d)
+				for d := t.nodes[ch].first; d != NO_NODE; d = t.nodes[d].next do html_render_block(w, d)
 				strings.write_string(&w.buf, "</dd>\n")
 			case:
 				html_render_block(w, ch)
@@ -255,53 +257,53 @@ html_render_block :: proc(w: ^Html_Writer, n: ^Node) {
 
 	case .Field_List:
 		strings.write_string(&w.buf, "<dl class=\"docutils field-list\">\n")
-		for ch := n.first; ch != nil; ch = ch.next {
+		for ch := t.nodes[n].first; ch != NO_NODE; ch = t.nodes[ch].next {
 			html_render_block(w, ch)
 		}
 		strings.write_string(&w.buf, "</dl>\n")
 
 	case .Field:
-		for ch := n.first; ch != nil; ch = ch.next {
-			if ch.kind == .Field_Name {
+		for ch := t.nodes[n].first; ch != NO_NODE; ch = t.nodes[ch].next {
+			if t.nodes[ch].kind == .Field_Name {
 				strings.write_string(&w.buf, "<dt class=\"field-name\">")
-				for t := ch.first; t != nil; t = t.next do html_render_inline(w, t)
+				for tc := t.nodes[ch].first; tc != NO_NODE; tc = t.nodes[tc].next do html_render_inline(w, tc)
 				strings.write_string(&w.buf, "</dt>\n")
-			} else if ch.kind == .Field_Body {
+			} else if t.nodes[ch].kind == .Field_Body {
 				strings.write_string(&w.buf, "<dd class=\"field-body\">\n")
-				for d := ch.first; d != nil; d = d.next do html_render_block(w, d)
+				for d := t.nodes[ch].first; d != NO_NODE; d = t.nodes[d].next do html_render_block(w, d)
 				strings.write_string(&w.buf, "</dd>\n")
 			}
 		}
 
 	case .Literal_Block, .Doctest_Block:
 		strings.write_string(&w.buf, "<pre class=\"literal-block\"><code>")
-		escape_html_text(&w.buf, n.text)
+		escape_html_text(&w.buf, t.nodes[n].text)
 		strings.write_string(&w.buf, "</code></pre>\n")
 
 	case .Line_Block:
 		strings.write_string(&w.buf, "<div class=\"line-block\">\n")
-		for ch := n.first; ch != nil; ch = ch.next {
+		for ch := t.nodes[n].first; ch != NO_NODE; ch = t.nodes[ch].next {
 			html_render_block(w, ch)
 		}
 		strings.write_string(&w.buf, "</div>\n")
 
 	case .Line:
 		strings.write_string(&w.buf, "<div class=\"line\">")
-		for ch := n.first; ch != nil; ch = ch.next {
+		for ch := t.nodes[n].first; ch != NO_NODE; ch = t.nodes[ch].next {
 			html_render_inline(w, ch)
 		}
 		strings.write_string(&w.buf, "</div>\n")
 
 	case .Block_Quote:
 		strings.write_string(&w.buf, "<blockquote>\n")
-		for ch := n.first; ch != nil; ch = ch.next {
+		for ch := t.nodes[n].first; ch != NO_NODE; ch = t.nodes[ch].next {
 			html_render_block(w, ch)
 		}
 		strings.write_string(&w.buf, "</blockquote>\n")
 
 	case .Attribution:
 		strings.write_string(&w.buf, "<p class=\"attribution\">— <cite>")
-		escape_html_text(&w.buf, n.text)
+		escape_html_text(&w.buf, t.nodes[n].text)
 		strings.write_string(&w.buf, "</cite></p>\n")
 
 	case .Transition:
@@ -309,20 +311,20 @@ html_render_block :: proc(w: ^Html_Writer, n: ^Node) {
 
 	case .Table:
 		strings.write_string(&w.buf, "<table class=\"docutils align-default\">\n")
-		for ch := n.first; ch != nil; ch = ch.next {
+		for ch := t.nodes[n].first; ch != NO_NODE; ch = t.nodes[ch].next {
 			html_render_block(w, ch)
 		}
 		strings.write_string(&w.buf, "</table>\n")
 
 	case .TGroup:
-		for ch := n.first; ch != nil; ch = ch.next {
+		for ch := t.nodes[n].first; ch != NO_NODE; ch = t.nodes[ch].next {
 			html_render_block(w, ch)
 		}
 
 	case .THead:
 		w.in_thead = true
 		strings.write_string(&w.buf, "<thead>\n")
-		for ch := n.first; ch != nil; ch = ch.next {
+		for ch := t.nodes[n].first; ch != NO_NODE; ch = t.nodes[ch].next {
 			html_render_block(w, ch)
 		}
 		strings.write_string(&w.buf, "</thead>\n")
@@ -330,14 +332,14 @@ html_render_block :: proc(w: ^Html_Writer, n: ^Node) {
 
 	case .TBody:
 		strings.write_string(&w.buf, "<tbody>\n")
-		for ch := n.first; ch != nil; ch = ch.next {
+		for ch := t.nodes[n].first; ch != NO_NODE; ch = t.nodes[ch].next {
 			html_render_block(w, ch)
 		}
 		strings.write_string(&w.buf, "</tbody>\n")
 
 	case .Row:
 		strings.write_string(&w.buf, "<tr>\n")
-		for ch := n.first; ch != nil; ch = ch.next {
+		for ch := t.nodes[n].first; ch != NO_NODE; ch = t.nodes[ch].next {
 			html_render_block(w, ch)
 		}
 		strings.write_string(&w.buf, "</tr>\n")
@@ -345,10 +347,10 @@ html_render_block :: proc(w: ^Html_Writer, n: ^Node) {
 	case .Entry:
 		tag := "th" if w.in_thead else "td"
 		fmt.sbprintf(&w.buf, "<%s", tag)
-		if n.num[0] > 1 do fmt.sbprintf(&w.buf, " colspan=\"%d\"", n.num[0])
-		if n.num[1] > 1 do fmt.sbprintf(&w.buf, " rowspan=\"%d\"", n.num[1])
+		if t.nodes[n].num[0] > 1 do fmt.sbprintf(&w.buf, " colspan=\"%d\"", t.nodes[n].num[0])
+		if t.nodes[n].num[1] > 1 do fmt.sbprintf(&w.buf, " rowspan=\"%d\"", t.nodes[n].num[1])
 		strings.write_byte(&w.buf, '>')
-		for ch := n.first; ch != nil; ch = ch.next {
+		for ch := t.nodes[n].first; ch != NO_NODE; ch = t.nodes[ch].next {
 			html_render_block(w, ch)
 		}
 		fmt.sbprintf(&w.buf, "</%s>\n", tag)
@@ -357,15 +359,15 @@ html_render_block :: proc(w: ^Html_Writer, n: ^Node) {
 		html_render_directive(w, n)
 
 	case .Footnote, .Citation:
-		fmt.sbprintf(&w.buf, "<aside class=\"%s\" id=\"%s\">\n", "footnote" if n.kind == .Footnote else "citation", n.name)
-		for ch := n.first; ch != nil; ch = ch.next {
+		fmt.sbprintf(&w.buf, "<aside class=\"%s\" id=\"%s\">\n", "footnote" if t.nodes[n].kind == .Footnote else "citation", t.nodes[n].name)
+		for ch := t.nodes[n].first; ch != NO_NODE; ch = t.nodes[ch].next {
 			html_render_block(w, ch)
 		}
 		strings.write_string(&w.buf, "</aside>\n")
 
 	case .Label:
 		strings.write_string(&w.buf, "<span class=\"label\">")
-		escape_html_text(&w.buf, n.text)
+		escape_html_text(&w.buf, t.nodes[n].text)
 		strings.write_string(&w.buf, "</span> ")
 
 	case .Comment:
@@ -373,16 +375,17 @@ html_render_block :: proc(w: ^Html_Writer, n: ^Node) {
 
 	case:
 		// Fallback: render children
-		for ch := n.first; ch != nil; ch = ch.next {
+		for ch := t.nodes[n].first; ch != NO_NODE; ch = t.nodes[ch].next {
 			html_render_block(w, ch)
 		}
 	}
 }
 
 @(private = "file")
-html_section_title :: proc(w: ^Html_Writer, n: ^Node) {
-	style := Title_Style{n = len(n.name)}
-	for i in 0 ..< min(len(n.name), 2) do style.chars[i] = n.name[i]
+html_section_title :: proc(w: ^Html_Writer, n: Node) {
+	t := &w.p.tree
+	style := Title_Style{n = len(t.nodes[n].name)}
+	for i in 0 ..< min(len(t.nodes[n].name), 2) do style.chars[i] = t.nodes[n].name[i]
 
 	level := len(w.title_styles) + 1
 	for s, i in w.title_styles {
@@ -395,16 +398,16 @@ html_section_title :: proc(w: ^Html_Writer, n: ^Node) {
 	w.section_depth = level
 
 	tag_num := clamp(level, 1, 6)
-	title_node := n.first
+	title_node := t.nodes[n].first
 	title_text := ""
-	if title_node != nil {
-		title_text = title_node.raw if len(title_node.raw) > 0 else title_node.text
+	if title_node != NO_NODE {
+		title_text = t.nodes[title_node].raw if len(t.nodes[title_node].raw) > 0 else t.nodes[title_node].text
 	}
 
 	slug := slugify(title_text, w.p.allocator)
 	fmt.sbprintf(&w.buf, "<h%d id=\"%s\">", tag_num, slug)
-	if title_node != nil {
-		for ch := title_node.first; ch != nil; ch = ch.next {
+	if title_node != NO_NODE {
+		for ch := t.nodes[title_node].first; ch != NO_NODE; ch = t.nodes[ch].next {
 			html_render_inline(w, ch)
 		}
 	}
@@ -412,19 +415,20 @@ html_section_title :: proc(w: ^Html_Writer, n: ^Node) {
 }
 
 @(private = "file")
-html_render_directive :: proc(w: ^Html_Writer, n: ^Node) {
-	name := strings.to_lower(n.name, context.temp_allocator)
-	info, has_info := n.extra.(^Directive_Info)
-	if !has_info || info == nil do return
+html_render_directive :: proc(w: ^Html_Writer, n: Node) {
+	t := &w.p.tree
+	name := strings.to_lower(t.nodes[n].name, context.temp_allocator)
+	info, has_info := directive_info(t, n)
+	if !has_info do return
 
 	switch name {
 	case "attention", "caution", "danger", "error", "hint", "important", "note", "tip", "warning", "admonition":
 		fmt.sbprintf(&w.buf, "<div class=\"admonition %s\">\n<p class=\"admonition-title\">%s</p>\n", name, name)
 		if len(info.lines) > 0 {
-			nested := new_node(.Block_Quote, 0, w.p.allocator)
+			nested := new_node(t, .Block_Quote, 0)
 			sm := make_state_machine(w.p, nil, 0, nested)
 			nested_parse(&sm, info.lines, info.line_offset, nested)
-			for ch := nested.first; ch != nil; ch = ch.next {
+			for ch := t.nodes[nested].first; ch != NO_NODE; ch = t.nodes[ch].next {
 				html_render_block(w, ch)
 			}
 		}
@@ -467,10 +471,10 @@ html_render_directive :: proc(w: ^Html_Writer, n: ^Node) {
 	case:
 		// Generic directive: if has content lines, render as nested block
 		if len(info.lines) > 0 {
-			nested := new_node(.Block_Quote, 0, w.p.allocator)
+			nested := new_node(t, .Block_Quote, 0)
 			sm := make_state_machine(w.p, nil, 0, nested)
 			nested_parse(&sm, info.lines, info.line_offset, nested)
-			for ch := nested.first; ch != nil; ch = ch.next {
+			for ch := t.nodes[nested].first; ch != NO_NODE; ch = t.nodes[ch].next {
 				html_render_block(w, ch)
 			}
 		}
@@ -478,79 +482,80 @@ html_render_directive :: proc(w: ^Html_Writer, n: ^Node) {
 }
 
 @(private = "file")
-html_render_inline :: proc(w: ^Html_Writer, n: ^Node) {
-	#partial switch n.kind {
+html_render_inline :: proc(w: ^Html_Writer, n: Node) {
+	t := &w.p.tree
+	#partial switch t.nodes[n].kind {
 	case .Text:
-		escape_html_text(&w.buf, n.text)
+		escape_html_text(&w.buf, t.nodes[n].text)
 
 	case .Emphasis:
 		strings.write_string(&w.buf, "<em>")
-		if n.first != nil {
-			for ch := n.first; ch != nil; ch = ch.next do html_render_inline(w, ch)
+		if t.nodes[n].first != NO_NODE {
+			for ch := t.nodes[n].first; ch != NO_NODE; ch = t.nodes[ch].next do html_render_inline(w, ch)
 		} else {
-			escape_html_text(&w.buf, n.text)
+			escape_html_text(&w.buf, t.nodes[n].text)
 		}
 		strings.write_string(&w.buf, "</em>")
 
 	case .Strong:
 		strings.write_string(&w.buf, "<strong>")
-		if n.first != nil {
-			for ch := n.first; ch != nil; ch = ch.next do html_render_inline(w, ch)
+		if t.nodes[n].first != NO_NODE {
+			for ch := t.nodes[n].first; ch != NO_NODE; ch = t.nodes[ch].next do html_render_inline(w, ch)
 		} else {
-			escape_html_text(&w.buf, n.text)
+			escape_html_text(&w.buf, t.nodes[n].text)
 		}
 		strings.write_string(&w.buf, "</strong>")
 
 	case .Literal:
 		strings.write_string(&w.buf, "<code>")
-		escape_html_text(&w.buf, n.text)
+		escape_html_text(&w.buf, t.nodes[n].text)
 		strings.write_string(&w.buf, "</code>")
 
 	case .Reference:
 		url := ""
-		ref_kind := Ref_Kind(n.num[0])
+		ref_kind := Ref_Kind(t.nodes[n].num[0])
 		switch ref_kind {
 		case .Uri:
-			url = n.name
+			url = t.nodes[n].name
 		case .Pep:
-			url = fmt.tprintf("https://peps.python.org/pep-%04s", n.name)
+			url = fmt.tprintf("https://peps.python.org/pep-%04s", t.nodes[n].name)
 		case .Rfc:
-			url = fmt.tprintf("https://datatracker.ietf.org/doc/html/rfc%s", n.name)
+			url = fmt.tprintf("https://datatracker.ietf.org/doc/html/rfc%s", t.nodes[n].name)
 		case .Phrase:
-			if info, ok := n.extra.(^Phrase_Info); ok && info != nil {
+			if info, ok := phrase_info(t, n); ok {
 				url = info.alias
 			}
-			if len(url) == 0 do url = fmt.tprintf("#%s", slugify(n.name, context.temp_allocator))
+			if len(url) == 0 do url = fmt.tprintf("#%s", slugify(t.nodes[n].name, context.temp_allocator))
 		case .Simple:
-			url = fmt.tprintf("#%s", slugify(n.name, context.temp_allocator))
+			url = fmt.tprintf("#%s", slugify(t.nodes[n].name, context.temp_allocator))
 		}
 		fmt.sbprintf(&w.buf, "<a href=\"%s\" class=\"reference\">", url)
-		if n.first != nil {
-			for ch := n.first; ch != nil; ch = ch.next do html_render_inline(w, ch)
+		if t.nodes[n].first != NO_NODE {
+			for ch := t.nodes[n].first; ch != NO_NODE; ch = t.nodes[ch].next do html_render_inline(w, ch)
 		} else {
-			escape_html_text(&w.buf, n.text if len(n.text) > 0 else n.name)
+			escape_html_text(&w.buf, t.nodes[n].text if len(t.nodes[n].text) > 0 else t.nodes[n].name)
 		}
 		strings.write_string(&w.buf, "</a>")
 
 	case .Footnote_Reference:
-		fmt.sbprintf(&w.buf, "<sup><a href=\"#%s\" class=\"footnote-reference\">[%s]</a></sup>", n.name, n.text if len(n.text) > 0 else n.name)
+		fmt.sbprintf(&w.buf, "<sup><a href=\"#%s\" class=\"footnote-reference\">[%s]</a></sup>", t.nodes[n].name, t.nodes[n].text if len(t.nodes[n].text) > 0 else t.nodes[n].name)
 
 	case .Citation_Reference:
-		fmt.sbprintf(&w.buf, "<sup><a href=\"#%s\" class=\"citation-reference\">[%s]</a></sup>", n.name, n.text if len(n.text) > 0 else n.name)
+		fmt.sbprintf(&w.buf, "<sup><a href=\"#%s\" class=\"citation-reference\">[%s]</a></sup>", t.nodes[n].name, t.nodes[n].text if len(t.nodes[n].text) > 0 else t.nodes[n].name)
 
 	case .Inline_Target:
-		fmt.sbprintf(&w.buf, "<span id=\"%s\">", slugify(n.name, context.temp_allocator))
-		for ch := n.first; ch != nil; ch = ch.next do html_render_inline(w, ch)
+		fmt.sbprintf(&w.buf, "<span id=\"%s\">", slugify(t.nodes[n].name, context.temp_allocator))
+		for ch := t.nodes[n].first; ch != NO_NODE; ch = t.nodes[ch].next do html_render_inline(w, ch)
 		strings.write_string(&w.buf, "</span>")
 
 	case .Problematic:
 		strings.write_string(&w.buf, "<span class=\"problematic\">")
-		escape_html_text(&w.buf, n.text)
+		escape_html_text(&w.buf, t.nodes[n].text)
 		strings.write_string(&w.buf, "</span>")
 
 	case:
-		if len(n.text) > 0 do escape_html_text(&w.buf, n.text)
-		for ch := n.first; ch != nil; ch = ch.next do html_render_inline(w, ch)
+		if len(t.nodes[n].text) > 0 do escape_html_text(&w.buf, t.nodes[n].text)
+		for ch := t.nodes[n].first; ch != NO_NODE; ch = t.nodes[ch].next do html_render_inline(w, ch)
 	}
 }
 

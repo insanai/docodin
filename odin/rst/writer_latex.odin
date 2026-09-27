@@ -52,7 +52,8 @@ escape_latex_text :: proc(b: ^strings.Builder, s: string) {
 	}
 }
 
-write_latex :: proc(doc: ^Node, p: ^Parser, config: Latex_Config) -> string {
+write_latex :: proc(doc: Node, p: ^Parser, config: Latex_Config) -> string {
+	t := &p.tree
 	w := Latex_Writer{
 		p            = p,
 		config       = config,
@@ -62,9 +63,9 @@ write_latex :: proc(doc: ^Node, p: ^Parser, config: Latex_Config) -> string {
 
 	title := config.title
 	if len(title) == 0 {
-		for n := doc.first; n != nil; n = n.next {
-			if n.kind == .Section_Title && n.first != nil {
-				title = n.first.raw if len(n.first.raw) > 0 else n.first.text
+		for n := t.nodes[doc].first; n != NO_NODE; n = t.nodes[n].next {
+			if t.nodes[n].kind == .Section_Title && t.nodes[n].first != NO_NODE {
+				title = t.nodes[t.nodes[n].first].raw if len(t.nodes[t.nodes[n].first].raw) > 0 else t.nodes[t.nodes[n].first].text
 				break
 			}
 		}
@@ -109,7 +110,7 @@ write_latex :: proc(doc: ^Node, p: ^Parser, config: Latex_Config) -> string {
 		strings.write_string(&w.buf, "\n\\begin{document}\n\\maketitle\n\n")
 	}
 
-	for n := doc.first; n != nil; n = n.next {
+	for n := t.nodes[doc].first; n != NO_NODE; n = t.nodes[n].next {
 		latex_render_block(&w, n)
 	}
 
@@ -121,25 +122,26 @@ write_latex :: proc(doc: ^Node, p: ^Parser, config: Latex_Config) -> string {
 }
 
 @(private = "file")
-latex_render_block :: proc(w: ^Latex_Writer, n: ^Node) {
-	#partial switch n.kind {
+latex_render_block :: proc(w: ^Latex_Writer, n: Node) {
+	t := &w.p.tree
+	#partial switch t.nodes[n].kind {
 	case .Section_Title:
 		latex_section_title(w, n)
 
 	case .Paragraph:
-		for ch := n.first; ch != nil; ch = ch.next {
+		for ch := t.nodes[n].first; ch != NO_NODE; ch = t.nodes[ch].next {
 			latex_render_inline(w, ch)
 		}
 		strings.write_string(&w.buf, "\n\n")
 
 	case .Bullet_List:
 		strings.write_string(&w.buf, "\\begin{itemize}\n")
-		for ch := n.first; ch != nil; ch = ch.next {
-			if ch.kind == .List_Item {
+		for ch := t.nodes[n].first; ch != NO_NODE; ch = t.nodes[ch].next {
+			if t.nodes[ch].kind == .List_Item {
 				strings.write_string(&w.buf, "  \\item ")
-				for item_ch := ch.first; item_ch != nil; item_ch = item_ch.next {
-					if item_ch.kind == .Paragraph {
-						for p_ch := item_ch.first; p_ch != nil; p_ch = p_ch.next {
+				for item_ch := t.nodes[ch].first; item_ch != NO_NODE; item_ch = t.nodes[item_ch].next {
+					if t.nodes[item_ch].kind == .Paragraph {
+						for p_ch := t.nodes[item_ch].first; p_ch != NO_NODE; p_ch = t.nodes[p_ch].next {
 							latex_render_inline(w, p_ch)
 						}
 						strings.write_byte(&w.buf, '\n')
@@ -153,12 +155,12 @@ latex_render_block :: proc(w: ^Latex_Writer, n: ^Node) {
 
 	case .Enumerated_List:
 		strings.write_string(&w.buf, "\\begin{enumerate}\n")
-		for ch := n.first; ch != nil; ch = ch.next {
-			if ch.kind == .List_Item {
+		for ch := t.nodes[n].first; ch != NO_NODE; ch = t.nodes[ch].next {
+			if t.nodes[ch].kind == .List_Item {
 				strings.write_string(&w.buf, "  \\item ")
-				for item_ch := ch.first; item_ch != nil; item_ch = item_ch.next {
-					if item_ch.kind == .Paragraph {
-						for p_ch := item_ch.first; p_ch != nil; p_ch = p_ch.next {
+				for item_ch := t.nodes[ch].first; item_ch != NO_NODE; item_ch = t.nodes[item_ch].next {
+					if t.nodes[item_ch].kind == .Paragraph {
+						for p_ch := t.nodes[item_ch].first; p_ch != NO_NODE; p_ch = t.nodes[p_ch].next {
 							latex_render_inline(w, p_ch)
 						}
 						strings.write_byte(&w.buf, '\n')
@@ -172,23 +174,23 @@ latex_render_block :: proc(w: ^Latex_Writer, n: ^Node) {
 
 	case .Definition_List:
 		strings.write_string(&w.buf, "\\begin{description}\n")
-		for ch := n.first; ch != nil; ch = ch.next {
-			if ch.kind == .Definition_List_Item {
+		for ch := t.nodes[n].first; ch != NO_NODE; ch = t.nodes[ch].next {
+			if t.nodes[ch].kind == .Definition_List_Item {
 				term := ""
-				for item_ch := ch.first; item_ch != nil; item_ch = item_ch.next {
-					if item_ch.kind == .Term {
-						term = item_ch.raw if len(item_ch.raw) > 0 else item_ch.text
+				for item_ch := t.nodes[ch].first; item_ch != NO_NODE; item_ch = t.nodes[item_ch].next {
+					if t.nodes[item_ch].kind == .Term {
+						term = t.nodes[item_ch].raw if len(t.nodes[item_ch].raw) > 0 else t.nodes[item_ch].text
 						break
 					}
 				}
 				strings.write_string(&w.buf, "  \\item[")
 				escape_latex_text(&w.buf, term)
 				strings.write_string(&w.buf, "] ")
-				for item_ch := ch.first; item_ch != nil; item_ch = item_ch.next {
-					if item_ch.kind == .Definition {
-						for d_ch := item_ch.first; d_ch != nil; d_ch = d_ch.next {
-							if d_ch.kind == .Paragraph {
-								for p_ch := d_ch.first; p_ch != nil; p_ch = p_ch.next {
+				for item_ch := t.nodes[ch].first; item_ch != NO_NODE; item_ch = t.nodes[item_ch].next {
+					if t.nodes[item_ch].kind == .Definition {
+						for d_ch := t.nodes[item_ch].first; d_ch != NO_NODE; d_ch = t.nodes[d_ch].next {
+							if t.nodes[d_ch].kind == .Paragraph {
+								for p_ch := t.nodes[d_ch].first; p_ch != NO_NODE; p_ch = t.nodes[p_ch].next {
 									latex_render_inline(w, p_ch)
 								}
 								strings.write_byte(&w.buf, '\n')
@@ -204,23 +206,23 @@ latex_render_block :: proc(w: ^Latex_Writer, n: ^Node) {
 
 	case .Field_List:
 		strings.write_string(&w.buf, "\\begin{description}\n")
-		for ch := n.first; ch != nil; ch = ch.next {
-			if ch.kind == .Field {
+		for ch := t.nodes[n].first; ch != NO_NODE; ch = t.nodes[ch].next {
+			if t.nodes[ch].kind == .Field {
 				name := ""
-				for item_ch := ch.first; item_ch != nil; item_ch = item_ch.next {
-					if item_ch.kind == .Field_Name {
-						name = item_ch.raw if len(item_ch.raw) > 0 else item_ch.text
+				for item_ch := t.nodes[ch].first; item_ch != NO_NODE; item_ch = t.nodes[item_ch].next {
+					if t.nodes[item_ch].kind == .Field_Name {
+						name = t.nodes[item_ch].raw if len(t.nodes[item_ch].raw) > 0 else t.nodes[item_ch].text
 						break
 					}
 				}
 				strings.write_string(&w.buf, "  \\item[")
 				escape_latex_text(&w.buf, name)
 				strings.write_string(&w.buf, ":] ")
-				for item_ch := ch.first; item_ch != nil; item_ch = item_ch.next {
-					if item_ch.kind == .Field_Body {
-						for d_ch := item_ch.first; d_ch != nil; d_ch = d_ch.next {
-							if d_ch.kind == .Paragraph {
-								for p_ch := d_ch.first; p_ch != nil; p_ch = p_ch.next {
+				for item_ch := t.nodes[ch].first; item_ch != NO_NODE; item_ch = t.nodes[item_ch].next {
+					if t.nodes[item_ch].kind == .Field_Body {
+						for d_ch := t.nodes[item_ch].first; d_ch != NO_NODE; d_ch = t.nodes[d_ch].next {
+							if t.nodes[d_ch].kind == .Paragraph {
+								for p_ch := t.nodes[d_ch].first; p_ch != NO_NODE; p_ch = t.nodes[p_ch].next {
 									latex_render_inline(w, p_ch)
 								}
 								strings.write_byte(&w.buf, '\n')
@@ -236,14 +238,14 @@ latex_render_block :: proc(w: ^Latex_Writer, n: ^Node) {
 
 	case .Literal_Block, .Doctest_Block:
 		strings.write_string(&w.buf, "\\begin{quote}\n\\begin{verbatim}\n")
-		strings.write_string(&w.buf, n.text)
+		strings.write_string(&w.buf, t.nodes[n].text)
 		strings.write_string(&w.buf, "\n\\end{verbatim}\n\\end{quote}\n\n")
 
 	case .Line_Block:
 		strings.write_string(&w.buf, "\\begin{quote}\n")
-		for ch := n.first; ch != nil; ch = ch.next {
-			if ch.kind == .Line {
-				for l_ch := ch.first; l_ch != nil; l_ch = l_ch.next do latex_render_inline(w, l_ch)
+		for ch := t.nodes[n].first; ch != NO_NODE; ch = t.nodes[ch].next {
+			if t.nodes[ch].kind == .Line {
+				for l_ch := t.nodes[ch].first; l_ch != NO_NODE; l_ch = t.nodes[l_ch].next do latex_render_inline(w, l_ch)
 				strings.write_string(&w.buf, "\\\\\n")
 			}
 		}
@@ -251,14 +253,14 @@ latex_render_block :: proc(w: ^Latex_Writer, n: ^Node) {
 
 	case .Block_Quote:
 		strings.write_string(&w.buf, "\\begin{quote}\n")
-		for ch := n.first; ch != nil; ch = ch.next {
+		for ch := t.nodes[n].first; ch != NO_NODE; ch = t.nodes[ch].next {
 			latex_render_block(w, ch)
 		}
 		strings.write_string(&w.buf, "\\end{quote}\n\n")
 
 	case .Attribution:
 		strings.write_string(&w.buf, "\\begin{flushright}\n--- \\emph{")
-		escape_latex_text(&w.buf, n.text)
+		escape_latex_text(&w.buf, t.nodes[n].text)
 		strings.write_string(&w.buf, "}\n\\end{flushright}\n\n")
 
 	case .Transition:
@@ -274,16 +276,17 @@ latex_render_block :: proc(w: ^Latex_Writer, n: ^Node) {
 		// Comments are omitted from LaTeX output
 
 	case:
-		for ch := n.first; ch != nil; ch = ch.next {
+		for ch := t.nodes[n].first; ch != NO_NODE; ch = t.nodes[ch].next {
 			latex_render_block(w, ch)
 		}
 	}
 }
 
 @(private = "file")
-latex_section_title :: proc(w: ^Latex_Writer, n: ^Node) {
-	style := Title_Style{n = len(n.name)}
-	for i in 0 ..< min(len(n.name), 2) do style.chars[i] = n.name[i]
+latex_section_title :: proc(w: ^Latex_Writer, n: Node) {
+	t := &w.p.tree
+	style := Title_Style{n = len(t.nodes[n].name)}
+	for i in 0 ..< min(len(t.nodes[n].name), 2) do style.chars[i] = t.nodes[n].name[i]
 
 	level := len(w.title_styles) + 1
 	for s, i in w.title_styles {
@@ -304,16 +307,16 @@ latex_section_title :: proc(w: ^Latex_Writer, n: ^Node) {
 	case:   cmd = "\\subparagraph"
 	}
 
-	title_node := n.first
+	title_node := t.nodes[n].first
 	title_text := ""
-	if title_node != nil {
-		title_text = title_node.raw if len(title_node.raw) > 0 else title_node.text
+	if title_node != NO_NODE {
+		title_text = t.nodes[title_node].raw if len(t.nodes[title_node].raw) > 0 else t.nodes[title_node].text
 	}
 
 	strings.write_string(&w.buf, cmd)
 	strings.write_byte(&w.buf, '{')
-	if title_node != nil {
-		for ch := title_node.first; ch != nil; ch = ch.next {
+	if title_node != NO_NODE {
+		for ch := t.nodes[title_node].first; ch != NO_NODE; ch = t.nodes[ch].next {
 			latex_render_inline(w, ch)
 		}
 	} else {
@@ -329,13 +332,14 @@ latex_section_title :: proc(w: ^Latex_Writer, n: ^Node) {
 }
 
 @(private = "file")
-latex_render_table :: proc(w: ^Latex_Writer, n: ^Node) {
+latex_render_table :: proc(w: ^Latex_Writer, n: Node) {
+	t := &w.p.tree
 	cols := 1
-	for ch := n.first; ch != nil; ch = ch.next {
-		if ch.kind == .TGroup {
+	for ch := t.nodes[n].first; ch != NO_NODE; ch = t.nodes[ch].next {
+		if t.nodes[ch].kind == .TGroup {
 			c_count := 0
-			for tg := ch.first; tg != nil; tg = tg.next {
-				if tg.kind == .Colspec do c_count += 1
+			for tg := t.nodes[ch].first; tg != NO_NODE; tg = t.nodes[tg].next {
+				if t.nodes[tg].kind == .Colspec do c_count += 1
 			}
 			if c_count > 0 do cols = c_count
 			break
@@ -349,17 +353,17 @@ latex_render_table :: proc(w: ^Latex_Writer, n: ^Node) {
 	}
 	strings.write_string(&w.buf, "}\n\\toprule\n")
 
-	for ch := n.first; ch != nil; ch = ch.next {
-		if ch.kind == .TGroup {
-			for tg := ch.first; tg != nil; tg = tg.next {
-				if tg.kind == .THead {
-					for row := tg.first; row != nil; row = row.next {
-						if row.kind == .Row do latex_render_table_row(w, row)
+	for ch := t.nodes[n].first; ch != NO_NODE; ch = t.nodes[ch].next {
+		if t.nodes[ch].kind == .TGroup {
+			for tg := t.nodes[ch].first; tg != NO_NODE; tg = t.nodes[tg].next {
+				if t.nodes[tg].kind == .THead {
+					for row := t.nodes[tg].first; row != NO_NODE; row = t.nodes[row].next {
+						if t.nodes[row].kind == .Row do latex_render_table_row(w, row)
 					}
 					strings.write_string(&w.buf, "\\midrule\n")
-				} else if tg.kind == .TBody {
-					for row := tg.first; row != nil; row = row.next {
-						if row.kind == .Row do latex_render_table_row(w, row)
+				} else if t.nodes[tg].kind == .TBody {
+					for row := t.nodes[tg].first; row != NO_NODE; row = t.nodes[row].next {
+						if t.nodes[row].kind == .Row do latex_render_table_row(w, row)
 					}
 				}
 			}
@@ -370,15 +374,16 @@ latex_render_table :: proc(w: ^Latex_Writer, n: ^Node) {
 }
 
 @(private = "file")
-latex_render_table_row :: proc(w: ^Latex_Writer, row: ^Node) {
+latex_render_table_row :: proc(w: ^Latex_Writer, row: Node) {
+	t := &w.p.tree
 	first := true
-	for entry := row.first; entry != nil; entry = entry.next {
-		if entry.kind == .Entry {
+	for entry := t.nodes[row].first; entry != NO_NODE; entry = t.nodes[entry].next {
+		if t.nodes[entry].kind == .Entry {
 			if !first do strings.write_string(&w.buf, " & ")
 			first = false
-			for ech := entry.first; ech != nil; ech = ech.next {
-				if ech.kind == .Paragraph {
-					for pch := ech.first; pch != nil; pch = pch.next do latex_render_inline(w, pch)
+			for ech := t.nodes[entry].first; ech != NO_NODE; ech = t.nodes[ech].next {
+				if t.nodes[ech].kind == .Paragraph {
+					for pch := t.nodes[ech].first; pch != NO_NODE; pch = t.nodes[pch].next do latex_render_inline(w, pch)
 				} else {
 					latex_render_block(w, ech)
 				}
@@ -389,19 +394,20 @@ latex_render_table_row :: proc(w: ^Latex_Writer, row: ^Node) {
 }
 
 @(private = "file")
-latex_render_directive :: proc(w: ^Latex_Writer, n: ^Node) {
-	name := strings.to_lower(n.name, context.temp_allocator)
-	info, has_info := n.extra.(^Directive_Info)
-	if !has_info || info == nil do return
+latex_render_directive :: proc(w: ^Latex_Writer, n: Node) {
+	t := &w.p.tree
+	name := strings.to_lower(t.nodes[n].name, context.temp_allocator)
+	info, has_info := directive_info(t, n)
+	if !has_info do return
 
 	switch name {
 	case "attention", "caution", "danger", "error", "hint", "important", "note", "tip", "warning", "admonition":
 		fmt.sbprintf(&w.buf, "\\begin{{quote}}\n\\textbf{{%s:}}\\newline\n", strings.to_upper(name, context.temp_allocator))
 		if len(info.lines) > 0 {
-			nested := new_node(.Block_Quote, 0, w.p.allocator)
+			nested := new_node(t, .Block_Quote, 0)
 			sm := make_state_machine(w.p, nil, 0, nested)
 			nested_parse(&sm, info.lines, info.line_offset, nested)
-			for ch := nested.first; ch != nil; ch = ch.next {
+			for ch := t.nodes[nested].first; ch != NO_NODE; ch = t.nodes[ch].next {
 				latex_render_block(w, ch)
 			}
 		}
@@ -437,10 +443,10 @@ latex_render_directive :: proc(w: ^Latex_Writer, n: ^Node) {
 
 	case:
 		if len(info.lines) > 0 {
-			nested := new_node(.Block_Quote, 0, w.p.allocator)
+			nested := new_node(t, .Block_Quote, 0)
 			sm := make_state_machine(w.p, nil, 0, nested)
 			nested_parse(&sm, info.lines, info.line_offset, nested)
-			for ch := nested.first; ch != nil; ch = ch.next {
+			for ch := t.nodes[nested].first; ch != NO_NODE; ch = t.nodes[ch].next {
 				latex_render_block(w, ch)
 			}
 		}
@@ -448,72 +454,73 @@ latex_render_directive :: proc(w: ^Latex_Writer, n: ^Node) {
 }
 
 @(private = "file")
-latex_render_inline :: proc(w: ^Latex_Writer, n: ^Node) {
-	#partial switch n.kind {
+latex_render_inline :: proc(w: ^Latex_Writer, n: Node) {
+	t := &w.p.tree
+	#partial switch t.nodes[n].kind {
 	case .Text:
-		escape_latex_text(&w.buf, n.text)
+		escape_latex_text(&w.buf, t.nodes[n].text)
 
 	case .Emphasis:
 		strings.write_string(&w.buf, "\\emph{")
-		if n.first != nil {
-			for ch := n.first; ch != nil; ch = ch.next do latex_render_inline(w, ch)
+		if t.nodes[n].first != NO_NODE {
+			for ch := t.nodes[n].first; ch != NO_NODE; ch = t.nodes[ch].next do latex_render_inline(w, ch)
 		} else {
-			escape_latex_text(&w.buf, n.text)
+			escape_latex_text(&w.buf, t.nodes[n].text)
 		}
 		strings.write_string(&w.buf, "}")
 
 	case .Strong:
 		strings.write_string(&w.buf, "\\textbf{")
-		if n.first != nil {
-			for ch := n.first; ch != nil; ch = ch.next do latex_render_inline(w, ch)
+		if t.nodes[n].first != NO_NODE {
+			for ch := t.nodes[n].first; ch != NO_NODE; ch = t.nodes[ch].next do latex_render_inline(w, ch)
 		} else {
-			escape_latex_text(&w.buf, n.text)
+			escape_latex_text(&w.buf, t.nodes[n].text)
 		}
 		strings.write_string(&w.buf, "}")
 
 	case .Literal:
 		strings.write_string(&w.buf, "\\texttt{")
-		escape_latex_text(&w.buf, n.text)
+		escape_latex_text(&w.buf, t.nodes[n].text)
 		strings.write_string(&w.buf, "}")
 
 	case .Reference:
 		url := ""
-		ref_kind := Ref_Kind(n.num[0])
+		ref_kind := Ref_Kind(t.nodes[n].num[0])
 		switch ref_kind {
 		case .Uri:
-			url = n.name
+			url = t.nodes[n].name
 		case .Pep:
-			url = fmt.tprintf("https://peps.python.org/pep-%04s", n.name)
+			url = fmt.tprintf("https://peps.python.org/pep-%04s", t.nodes[n].name)
 		case .Rfc:
-			url = fmt.tprintf("https://datatracker.ietf.org/doc/html/rfc%s", n.name)
+			url = fmt.tprintf("https://datatracker.ietf.org/doc/html/rfc%s", t.nodes[n].name)
 		case .Phrase:
-			if info, ok := n.extra.(^Phrase_Info); ok && info != nil {
+			if info, ok := phrase_info(t, n); ok {
 				url = info.alias
 			}
-			if len(url) == 0 do url = fmt.tprintf("#%s", slugify(n.name, context.temp_allocator))
+			if len(url) == 0 do url = fmt.tprintf("#%s", slugify(t.nodes[n].name, context.temp_allocator))
 		case .Simple:
-			url = fmt.tprintf("#%s", slugify(n.name, context.temp_allocator))
+			url = fmt.tprintf("#%s", slugify(t.nodes[n].name, context.temp_allocator))
 		}
 		fmt.sbprintf(&w.buf, "\\href{{%s}}{{", url)
-		if n.first != nil {
-			for ch := n.first; ch != nil; ch = ch.next do latex_render_inline(w, ch)
+		if t.nodes[n].first != NO_NODE {
+			for ch := t.nodes[n].first; ch != NO_NODE; ch = t.nodes[ch].next do latex_render_inline(w, ch)
 		} else {
-			escape_latex_text(&w.buf, n.text if len(n.text) > 0 else n.name)
+			escape_latex_text(&w.buf, t.nodes[n].text if len(t.nodes[n].text) > 0 else t.nodes[n].name)
 		}
 		strings.write_string(&w.buf, "}")
 
 	case .Footnote_Reference:
-		fmt.sbprintf(&w.buf, "\\footnote{{%s}}", n.name)
+		fmt.sbprintf(&w.buf, "\\footnote{{%s}}", t.nodes[n].name)
 
 	case .Citation_Reference:
-		fmt.sbprintf(&w.buf, "\\cite{{%s}}", n.name)
+		fmt.sbprintf(&w.buf, "\\cite{{%s}}", t.nodes[n].name)
 
 	case .Inline_Target:
-		fmt.sbprintf(&w.buf, "\\label{{%s}}", slugify(n.name, context.temp_allocator))
-		for ch := n.first; ch != nil; ch = ch.next do latex_render_inline(w, ch)
+		fmt.sbprintf(&w.buf, "\\label{{%s}}", slugify(t.nodes[n].name, context.temp_allocator))
+		for ch := t.nodes[n].first; ch != NO_NODE; ch = t.nodes[ch].next do latex_render_inline(w, ch)
 
 	case:
-		if len(n.text) > 0 do escape_latex_text(&w.buf, n.text)
-		for ch := n.first; ch != nil; ch = ch.next do latex_render_inline(w, ch)
+		if len(t.nodes[n].text) > 0 do escape_latex_text(&w.buf, t.nodes[n].text)
+		for ch := t.nodes[n].first; ch != NO_NODE; ch = t.nodes[ch].next do latex_render_inline(w, ch)
 	}
 }

@@ -71,6 +71,8 @@ Initial_Match :: struct {
 
 parse_inline :: proc(p: ^Parser, text: string, lineno: int) -> (out: Node_List) {
 	if len(text) == 0 do return
+	tree_init(&p.tree, p.allocator)
+	t := &p.tree
 	il := Inliner {
 		p          = p,
 		s          = escape2null(text, p.allocator),
@@ -88,16 +90,16 @@ parse_inline :: proc(p: ^Parser, text: string, lineno: int) -> (out: Node_List) 
 		m, found := search_initial(&il, rem)
 		if !found do break
 		before_end, inlines, new_rem, trim := dispatch(&il, m, rem)
-		if inlines.first != nil {
+		if inlines.first != NO_NODE {
 			pending := s[ustart:before_end]
 			if trim do pending = rstrip(pending)
-			list_extend(&out, implicit_inline(&il, pending))
-			list_extend(&out, inlines)
+			list_extend(t, &out, implicit_inline(&il, pending))
+			list_extend(t, &out, inlines)
 			ustart = new_rem
 		}
 		rem = new_rem
 	}
-	list_extend(&out, implicit_inline(&il, s[ustart:]))
+	list_extend(t, &out, implicit_inline(&il, s[ustart:]))
 	return
 }
 
@@ -326,6 +328,7 @@ dispatch :: proc(
 	new_rem: int,
 	trim: bool,
 ) {
+	t := &il.p.tree
 	switch m.kind {
 	case .Strong:       return inline_obj(il, m, rem, .Strong, .Strong, "strong")
 	case .Emphasis:     return inline_obj(il, m, rem, .Emphasis, .Emphasis, "emphasis")
@@ -338,17 +341,17 @@ dispatch :: proc(
 	case .Backquote:    return interpreted_or_phrase_ref(il, m, rem)
 	case .Reference:
 		n := make_inline(il, .Reference)
-		n.num[0] = i32(Ref_Kind.Simple)
-		n.num[1] = 1 if m.anonymous else 0
-		n.text = m.refname
-		n.raw = il.s[m.start:m.end]
-		list_append(&inlines, n)
+		t.nodes[n].num[0] = i32(Ref_Kind.Simple)
+		t.nodes[n].num[1] = 1 if m.anonymous else 0
+		t.nodes[n].text = m.refname
+		t.nodes[n].raw = il.s[m.start:m.end]
+		list_append(t, &inlines, n)
 		return m.start, inlines, m.end, false
 	case .Footnote_Reference, .Citation_Reference:
 		is_footnote := m.kind == .Footnote_Reference
 		n := make_inline(il, .Footnote_Reference if is_footnote else .Citation_Reference)
-		n.text = m.label
-		list_append(&inlines, n)
+		t.nodes[n].text = m.label
+		list_append(t, &inlines, n)
 		// docutils trims the preceding space for footnote references only
 		trim = is_footnote && il.p.settings.trim_footnote_reference_space
 		return m.start, inlines, m.end, trim
@@ -358,20 +361,21 @@ dispatch :: proc(
 }
 
 @(private = "file")
-make_inline :: #force_inline proc(il: ^Inliner, kind: Node_Kind) -> ^Node {
-	return new_node(kind, il.lineno, il.allocator)
+make_inline :: #force_inline proc(il: ^Inliner, kind: Node_Kind) -> Node {
+	return new_node(&il.p.tree, kind, il.lineno)
 }
 
 // ``text`` starts at byte ``start`` of the inline source; its position is kept
 // for diagnostics (see ``inline_position``).
 @(private = "file")
-problematic :: proc(il: ^Inliner, text: string, message: string, start: int) -> ^Node {
+problematic :: proc(il: ^Inliner, text: string, message: string, start: int) -> Node {
+	t := &il.p.tree
 	n := make_inline(il, .Problematic)
-	n.raw = text
-	n.text = text
-	n.name = message
-	n.num[0] = WARNING
-	n.num[1] = inline_position(il.s, start)
+	t.nodes[n].raw = text
+	t.nodes[n].text = text
+	t.nodes[n].name = message
+	t.nodes[n].num[0] = WARNING
+	t.nodes[n].num[1] = inline_position(il.s, start)
 	return n
 }
 
@@ -414,6 +418,7 @@ inline_obj :: proc(
 	new_rem: int,
 	trim: bool,
 ) {
+	t := &il.p.tree
 	matchstart, matchend := m.start, m.end
 	if quoted_start(il, matchstart, matchend, rem) do return matchend, {}, matchend, false
 	es, ee, found := search_end(il, kind, matchend)
@@ -423,16 +428,17 @@ inline_obj :: proc(
 			text = unescape(text, il.allocator, restore_backslashes = true)
 		}
 		n := make_inline(il, node_kind)
-		n.raw = unescape(il.s[matchstart:ee], il.allocator, restore_backslashes = true)
-		n.text = text
-		if kind == .Substitution do n.num[0] = i32(ee - es - 1) // underscores in the end-string
-		list_append(&inlines, n)
+		t.nodes[n].raw = unescape(il.s[matchstart:ee], il.allocator, restore_backslashes = true)
+		t.nodes[n].text = text
+		// num[0]: the underscores in the end-string
+		if kind == .Substitution do t.nodes[n].num[0] = i32(ee - es - 1)
+		list_append(t, &inlines, n)
 		return matchstart, inlines, ee, false
 	}
 	parts := []string{"Inline ", class_name, " start-string without end-string."}
 	msg := strings.concatenate(parts, il.allocator)
 	text := unescape(il.s[matchstart:matchend], il.allocator, restore_backslashes = true)
-	list_append(&inlines, problematic(il, text, msg, matchstart))
+	list_append(t, &inlines, problematic(il, text, msg, matchstart))
 	return matchstart, inlines, matchend, false
 }
 
@@ -571,6 +577,7 @@ interpreted_or_phrase_ref :: proc(
 	new_rem: int,
 	trim: bool,
 ) {
+	t := &il.p.tree
 	a := il.allocator
 	s := il.s
 	matchstart, matchend := m.bq_start, m.bq_end
@@ -588,7 +595,7 @@ interpreted_or_phrase_ref :: proc(
 		if erole != "" {
 			if m.has_role {
 				text := unescape(s[rolestart:textend], a, restore_backslashes = true)
-				list_append(&inlines, problematic(il, text,
+				list_append(t, &inlines, problematic(il, text,
 					"Multiple roles in interpreted text " +
 					"(both prefix and suffix present; only one allowed).",
 					rolestart))
@@ -606,21 +613,21 @@ interpreted_or_phrase_ref :: proc(
 					"Mismatch: both interpreted text role ", position, " and reference suffix.",
 				}
 				msg := strings.concatenate(parts, a)
-				list_append(&inlines, problematic(il, text, msg, rolestart))
+				list_append(t, &inlines, problematic(il, text, msg, rolestart))
 				return rolestart, inlines, textend, false
 			}
-			list_append(&inlines, phrase_ref(il, rawsource, escaped))
+			list_append(t, &inlines, phrase_ref(il, rawsource, escaped))
 			return matchstart, inlines, textend, false
 		}
 		n := make_inline(il, .Interpreted)
-		n.raw = unescape(s[rolestart:textend], a, restore_backslashes = true)
-		n.text = escaped
-		n.name = role
-		list_append(&inlines, n)
+		t.nodes[n].raw = unescape(s[rolestart:textend], a, restore_backslashes = true)
+		t.nodes[n].text = escaped
+		t.nodes[n].name = role
+		list_append(t, &inlines, n)
 		return rolestart, inlines, textend, false
 	}
 	text := unescape(s[matchstart:matchend], a, restore_backslashes = true)
-	list_append(&inlines, problematic(il, text,
+	list_append(t, &inlines, problematic(il, text,
 		"Inline interpreted text or phrase reference start-string without end-string.",
 		matchstart))
 	return matchstart, inlines, matchend, false
@@ -629,20 +636,21 @@ interpreted_or_phrase_ref :: proc(
 // ``Inliner.phrase_ref``: builds a Reference (``Ref_Kind.Phrase``).  The host
 // finishes name normalisation and target registration.
 @(private = "file")
-phrase_ref :: proc(il: ^Inliner, rawsource: string, escaped: string) -> ^Node {
+phrase_ref :: proc(il: ^Inliner, rawsource: string, escaped: string) -> Node {
 	a := il.allocator
+	t := &il.p.tree
 	n := make_inline(il, .Reference)
-	n.num[0] = i32(Ref_Kind.Phrase)
-	n.raw = rawsource
-	n.text = escaped
+	t.nodes[n].num[0] = i32(Ref_Kind.Phrase)
+	t.nodes[n].raw = rawsource
+	t.nodes[n].text = escaped
 	start, lt, found := search_embedded_link(escaped)
 	if !found do return n
-	info := new(Phrase_Info, a)
-	n.extra = info
-	n.text = escaped[:start]
+	text := escaped[:start]
+	t.nodes[n].text = text
 	aliastext := escaped[lt + 1:len(escaped) - 1]
+	info: Phrase_Info
 	info.target_raw = escaped[start:]
-	info.rawtext = unescape(n.text, a, restore_backslashes = true)
+	info.rawtext = unescape(text, a, restore_backslashes = true)
 	rawaliastext := unescape(aliastext, a, restore_backslashes = true)
 	underscore_escaped := strings.has_suffix(rawaliastext, "\\_")
 	_, _, _, is_uri := uri_whole_at(il, aliastext, 0, nil)
@@ -660,7 +668,8 @@ phrase_ref :: proc(il: ^Inliner, rawsource: string, escaped: string) -> ^Node {
 		}
 		info.alias = alias
 	}
-	if n.text == "" do info.rawtext = rawaliastext
+	if text == "" do info.rawtext = rawaliastext
+	set_phrase_info(t, n, info)
 	return n
 }
 
@@ -723,21 +732,22 @@ embedded_link_valid :: proc "contextless" (s: string, lt: int) -> bool {
 // ``Inliner.implicit_inline``
 @(private = "file")
 implicit_inline :: proc(il: ^Inliner, text: string) -> (out: Node_List) {
+	t := &il.p.tree
 	rest := text
 	for len(rest) > 0 {
 		if il.depth < 32 {
 			if m, found := search_implicit(il, rest); found {
 				il.depth += 1
-				list_extend(&out, implicit_inline(il, rest[:m.start]))
+				list_extend(t, &out, implicit_inline(il, rest[:m.start]))
 				il.depth -= 1
-				list_append(&out, implicit_reference(il, rest[m.start:m.end], m))
+				list_append(t, &out, implicit_reference(il, rest[m.start:m.end], m))
 				rest = rest[m.end:]
 				continue
 			}
 		}
-		t := make_inline(il, .Text)
-		t.text = rest
-		list_append(&out, t)
+		txt := make_inline(il, .Text)
+		t.nodes[txt].text = rest
+		list_append(t, &out, txt)
 		break
 	}
 	return
@@ -775,17 +785,18 @@ search_implicit :: proc(il: ^Inliner, s: string) -> (m: Implicit_Match, found: b
 
 // The Reference node for implicit reference ``m`` (text ``whole``).
 @(private = "file")
-implicit_reference :: proc(il: ^Inliner, whole: string, m: Implicit_Match) -> ^Node {
+implicit_reference :: proc(il: ^Inliner, whole: string, m: Implicit_Match) -> Node {
+	t := &il.p.tree
 	n := make_inline(il, .Reference)
-	n.num[0] = i32(m.kind)
-	n.raw = unescape(whole, il.allocator, restore_backslashes = true)
-	n.text = whole
+	t.nodes[n].num[0] = i32(m.kind)
+	t.nodes[n].raw = unescape(whole, il.allocator, restore_backslashes = true)
+	t.nodes[n].text = whole
 	if m.kind != .Uri {
-		n.name = m.num
+		t.nodes[n].name = m.num
 		return n
 	}
-	n.name = unescape(whole, il.allocator)
-	if m.is_email do n.name = concat("mailto:", n.name, allocator = il.allocator)
+	t.nodes[n].name = unescape(whole, il.allocator)
+	if m.is_email do t.nodes[n].name = concat("mailto:", t.nodes[n].name, allocator = il.allocator)
 	return n
 }
 

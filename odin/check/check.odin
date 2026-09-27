@@ -76,6 +76,7 @@ check_text :: proc(text: string, opts: Options) -> []Message {
 	doc, line_count, final_offset := rst.parse_text(&p, text, 0, true)
 	c := Collector {
 		p        = &p,
+		t        = &p.tree,
 		messages = make([dynamic]Message, 0, 16),
 	}
 	collect_document(&c, doc)
@@ -101,6 +102,7 @@ Style :: struct {
 @(private = "file")
 Collector :: struct {
 	p:             ^rst.Parser,
+	t:             ^rst.Tree, // the parser's tree
 	messages:      [dynamic]Message,
 	title_styles:  [dynamic]Style,
 	section_level: int,
@@ -116,13 +118,14 @@ Walk :: struct {
 }
 
 @(private = "file")
-collect_document :: proc(c: ^Collector, doc: ^rst.Node) {
+collect_document :: proc(c: ^Collector, doc: rst.Node) {
 	c.title_styles = make([dynamic]Style, 0, 8)
 	w := Walk {
 		ctx = .Root,
 	}
-	for n := doc.first; n != nil; n = n.next {
-		if n.kind == .Section_Title {
+	it := rst.children(c.t, doc)
+	for n in rst.iterate(&it) {
+		if rst.node_kind(c.t, n) == .Section_Title {
 			section_title(c, n)
 		} else {
 			collect(c, n, w)
@@ -131,16 +134,18 @@ collect_document :: proc(c: ^Collector, doc: ^rst.Node) {
 }
 
 @(private = "file")
-collect :: proc(c: ^Collector, n: ^rst.Node, w: Walk) {
-	line := int(n.line) if n.line > 0 else w.line
-	#partial switch n.kind {
+collect :: proc(c: ^Collector, n: rst.Node, w: Walk) {
+	d := rst.node_data(c.t, n)
+	line := int(d.line) if d.line > 0 else w.line
+	#partial switch d.kind {
 	case .System_Message:
 		add_message(c, n)
 		return
 	case .Problematic:
-		row, from_end := rst.inline_position_unpack(n.num[1])
-		append(&c.messages, Message{line = line, level = int(n.num[0]), text = n.name,
-			span = {n.text, row, from_end}})
+		row, from_end := rst.inline_position_unpack(d.num[1])
+		msg := Message{line = line, level = int(d.num[0]), text = d.name}
+		msg.span = Span{d.text, row, from_end}
+		append(&c.messages, msg)
 		return
 	case .Directive:
 		run_directive(c, n, w)
@@ -149,30 +154,34 @@ collect :: proc(c: ^Collector, n: ^rst.Node, w: Walk) {
 		return
 	}
 	cw := Walk{line, w.delta, .Other, w.subst}
-	#partial switch n.kind {
+	#partial switch d.kind {
 	case .Entry:
 		cw.delta -= 1 // cells are nested-parsed with a 1-based offset
 	case .Substitution_Definition:
-		cw.delta += int(n.num[0])
+		cw.delta += int(d.num[0])
 		cw.subst = true
 	}
 	collect_children(c, n, cw)
 }
 
 @(private = "file")
-collect_children :: proc(c: ^Collector, n: ^rst.Node, w: Walk) {
-	for ch := n.first; ch != nil; ch = ch.next do collect(c, ch, w)
+collect_children :: proc(c: ^Collector, n: rst.Node, w: Walk) {
+	it := rst.children(c.t, n)
+	for ch in rst.iterate(&it) do collect(c, ch, w)
 }
 
 @(private = "file")
-add_message :: proc(c: ^Collector, n: ^rst.Node) {
-	m := Message{line = int(n.line), level = int(n.num[0]), text = n.text}
+add_message :: proc(c: ^Collector, n: rst.Node) {
+	d := rst.node_data(c.t, n)
+	m := Message{line = int(d.line), level = int(d.num[0]), text = d.text}
 	details := make([dynamic]string, 0, 1)
-	for ch := n.first; ch != nil; ch = ch.next {
-		if ch.kind == .Literal_Block && m.literal == "" {
-			m.literal = ch.text
+	it := rst.children(c.t, n)
+	for ch in rst.iterate(&it) {
+		text := rst.node_text(c.t, ch)
+		if rst.node_kind(c.t, ch) == .Literal_Block && m.literal == "" {
+			m.literal = text
 		} else {
-			append(&details, ch.text if len(ch.text) > 0 else ch.raw)
+			append(&details, text if len(text) > 0 else rst.node_raw(c.t, ch))
 		}
 	}
 	m.details = details[:]
@@ -182,19 +191,21 @@ add_message :: proc(c: ^Collector, n: ^rst.Node) {
 // ``RSTState.check_subsection`` at document level: title messages are
 // reported first; an inconsistent title is dropped with an error.
 @(private = "file")
-section_title :: proc(c: ^Collector, n: ^rst.Node) {
+section_title :: proc(c: ^Collector, n: rst.Node) {
 	w := Walk {
-		line = int(n.line),
+		line = rst.node_line(c.t, n),
 		ctx  = .Other,
 	}
-	title := n.first
-	if title != nil {
-		for m := title.next; m != nil; m = m.next do collect(c, m, w)
+	title := rst.first_child(c.t, n)
+	if title != rst.NO_NODE {
+		it := rst.chain(c.t, rst.next_sibling(c.t, title))
+		for m in rst.iterate(&it) do collect(c, m, w)
 	}
+	name := rst.node_name(c.t, n)
 	style := Style {
-		n = len(n.name),
+		n = len(name),
 	}
-	for i in 0 ..< min(len(n.name), 2) do style.chars[i] = n.name[i]
+	for i in 0 ..< min(len(name), 2) do style.chars[i] = name[i]
 
 	newlevel := len(c.title_styles) + 1
 	for s, i in c.title_styles {
@@ -209,11 +220,11 @@ section_title :: proc(c: ^Collector, n: ^rst.Node) {
 	}
 	c.section_level = newlevel
 	if newlevel > len(c.title_styles) do append(&c.title_styles, style)
-	if title != nil do collect(c, title, w)
+	if title != rst.NO_NODE do collect(c, title, w)
 }
 
 @(private = "file")
-inconsistent_title :: proc(c: ^Collector, n: ^rst.Node, newlevel: int) {
+inconsistent_title :: proc(c: ^Collector, n: rst.Node, newlevel: int) {
 	b := strings.builder_make()
 	strings.write_string(&b, "Established title styles:")
 	for s in c.title_styles {
@@ -226,20 +237,27 @@ inconsistent_title :: proc(c: ^Collector, n: ^rst.Node, newlevel: int) {
 	}
 	details := make([]string, 1)
 	details[0] = strings.to_string(b)
-	text := fmt.aprintf("Inconsistent title style: skip from level %d to %d.", c.section_level, newlevel)
-	append(&c.messages, Message{line = int(n.line), level = rst.ERROR, text = text, details = details,
-		literal = n.text})
+	text := fmt.aprintf(
+		"Inconsistent title style: skip from level %d to %d.", c.section_level, newlevel,
+	)
+	append(&c.messages, Message {
+		line    = rst.node_line(c.t, n),
+		level   = rst.ERROR,
+		text    = text,
+		details = details,
+		literal = rst.node_text(c.t, n),
+	})
 }
 
 // --- directives ----------------------------------------------------------------------
 
 // Run the reStructuredText parts of a standard directive (see directives.odin).
 @(private = "file")
-run_directive :: proc(c: ^Collector, n: ^rst.Node, w: Walk) {
-	spec, known := directive_spec(n.name)
+run_directive :: proc(c: ^Collector, n: rst.Node, w: Walk) {
+	spec, known := directive_spec(rst.node_name(c.t, n))
 	if !known do return
-	info, has_info := n.extra.(^rst.Directive_Info)
-	if !has_info || info == nil do return
+	info, has_info := rst.directive_info(c.t, n)
+	if !has_info do return
 	b, ok := parse_directive_block(info, spec)
 	if !ok do return
 
@@ -248,15 +266,22 @@ run_directive :: proc(c: ^Collector, n: ^rst.Node, w: Walk) {
 	saved_root_line := c.p.root_line
 	if c.p.root_line == 0 do c.p.root_line = info.end_offset + 1
 	defer c.p.root_line = saved_root_line
-	directive_parts(c, &b, spec, int(n.line), w)
+	directive_parts(c, &b, spec, rst.node_line(c.t, n), w)
 }
 
 @(private = "file")
-directive_parts :: proc(c: ^Collector, b: ^Directive_Block, spec: Directive_Spec, lineno: int, w: Walk) {
+directive_parts :: proc(
+	c: ^Collector,
+	b: ^Directive_Block,
+	spec: Directive_Spec,
+	lineno: int,
+	w: Walk,
+) {
 	has_content := len(b.content) > 0
 	switch spec.kind {
 	case .Admonition, .Figure:
-		if has_content do parse_content(c, b, w, .Other if spec.kind == .Admonition else .Anonymous)
+		ctx: Context = .Other if spec.kind == .Admonition else .Anonymous
+		if has_content do parse_content(c, b, w, ctx)
 	case .Generic_Admonition:
 		if !has_content do return
 		parse_title(c, b.arguments[0], lineno)
@@ -265,7 +290,8 @@ directive_parts :: proc(c: ^Collector, b: ^Directive_Block, spec: Directive_Spec
 		if w.ctx == .Other || !has_content do return
 		if len(b.arguments) > 0 {
 			parse_title(c, b.arguments[0], lineno)
-			if subtitle, given := option_value(b, "subtitle"); given do parse_title(c, subtitle, lineno)
+			subtitle, given := option_value(b, "subtitle")
+			if given do parse_title(c, subtitle, lineno)
 		}
 		parse_content(c, b, w, .Sidebar if spec.kind == .Sidebar else .Other)
 	case .Rubric:
@@ -294,7 +320,7 @@ directive_parts :: proc(c: ^Collector, b: ^Directive_Block, spec: Directive_Spec
 // ``state.nested_parse(content, content_offset, node)``
 @(private = "file")
 parse_content :: proc(c: ^Collector, b: ^Directive_Block, w: Walk, ctx: Context) {
-	node := rst.new_node(.Block_Quote, 0, c.p.allocator) // anonymous container
+	node := rst.new_node(c.t, .Block_Quote, 0) // anonymous container
 	sm := rst.make_state_machine(c.p, nil, 0, node)
 	sm.line_delta = w.delta
 	rst.nested_parse(&sm, b.content, b.content_offset, node)
@@ -304,7 +330,7 @@ parse_content :: proc(c: ^Collector, b: ^Directive_Block, w: Walk, ctx: Context)
 // epigraph, highlights, pull-quote: ``state.block_quote(content, content_offset)``
 @(private = "file")
 parse_block_quote :: proc(c: ^Collector, b: ^Directive_Block, lineno: int, w: Walk) {
-	out := rst.new_node(.Block_Quote, 0, c.p.allocator)
+	out := rst.new_node(c.t, .Block_Quote, 0)
 	sm := rst.make_state_machine(c.p, nil, 0, out)
 	sm.line_delta = w.delta
 	rst.block_quote(&sm, b.content, b.content_offset, out)
@@ -319,5 +345,6 @@ parse_title :: proc(c: ^Collector, text: string, lineno: int) {
 		line = lineno,
 		ctx  = .Other,
 	}
-	for n := nodes.first; n != nil; n = n.next do collect(c, n, w)
+	it := rst.chain(c.t, nodes.first)
+	for n in rst.iterate(&it) do collect(c, n, w)
 }

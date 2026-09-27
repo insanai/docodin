@@ -139,7 +139,7 @@ malformed_table :: proc(
 	block: []string,
 	detail: string,
 	offset: int,
-) -> ^Node {
+) -> Node {
 	a := sm.p.allocator
 	message := "Malformed table."
 	if detail != "" do message = concat("Malformed table.\n", detail, allocator = a)
@@ -157,6 +157,7 @@ rows_to_strings :: proc(rows: [][]rune, allocator: runtime.Allocator) -> []strin
 // --- Body.table -------------------------------------------------------------------
 
 body_table :: proc(sm: ^State_Machine, kind: Table_Kind) {
+	t := &sm.p.tree
 	a := sm.p.allocator
 	top_line := abs_line_number(sm)
 	nodes: Node_List
@@ -182,18 +183,18 @@ body_table :: proc(sm: ^State_Machine, kind: Table_Kind) {
 			// bug), ``tableline`` is lower still; docutils' cell lines come
 			// from the source positions of the lines, so the delta absorbs it.
 			cell_delta := -1 + (top_line - tableline)
-			list_append(&nodes, build_table(sm, data, tableline, cell_delta))
+			list_append(t, &nodes, build_table(sm, data, tableline, cell_delta))
 		} else {
 			msg := malformed_table(sm, rows_to_strings(block, a), err.message, err.offset)
-			list_append(&nodes, msg)
+			list_append(t, &nodes, msg)
 		}
 	}
 	// isolation messages are attached with the table, after its cells were parsed
-	for m := messages.first; m != nil; m = m.next do m.cur_line = i32(sm.p.cur_line)
-	list_extend(&nodes, messages)
-	append_chain(sm.parent, nodes.first)
+	set_chain_cur_line(t, messages.first, sm.p.cur_line)
+	list_extend(t, &nodes, messages)
+	append_chain(t, sm.parent, nodes.first)
 	if !blank_finish {
-		append_child(sm.parent, make_message(sm.p, WARNING,
+		append_child(t, sm.parent, make_message(sm.p, WARNING,
 			"Blank line required after table.", abs_line_number(sm) + 1))
 	}
 }
@@ -206,11 +207,12 @@ isolate_grid_table :: proc(
 	messages: Node_List,
 	blank_finish: bool,
 ) {
+	t := &sm.p.tree
 	a := sm.p.allocator
 	blank_finish = true
 	lines, err_line := get_text_block(sm, flush_left = true)
 	if err_line > 0 {
-		list_append(&messages, make_message(sm.p, ERROR, "Unexpected indentation.", err_line))
+		list_append(t, &messages, make_message(sm.p, ERROR, "Unexpected indentation.", err_line))
 		blank_finish = false
 	}
 	block := make([][]rune, len(lines), a)
@@ -237,7 +239,7 @@ isolate_grid_table :: proc(
 		if !found {
 			msg := malformed_table(sm, rows_to_strings(block, a),
 				"Bottom border missing or corrupt.", i_var)
-			list_append(&messages, msg)
+			list_append(t, &messages, msg)
 			return nil, messages, blank_finish
 		}
 		block = block[:n]
@@ -249,7 +251,7 @@ isolate_grid_table :: proc(
 		if len(stripped) != width || (last != '+' && last != '|') {
 			msg := malformed_table(sm, rows_to_strings(block, a),
 				"Right border not aligned or missing.", i)
-			list_append(&messages, msg)
+			list_append(t, &messages, msg)
 			return nil, messages, blank_finish
 		}
 	}
@@ -287,6 +289,7 @@ isolate_simple_table :: proc(
 	messages: Node_List,
 	blank_finish: bool,
 ) {
+	t := &sm.p.tree
 	a := sm.p.allocator
 	start := sm.line_offset
 	lines := sm.lines
@@ -301,7 +304,7 @@ isolate_simple_table :: proc(
 		if match_simple_border(line) {
 			if cp_len(strip(line)) != toplen {
 				next_line(sm, i - start)
-				list_append(&messages, malformed_table(sm, lines[start:i + 1],
+				list_append(t, &messages, malformed_table(sm, lines[start:i + 1],
 					"Bottom border or header rule does not match top border.", i - start))
 				return nil, messages, i == limit || len(lines[i + 1]) == 0
 			}
@@ -325,7 +328,7 @@ isolate_simple_table :: proc(
 			next_line(sm, i - start - 1)
 			block = lines[start:]
 		}
-		list_append(&messages, malformed_table(sm, block, details, 0))
+		list_append(t, &messages, malformed_table(sm, block, details, 0))
 		return nil, messages, found == 0
 	}
 	next_line(sm, end - start)
@@ -340,30 +343,31 @@ build_table :: proc(
 	data: Table_Data,
 	tableline: int,
 	cell_delta: int,
-) -> ^Node {
+) -> Node {
+	t := &sm.p.tree
 	table := make_node(sm, .Table, tableline)
-	table.num[0] = i32(cell_delta)
+	t.nodes[table].num[0] = i32(cell_delta)
 	tgroup := make_node(sm, .TGroup, tableline)
-	tgroup.num[0] = i32(len(data.colwidths))
-	append_child(table, tgroup)
+	t.nodes[tgroup].num[0] = i32(len(data.colwidths))
+	append_child(t, table, tgroup)
 	for w in data.colwidths {
 		cs := make_node(sm, .Colspec, tableline)
-		cs.num[0] = i32(w)
-		append_child(tgroup, cs)
+		t.nodes[cs].num[0] = i32(w)
+		append_child(t, tgroup, cs)
 	}
 	if len(data.head_rows) > 0 {
 		thead := make_node(sm, .THead, tableline)
-		append_child(tgroup, thead)
+		append_child(t, tgroup, thead)
 		for row in data.head_rows {
-			append_child(thead, build_table_row(sm, row, tableline, cell_delta))
+			append_child(t, thead, build_table_row(sm, row, tableline, cell_delta))
 		}
 	}
 	tbody := make_node(sm, .TBody, tableline)
-	append_child(tgroup, tbody)
+	append_child(t, tgroup, tbody)
 	for row in data.body_rows {
-		append_child(tbody, build_table_row(sm, row, tableline, cell_delta))
+		append_child(t, tbody, build_table_row(sm, row, tableline, cell_delta))
 	}
-	table.cur_line = i32(sm.p.cur_line) // after the cells' nested parses
+	t.nodes[table].cur_line = i32(sm.p.cur_line) // after the cells' nested parses
 	return table
 }
 
@@ -373,13 +377,14 @@ build_table_row :: proc(
 	row: []Cell,
 	tableline: int,
 	cell_delta: int,
-) -> ^Node {
+) -> Node {
+	t := &sm.p.tree
 	r := make_node(sm, .Row, tableline)
 	for cell in row {
 		if !cell.used do continue
 		entry := make_node(sm, .Entry, tableline + cell.offset)
-		entry.num = {i32(cell.morerows), i32(cell.morecols)}
-		append_child(r, entry)
+		t.nodes[entry].num = {i32(cell.morerows), i32(cell.morecols)}
+		append_child(t, r, entry)
 		has_text := false
 		for l in cell.lines do if len(l) > 0 { has_text = true; break }
 		if has_text {

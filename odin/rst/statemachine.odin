@@ -14,6 +14,7 @@ Parser :: struct {
 	// cursor moves to ``document.note_source`` (see ``observe``).  A line
 	// number, or CUR_NONE / CUR_NO_SOURCE.
 	cur_line:    int,
+	tree:        Tree, // the nodes of this parse
 }
 
 CUR_NONE      :: 0  // line None (cursor just past the end of its input)
@@ -33,7 +34,7 @@ State_Machine :: struct {
 	input_offset: int,
 	line_offset:  int,
 	match_titles: bool,
-	parent:       ^Node, // docutils ``state_machine.node``
+	parent:       Node, // docutils ``state_machine.node``
 	// Source line minus absolute line number.  docutils nests table cells
 	// with a 1-based ``input_offset``, so inside cells absolute numbers run
 	// one ahead of the StringList source information (-1 there, else 0).
@@ -49,7 +50,7 @@ make_state_machine :: proc(
 	p: ^Parser,
 	lines: []string,
 	input_offset: int,
-	parent: ^Node,
+	parent: Node,
 	match_titles := false,
 ) -> State_Machine {
 	return State_Machine {
@@ -316,16 +317,17 @@ get_text_block :: proc(
 
 // --- node helpers ------------------------------------------------------------
 
-make_node :: #force_inline proc(sm: ^State_Machine, kind: Node_Kind, line: int) -> ^Node {
-	return new_node(kind, line, sm.p.allocator)
+make_node :: #force_inline proc(sm: ^State_Machine, kind: Node_Kind, line: int) -> Node {
+	return new_node(&sm.p.tree, kind, line)
 }
 
 // A system message.  ``line`` 0 means "no line given".
-make_message :: proc(p: ^Parser, level: int, message: string, line: int) -> ^Node {
-	n := new_node(.System_Message, line, p.allocator)
-	n.text = message
-	n.num[0] = i32(level)
-	n.cur_line = i32(p.cur_line) // docutils attaches messages where they are created
+make_message :: proc(p: ^Parser, level: int, message: string, line: int) -> Node {
+	t := &p.tree
+	n := new_node(t, .System_Message, line)
+	t.nodes[n].text = message
+	t.nodes[n].num[0] = i32(level)
+	t.nodes[n].cur_line = i32(p.cur_line) // docutils attaches messages where they are created
 	return n
 }
 
@@ -336,12 +338,13 @@ make_message_block :: proc(
 	message: string,
 	block: string,
 	line: int,
-) -> ^Node {
+) -> Node {
 	n := make_message(p, level, message, line)
-	lit := new_node(.Literal_Block, 0, p.allocator)
-	lit.text = block
-	lit.raw = block
-	append_child(n, lit)
+	t := &p.tree
+	lit := new_node(t, .Literal_Block, 0)
+	t.nodes[lit].text = block
+	t.nodes[lit].raw = block
+	append_child(t, n, lit)
 	return n
 }
 
@@ -388,7 +391,7 @@ concat :: proc(parts: ..string, allocator := context.allocator) -> string {
 }
 
 // docutils ``unindent_warning``: "<X> ends without a blank line; unexpected unindent."
-unindent_warning :: proc(sm: ^State_Machine, node_name: string) -> ^Node {
+unindent_warning :: proc(sm: ^State_Machine, node_name: string) -> Node {
 	msg := concat(
 		node_name, " ends without a blank line; unexpected unindent.",
 		allocator = sm.p.allocator,
@@ -402,7 +405,7 @@ nested_parse :: proc(
 	sm: ^State_Machine,
 	lines: []string,
 	input_offset: int,
-	node: ^Node,
+	node: Node,
 	line_delta := 0,
 ) {
 	p := sm.p
@@ -411,7 +414,7 @@ nested_parse :: proc(
 		msg := make_message_block(
 			p, ERROR, "Nesting too deep; content ignored.", block, input_offset + 1,
 		)
-		append_child(node, msg)
+		append_child(&p.tree, node, msg)
 		return
 	}
 	p.depth += 1

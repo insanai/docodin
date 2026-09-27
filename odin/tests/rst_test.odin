@@ -11,7 +11,7 @@ import rst "../rst"
 // with docutils is tested from Python (tests/), against docutils itself.
 
 @(private = "file")
-parse :: proc(text: string, allocator := context.allocator) -> (doc: ^rst.Node, p: rst.Parser) {
+parse :: proc(text: string, allocator := context.allocator) -> (doc: rst.Node, p: rst.Parser) {
 	p = rst.Parser {
 		allocator = allocator,
 		settings  = rst.DEFAULT_SETTINGS,
@@ -21,17 +21,19 @@ parse :: proc(text: string, allocator := context.allocator) -> (doc: ^rst.Node, 
 }
 
 @(private = "file")
-kinds :: proc(n: ^rst.Node) -> []rst.Node_Kind {
+kinds :: proc(tree: ^rst.Tree, n: rst.Node) -> []rst.Node_Kind {
 	out := make([dynamic]rst.Node_Kind, context.temp_allocator)
-	for c := n.first; c != nil; c = c.next do append(&out, c.kind)
+	it := rst.children(tree, n)
+	for c in rst.iterate(&it) do append(&out, rst.node_kind(tree, c))
 	return out[:]
 }
 
 @(private = "file")
-messages :: proc(n: ^rst.Node, out: ^[dynamic]^rst.Node) {
-	for c := n.first; c != nil; c = c.next {
-		if c.kind == .System_Message do append(out, c)
-		messages(c, out)
+messages :: proc(tree: ^rst.Tree, n: rst.Node, out: ^[dynamic]rst.Node_Data) {
+	it := rst.children(tree, n)
+	for c in rst.iterate(&it) {
+		if rst.node_kind(tree, c) == .System_Message do append(out, rst.node_data(tree, c))
+		messages(tree, c, out)
 	}
 }
 
@@ -49,37 +51,39 @@ split_lines_matches_string2lines :: proc(t: ^testing.T) {
 @(test)
 block_structure :: proc(t: ^testing.T) {
 	context.allocator = context.temp_allocator
-	doc, _ := parse(
+	doc, p := parse(
 		"Title\n=====\n\nPara *em*.\n\n- a\n- b\n\n::\n\n  code\n\n----\n\n.. note:: x\n",
 	)
-	testing.expect(t, slice_equal(kinds(doc), []rst.Node_Kind {
+	tree := &p.tree
+	testing.expect(t, slice_equal(kinds(tree, doc), []rst.Node_Kind {
 		.Section_Title, .Paragraph, .Bullet_List, .Literal_Block, .Transition, .Directive,
 	})) // a lone "::" paragraph is dropped
-	para := doc.first.next
-	testing.expect(t, slice_equal(kinds(para), []rst.Node_Kind{.Text, .Emphasis, .Text}))
-	testing.expect_value(t, rst.child_count(para.next), 2)
-	directive := doc.last
-	testing.expect_value(t, directive.name, "note")
-	info := directive.extra.(^rst.Directive_Info)
+	para := rst.next_sibling(tree, rst.first_child(tree, doc))
+	testing.expect(t, slice_equal(kinds(tree, para), []rst.Node_Kind{.Text, .Emphasis, .Text}))
+	testing.expect_value(t, rst.child_count(tree, rst.next_sibling(tree, para)), 2)
+	directive := rst.last_child(tree, doc)
+	testing.expect_value(t, rst.node_name(tree, directive), "note")
+	info, has_info := rst.directive_info(tree, directive)
+	testing.expect(t, has_info)
 	testing.expect_value(t, info.lines[0], "x")
 }
 
 @(test)
 tables :: proc(t: ^testing.T) {
 	context.allocator = context.temp_allocator
-	doc, _ := parse("+---+---+\n| a | b |\n+===+===+\n| c | d |\n+---+---+\n\n=  =\nx  y\n=  =\n")
-	testing.expect(t, slice_equal(kinds(doc), []rst.Node_Kind{.Table, .Table}))
-	msgs := make([dynamic]^rst.Node)
-	messages(doc, &msgs)
+	doc, p := parse("+---+---+\n| a | b |\n+===+===+\n| c | d |\n+---+---+\n\n=  =\nx  y\n=  =\n")
+	testing.expect(t, slice_equal(kinds(&p.tree, doc), []rst.Node_Kind{.Table, .Table}))
+	msgs := make([dynamic]rst.Node_Data)
+	messages(&p.tree, doc, &msgs)
 	testing.expect_value(t, len(msgs), 0)
 }
 
 @(test)
 system_messages_have_docutils_lines :: proc(t: ^testing.T) {
 	context.allocator = context.temp_allocator
-	doc, _ := parse("Para\n\n- item\ntext\n\n+---+\n| x  |\n+---+\n")
-	msgs := make([dynamic]^rst.Node)
-	messages(doc, &msgs)
+	doc, p := parse("Para\n\n- item\ntext\n\n+---+\n| x  |\n+---+\n")
+	msgs := make([dynamic]rst.Node_Data)
+	messages(&p.tree, doc, &msgs)
 	testing.expect_value(t, len(msgs), 2)
 	testing.expect_value(t, msgs[0].text,
 		"Bullet list ends without a blank line; unexpected unindent.")
@@ -96,7 +100,10 @@ inline_markup :: proc(t: ^testing.T) {
 	p := rst.Parser{allocator = context.allocator, settings = rst.DEFAULT_SETTINGS}
 	nodes := rst.parse_inline(&p, "**b** ``l`` `t <http://x>`_ :r:`i` [1]_ *open", 1)
 	got := make([dynamic]rst.Node_Kind)
-	for n := nodes.first; n != nil; n = n.next do if n.kind != .Text do append(&got, n.kind)
+	it := rst.chain(&p.tree, nodes.first)
+	for n in rst.iterate(&it) {
+		if kind := rst.node_kind(&p.tree, n); kind != .Text do append(&got, kind)
+	}
 	testing.expect(t, slice_equal(got[:], []rst.Node_Kind {
 		.Strong, .Literal, .Reference, .Interpreted, .Footnote_Reference, .Problematic,
 	}))
@@ -110,9 +117,9 @@ deep_nesting_is_bounded :: proc(t: ^testing.T) {
 		for _ in 0 ..< i do strings.write_byte(&b, ' ')
 		strings.write_string(&b, "- x\n\n")
 	}
-	doc, _ := parse(strings.to_string(b))
-	msgs := make([dynamic]^rst.Node)
-	messages(doc, &msgs)
+	doc, p := parse(strings.to_string(b))
+	msgs := make([dynamic]rst.Node_Data)
+	messages(&p.tree, doc, &msgs)
 	// reported where the limit is reached, instead of overflowing the stack
 	testing.expect(t, len(msgs) > 0)
 	for m in msgs do testing.expect_value(t, m.text, "Nesting too deep; content ignored.")
@@ -125,7 +132,8 @@ line_length_limit :: proc(t: ^testing.T) {
 	p.settings.line_length_limit = 10
 	doc, _, final_offset := rst.parse_text(&p, "short\nthis line is too long\n", 0, true)
 	testing.expect_value(t, final_offset, -1)
-	testing.expect_value(t, doc.first.text, "Line 2 exceeds the line-length-limit.")
+	message := rst.node_text(&p.tree, rst.first_child(&p.tree, doc))
+	testing.expect_value(t, message, "Line 2 exceeds the line-length-limit.")
 }
 
 // Everything a parse allocates comes from the parser's allocator.
@@ -159,11 +167,11 @@ slice_equal :: proc(a, b: []rst.Node_Kind) -> bool {
 @(test)
 current_line_tracking :: proc(t: ^testing.T) {
 	context.allocator = context.temp_allocator
-	doc, _ := parse(".. comment\n   more\n\nx\n\n+---+\n| a |\n+---+\n")
-	comment := doc.first
+	doc, p := parse(".. comment\n   more\n\nx\n\n+---+\n| a |\n+---+\n")
+	comment := rst.node_data(&p.tree, rst.first_child(&p.tree, doc))
 	testing.expect_value(t, comment.kind, rst.Node_Kind.Comment)
 	testing.expect_value(t, comment.cur_line, 3)
-	table := doc.last
+	table := rst.node_data(&p.tree, rst.last_child(&p.tree, doc))
 	testing.expect_value(t, table.kind, rst.Node_Kind.Table)
 	testing.expect_value(t, table.cur_line, rst.CUR_NONE)
 }

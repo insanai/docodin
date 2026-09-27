@@ -84,7 +84,8 @@ docodin_parse :: proc "c" (
 		&p, text, input_offset, match_titles, raw_line_count,
 	)
 	capacity := input_len + input_len / 2
-	return finish(serialize_document(doc, line_count, final_offset, p.cur_line, capacity), out_len)
+	w := serialize_document(&p.tree, doc, line_count, final_offset, p.cur_line, capacity)
+	return finish(w, out_len)
 }
 
 // Parse inline markup only (``Inliner.parse`` / ``RSTState.inline_text``).
@@ -103,7 +104,7 @@ docodin_parse_inline :: proc "c" (
 		settings  = rst.settings_from_flags(flags, 8, 0),
 	}
 	nodes := rst.parse_inline(&p, string(input[:max(input_len, 0)]), lineno)
-	return finish(serialize_inline(nodes, input_len * 2 + 64), out_len)
+	return finish(serialize_inline(&p.tree, nodes, input_len * 2 + 64), out_len)
 }
 
 // ``docutils.statemachine.string2lines``: (WIRE_VERSION, [lines]).
