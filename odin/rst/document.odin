@@ -88,7 +88,9 @@ parse_text :: proc(
 	} else {
 		run_body(&sm)
 	}
-	final_offset = sm.line_offset
+	// docutils' input lines include the inserted ones
+	final_offset = sm.line_offset + (sm.input_offset - input_offset)
+	p.inserted = sm.inserted
 	return
 }
 

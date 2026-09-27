@@ -59,6 +59,9 @@ class OdinStateMachine(statemachine.StateMachineWS):
         # source line minus absolute line (docutils quirks: table cells -1,
         # substitution definitions spanning lines); see odin/rst/statemachine.odin
         self.line_delta = 0
+        # the input is a disconnected block (substitution definitions, table
+        # cells): insertions into directive content do not reach its input
+        self.disconnected = False
         self.debug = False
         self.observers = []
         self.states = {}
@@ -127,6 +130,17 @@ class OdinStateMachine(statemachine.StateMachineWS):
 
     def run(self, *args: Any, **kwargs: Any) -> Any:  # pragma: no cover - not line-driven
         raise NotImplementedError("OdinStateMachine is not run line by line")
+
+    def insert_input(self, input_lines, source) -> None:
+        """``StateMachine.insert_input``; captured by an include dry run
+        (``ctx.capture_insert`` is a list), or skipped where the native
+        parser already inserted the lines (it is True)."""
+        capture = self.ctx.capture_insert
+        if capture is not None:
+            if isinstance(capture, list):
+                capture.append((list(input_lines), source))
+            return
+        super().insert_input(input_lines, source)
 
     def unlink(self) -> None:
         self.observers = []

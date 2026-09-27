@@ -2,6 +2,8 @@ package docodin
 
 import "base:runtime"
 
+import "core:strings"
+
 import rst "../rst"
 import text "../text"
 
@@ -14,19 +16,32 @@ import text "../text"
 // * Results are heap buffers owned by the caller; release with
 //   ``docodin_free``.
 
-ABI_VERSION :: 2
+ABI_VERSION :: 3
 VERSION :: "0.2.0"
 
 @(thread_local, private = "file")
 tl_arena: Bump_Arena
 
+// Calls in progress on this thread: a host callback (the include hook of
+// ``docodin_parse``) may call back into the library, and the arena is only
+// reset when the outermost call returns.
+@(thread_local, private = "file")
+tl_depth: int
+
 @(private = "file")
 call_context :: proc "contextless" () -> runtime.Context {
+	tl_depth += 1
 	ctx := runtime.default_context()
 	a := bump_allocator(&tl_arena)
 	ctx.allocator = a
 	ctx.temp_allocator = a
 	return ctx
+}
+
+@(private = "file")
+leave_call :: proc "contextless" () {
+	tl_depth -= 1
+	if tl_depth == 0 do bump_reset(&tl_arena)
 }
 
 @(private = "file")
@@ -60,6 +75,10 @@ docodin_version :: proc "c" () -> cstring {
 //   raw_line_count:    >= 0: input holds that many '\n'-joined lines
 //                      (StringList); < 0: apply ``string2lines``
 //   root_line:         host's current reporter line for nested parses (0: none)
+//   include_hook:      nil, or called with each directive (its wire tuple);
+//                      it returns true and '\n'-joined lines to insert
+//                      after the directive (``insert_input``), which the
+//                      parser then parses in place
 @(export)
 docodin_parse :: proc "c" (
 	input: [^]u8,
@@ -70,14 +89,21 @@ docodin_parse :: proc "c" (
 	tab_width: i32,
 	line_length_limit: i32,
 	root_line: i32,
+	include_hook: Include_Callback,
+	hook_data: rawptr,
 	out_len: ^int,
 ) -> [^]u8 {
 	context = call_context()
-	defer bump_reset(&tl_arena)
+	defer leave_call()
 	p := rst.Parser {
 		allocator = context.allocator,
 		settings  = rst.settings_from_flags(flags, int(tab_width), int(line_length_limit)),
 		root_line = int(root_line),
+	}
+	hook := C_Hook{include_hook, hook_data}
+	if include_hook != nil {
+		p.include_hook = c_include_hook
+		p.hook_data = &hook
 	}
 	text := string(input[:max(input_len, 0)])
 	match_titles := .Match_Titles in flags
@@ -87,6 +113,44 @@ docodin_parse :: proc "c" (
 	capacity := input_len + input_len / 2
 	w := serialize_document(&p.tree, doc, line_count, final_offset, p.cur_line, capacity)
 	return finish(w, out_len)
+}
+
+// The host's include hook: ``item`` is the wire tuple of the directive; on
+// true, ``out`` holds the lines to insert (``'\n'``-joined), valid until
+// the next call.
+Include_Callback :: proc "c" (
+	data: rawptr,
+	item: [^]u8,
+	item_len: int,
+	out: ^[^]u8,
+	out_len: ^int,
+) -> b32
+
+@(private = "file")
+C_Hook :: struct {
+	callback: Include_Callback,
+	data:     rawptr,
+}
+
+@(private = "file")
+c_include_hook :: proc(
+	data: rawptr,
+	p: ^rst.Parser,
+	sm: ^rst.State_Machine,
+	d: rst.Node,
+) -> (
+	lines: []string,
+	insert: bool,
+) {
+	hook := (^C_Hook)(data)
+	w := writer_make(256)
+	defer delete(w.buf)
+	write_node(&w, &p.tree, d)
+	out: [^]u8
+	out_len: int
+	if !hook.callback(hook.data, raw_data(w.buf), len(w.buf), &out, &out_len) do return nil, false
+	text := strings.clone(string(out[:max(out_len, 0)]), p.allocator)
+	return strings.split(text, "\n", p.allocator), true
 }
 
 // Parse inline markup only (``Inliner.parse`` / ``RSTState.inline_text``).
@@ -99,7 +163,7 @@ docodin_parse_inline :: proc "c" (
 	out_len: ^int,
 ) -> [^]u8 {
 	context = call_context()
-	defer bump_reset(&tl_arena)
+	defer leave_call()
 	p := rst.Parser {
 		allocator = context.allocator,
 		settings  = rst.settings_from_flags(flags, 8, 0),
@@ -117,7 +181,7 @@ docodin_split_lines :: proc "c" (
 	out_len: ^int,
 ) -> [^]u8 {
 	context = call_context()
-	defer bump_reset(&tl_arena)
+	defer leave_call()
 	lines := rst.split_lines(string(input[:max(input_len, 0)]), int(tab_width), context.allocator)
 	w := writer_make(input_len + len(lines) * 6 + 16)
 	w_tuple(&w, 2)
@@ -141,7 +205,7 @@ docodin_render_html :: proc "c" (
 	out_len: ^int,
 ) -> [^]u8 {
 	context = call_context()
-	defer bump_reset(&tl_arena)
+	defer leave_call()
 	p := rst.Parser {
 		allocator = context.allocator,
 		settings  = rst.DEFAULT_SETTINGS,
@@ -177,7 +241,7 @@ docodin_render_latex :: proc "c" (
 	out_len: ^int,
 ) -> [^]u8 {
 	context = call_context()
-	defer bump_reset(&tl_arena)
+	defer leave_call()
 	p := rst.Parser {
 		allocator = context.allocator,
 		settings  = rst.DEFAULT_SETTINGS,
@@ -220,7 +284,7 @@ docodin_free :: proc "c" (ptr: rawptr) {
 @(export)
 docodin_educate :: proc "c" (request: [^]u8, request_len: int, out_len: ^int) -> [^]u8 {
 	context = call_context()
-	defer bump_reset(&tl_arena)
+	defer leave_call()
 	r := Request {
 		buf = string(request[:max(request_len, 0)]),
 		ok  = true,

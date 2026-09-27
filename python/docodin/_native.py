@@ -10,11 +10,11 @@ import os
 import struct
 import sys
 import threading
-from collections.abc import Sequence
+from collections.abc import Callable, Sequence
 from typing import Any
 
-ABI_VERSION = 2
-WIRE_VERSION = 2
+ABI_VERSION = 3
+WIRE_VERSION = 3
 
 # Parse_Flag bit positions (odin/rst/document.odin)
 MATCH_TITLES = 1 << 0
@@ -55,6 +55,43 @@ def _find_library() -> str:
     )
 
 
+
+_HOOK_TYPE = ctypes.CFUNCTYPE(
+    ctypes.c_int32, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_ssize_t,
+    ctypes.POINTER(ctypes.c_void_p), ctypes.POINTER(ctypes.c_ssize_t),
+)
+
+
+class _Hook:
+    """The C callback of ``docodin_parse``'s include hook around a Python callable.
+
+    Exceptions cannot cross the C boundary: the first one is kept and re-raised
+    after the parse.  Returned buffers stay alive until the parse ends.
+    """
+
+    def __init__(self, function: Callable[[tuple], list[str] | None]) -> None:
+        self.function = function
+        self.error: BaseException | None = None
+        self.buffers: list[Any] = []
+        self.callback = _HOOK_TYPE(self._call)
+        self.pointer = ctypes.cast(self.callback, ctypes.c_void_p)
+
+    def _call(self, _data, item, item_len, out, out_len) -> int:
+        if self.error is not None:
+            return 0
+        try:
+            lines = self.function(marshal.loads(ctypes.string_at(item, item_len)))
+            if lines is None:
+                return 0
+            buffer = ctypes.create_string_buffer("\n".join(lines).encode("utf-8", "surrogatepass"))
+            self.buffers.append(buffer)
+            out[0] = ctypes.cast(buffer, ctypes.c_void_p)
+            out_len[0] = len(buffer) - 1
+            return 1
+        except BaseException as error:  # noqa: BLE001 - re-raised after the parse
+            self.error = error
+            return 0
+
 class NativeLibrary:
     """Thin, thread-safe wrapper around the C ABI (the library keeps no global state)."""
 
@@ -73,7 +110,8 @@ class NativeLibrary:
         lib.docodin_parse.restype = ctypes.c_void_p
         lib.docodin_parse.argtypes = [
             ctypes.c_char_p, ssize, ssize, ssize, ctypes.c_uint32,
-            ctypes.c_int32, ctypes.c_int32, ctypes.c_int32, ctypes.POINTER(ssize),
+            ctypes.c_int32, ctypes.c_int32, ctypes.c_int32, ctypes.c_void_p, ctypes.c_void_p,
+            ctypes.POINTER(ssize),
         ]
         lib.docodin_parse_inline.restype = ctypes.c_void_p
         lib.docodin_parse_inline.argtypes = [
@@ -145,6 +183,7 @@ class NativeLibrary:
         tab_width: int = 8,
         line_length_limit: int = 10_000,
         root_line: int = 0,
+        include_hook: Callable[[tuple], list[str] | None] | None = None,
     ) -> tuple[list, int, int, int]:
         """Parse reStructuredText markup into an intermediate wire-format tree.
 
@@ -156,6 +195,9 @@ class NativeLibrary:
             tab_width: Number of spaces per tab expansion. Defaults to 8.
             line_length_limit: Maximum allowed characters per line before error. Defaults to 10,000.
             root_line: Line number offset from top-level state machine. Defaults to 0.
+            include_hook: Called with the wire tuple of each directive the parser finds in
+                input connected to the parsed lines; returns the lines to insert after the
+                directive (``insert_input``), which the parser then parses in place, or None.
 
         Returns:
             Tuple of (items, number_of_lines, final_line_offset, current_line).
@@ -166,11 +208,16 @@ class NativeLibrary:
         """
         data = text.encode("utf-8", "surrogatepass")
         size = ctypes.c_ssize_t()
+        hook = _Hook(include_hook) if include_hook is not None else None
         ptr = self._parse(
             data, len(data), input_offset, line_count, flags,
-            tab_width, max(0, min(line_length_limit, 2**31 - 1)), root_line, ctypes.byref(size),
+            tab_width, max(0, min(line_length_limit, 2**31 - 1)), root_line,
+            hook.pointer if hook else None, None, ctypes.byref(size),
         )
-        _, items, count, final_offset, current_line = self._take(ptr, size.value)
+        result = self._take(ptr, size.value)
+        if hook is not None and hook.error is not None:
+            raise hook.error
+        _, items, count, final_offset, current_line = result
         return items, count, final_offset, current_line
 
     def split_lines(self, text: str, tab_width: int = 8) -> list[str]:

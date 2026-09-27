@@ -12,13 +12,45 @@ Parser :: struct {
 	depth:       int,            // nesting depth of state machines
 	// docutils ``document.current_line``: every state machine reports its
 	// cursor moves to ``document.note_source`` (see ``observe``).  A line
-	// number, or CUR_NONE / CUR_NO_SOURCE.
+	// number, ``cur_past_end(last line)`` or CUR_NO_SOURCE.
 	cur_line:    int,
 	tree:        Tree, // the nodes of this parse
+	// ``include`` support: the host decides whether a directive inserts
+	// input lines (``state_machine.insert_input``); the parser then parses
+	// them in place, like docutils (see ``insert_input``)
+	include_hook: Include_Hook,
+	hook_data:    rawptr,
+	inserted:     int, // lines inserted into the input of the parse
 }
 
-CUR_NONE      :: 0  // line None (cursor just past the end of its input)
+// Called for each directive the parser finds in input connected to the
+// parse's input lines (see ``State_Machine.disconnected``): returns the
+// lines to insert after the directive's block (``insert_input``), if any.
+Include_Hook :: proc(
+	data: rawptr,
+	p: ^Parser,
+	sm: ^State_Machine,
+	directive: Node,
+) -> (
+	lines: []string,
+	insert: bool,
+)
+
+CUR_NONE      :: 0  // line None (and no line to take the source from)
 CUR_NO_SOURCE :: -1 // line and source None (cursor further out)
+
+// The cursor just past the end of its input: line None, the source of the
+// input's last line ``last_line`` (a source line number).  At most -2.
+cur_past_end :: #force_inline proc "contextless" (last_line: int) -> int {
+	return -(last_line + 1)
+}
+
+// The last line of the input of a ``cur_past_end`` value.
+past_end_line :: #force_inline proc "contextless" (cur: int) -> (last_line: int, ok: bool) {
+	if cur > CUR_NO_SOURCE do return 0, false
+	if cur == CUR_NO_SOURCE do return 0, false
+	return -cur - 1, true
+}
 
 // Maximum nesting of block structures.  docutils itself fails with a
 // RecursionError between 150 and 200 levels; beyond this limit the content
@@ -44,6 +76,13 @@ State_Machine :: struct {
 	// messages without an explicit line) stays where the first member ended.
 	// The specialized-state loops here run in place and freeze that line.
 	frozen_line:  int,
+	// Lines inserted into this machine's input by ``insert_input`` (its own
+	// or propagated from nested machines over a slice of its lines).
+	inserted:     int,
+	// The input is not a slice of the enclosing machine's (docutils
+	// ``block.disconnect()``: substitution definitions, table cells), so
+	// insertions do not reach the enclosing input.
+	disconnected: bool,
 }
 
 make_state_machine :: proc(
@@ -99,7 +138,7 @@ observe :: #force_inline proc "contextless" (sm: ^State_Machine) {
 	switch {
 	case i >= 0 && i < n:  sm.p.cur_line = sm.input_offset + i + 1 + sm.line_delta
 	case i < 0 && i >= -n: sm.p.cur_line = sm.input_offset + n + i + 1 + sm.line_delta
-	case i == n && n > 0:  sm.p.cur_line = CUR_NONE
+	case i == n && n > 0:  sm.p.cur_line = cur_past_end(sm.input_offset + n + sm.line_delta)
 	case:                  sm.p.cur_line = CUR_NO_SOURCE
 	}
 }
@@ -331,6 +370,14 @@ make_message :: proc(p: ^Parser, level: int, message: string, line: int) -> Node
 	return n
 }
 
+// Mark a message whose line is a ``source_line``: docutils reports it with
+// the ``(source, line)`` of the state machine's ``get_source_and_line``
+// (the host maps the line through that machine's input lines).
+mark_source_line :: proc "contextless" (p: ^Parser, msg: Node) -> Node {
+	p.tree.nodes[msg].num[1] = 1
+	return msg
+}
+
 // A system message carrying a literal block (docutils idiom).
 make_message_block :: proc(
 	p: ^Parser,
@@ -407,6 +454,7 @@ nested_parse :: proc(
 	input_offset: int,
 	node: Node,
 	line_delta := 0,
+	disconnected := false,
 ) {
 	p := sm.p
 	if p.depth >= MAX_NESTING {
@@ -421,7 +469,34 @@ nested_parse :: proc(
 	defer p.depth -= 1
 	nsm := make_state_machine(p, lines, input_offset, node)
 	nsm.line_delta = sm.line_delta + line_delta
+	nsm.disconnected = sm.disconnected || disconnected
 	run_body(&nsm)
+	propagate_insertion(sm, &nsm)
+}
+
+// After a nested machine over a slice of ``sm``'s lines returns: the lines
+// inserted into it are in ``sm``'s input too, and docutils moves ``sm``
+// past them (``nested_parse``: ``next_line(len(block) - block_length)``),
+// so the following lines are numbered after them.
+propagate_insertion :: proc "contextless" (sm, nested: ^State_Machine) {
+	if nested.inserted == 0 || (nested.disconnected && !sm.disconnected) do return
+	sm.input_offset += nested.inserted
+	sm.inserted += nested.inserted
+	observe(sm) // ``next_line`` notifies the observers
+}
+
+// ``state_machine.insert_input(lines, source)``: ``lines`` go after the
+// current line, between the padding lines docutils adds.
+insert_input :: proc(sm: ^State_Machine, lines: []string) {
+	at := sm.line_offset + 1
+	grown := make([]string, len(sm.lines) + len(lines) + 2, sm.p.allocator)
+	copy(grown, sm.lines[:at])
+	grown[at] = "" // internal padding before
+	copy(grown[at + 1:], lines)
+	grown[at + 1 + len(lines)] = "" // internal padding after
+	copy(grown[at + 2 + len(lines):], sm.lines[at:])
+	sm.lines = grown
+	sm.inserted += len(lines) + 2
 }
 
 // Line number as docutils' ``get_source_and_line()`` reports it (from the

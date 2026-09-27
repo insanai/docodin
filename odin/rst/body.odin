@@ -569,7 +569,8 @@ text_text :: proc(sm: ^State_Machine, line1: string) {
 	copy(lines[1:], block)
 	literalnext := paragraph(sm, lines, startline, sm.parent)
 	if err_line > 0 {
-		append_child(t, sm.parent, make_message(sm.p, ERROR, "Unexpected indentation.", err_line))
+		msg := make_message(sm.p, ERROR, "Unexpected indentation.", err_line)
+		append_child(t, sm.parent, mark_source_line(sm.p, msg))
 	}
 	if literalnext {
 		next_line(sm)
@@ -604,8 +605,9 @@ text_underline :: proc(sm: ^State_Machine, line1: string, l2: string) -> bool {
 	if !sm.match_titles {
 		blocktext := concat(line1, "\n", l2, allocator = a)
 		append_chain(t, sm.parent, messages.first)
-		append_child(t, sm.parent, make_message_block(sm.p, ERROR,
-			"Unexpected section title.", blocktext, source_line(sm, abs_line_number(sm))))
+		msg := make_message_block(sm.p, ERROR,
+			"Unexpected section title.", blocktext, source_line(sm, abs_line_number(sm)))
+		append_child(t, sm.parent, mark_source_line(sm.p, msg))
 		return true
 	}
 	emit_section_title(sm, title, source, underline[:1], lineno - 1, messages)

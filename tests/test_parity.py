@@ -114,3 +114,99 @@ def test_include_leaves_the_reporter_where_docutils_does(name, tmp_path, monkeyp
                 document.current_source, document.current_line)
 
     assert state(docodin.Parser()) == state(docutils.parsers.rst.Parser())
+
+
+def _document_state(parser, text: str, **settings_overrides) -> tuple:
+    """Everything a parse leaves behind: pseudo-XML, the source and line of
+    every element, the warning stream (all messages, in creation order) and
+    the reporter's and document's position."""
+    import io
+
+    from docutils import nodes
+    from docutils.parsers.rst import directives, roles
+
+    roles._roles.clear()  # docutils caches roles and directives per process
+    directives._directives.clear()
+    settings = docutils.frontend.get_default_settings(docutils.parsers.rst.Parser)
+    stream = io.StringIO()
+    settings.warning_stream = stream
+    settings.report_level = 1
+    settings.halt_level = 5
+    for key, value in settings_overrides.items():
+        setattr(settings, key, value)
+    document = docutils.utils.new_document("test data", settings)
+    parser.parse(text, document)
+    positions = [(n.tagname, n.source, n.line) for n in document.findall(nodes.Element)]
+    return (document.pformat(), positions, stream.getvalue(),
+            document.reporter.get_source_and_line(), document.current_source,
+            document.current_line)
+
+
+# Host bugs found by the directive fuzzer (tests/fuzz_differential.py --directives).
+STATE_CASES = {
+    # the reporter's line stays where the root machine is: explicit lists run
+    # in a nested state machine
+    "explicit_list_reporter_line": (".. _t1:\n.. note:: x\n   :name: a b\n.. _t2:\n\n"
+                                    ".. note:: y\n   :name: a b\n"),
+    # a nested state machine that ran past the end of its input leaves the
+    # source of its last line
+    "end_of_input_source": (".. |sub| replace:: text\n  :other: more\n   .. |sub| replace:: text"
+                            "\n\n    Term\n      Def\n"),
+    # a grid table reports an indented line after it before parsing its cells
+    "grid_table_indentation": ("+---+-----+\n| a | *b  |\n+---+-----+\n  indented\ntext\n"),
+    # a paragraph in a table cell reports an indented line before its inline
+    # markup (cell lines are numbered one ahead of the source)
+    "cell_paragraph_indentation": "====  ====\nR     `x\n      y\n        ]\n====  ====\n",
+}
+
+
+@pytest.mark.parametrize("name", sorted(STATE_CASES))
+def test_document_state(name):
+    import docodin
+
+    text = STATE_CASES[name]
+    assert (_document_state(docodin.Parser(), text)
+            == _document_state(docutils.parsers.rst.Parser(), text))
+
+
+def test_parsed_literal_error_after_include():
+    """Only the literal block of ``parsed-literal`` carries an absolute line
+    (renumbered after an include), not its error message."""
+    import docodin
+
+    text = ".. include:: <isonum.txt>\n.. parsed-literal::\n\n"
+    assert (_document_state(docodin.Parser(), text)
+            == _document_state(docutils.parsers.rst.Parser(), text))
+
+
+# ``include``: docutils parses the inserted lines in the state machine that ran
+# the directive (explicit lists, block quotes, directive content, table cells)
+INCLUDE_STATE_CASES = {
+    "block_quote": " .. include:: <isonum.txt>\n.. _tgt:\n",
+    "explicit_list": ".. include:: <isonum.txt>\n.. _a:\n.. note:: x\n   :name: a\n",
+    "nested_directive": ".. note::\n\n   .. include:: <isolat1.txt>\n\n   |Auml| after\n\nText\n",
+    "figure_content": ".. figure:: f.png\n\n  .. include:: <isonum.txt>\n- list\n",
+    "substitution_content": (".. |r2| replace:: two\n\n    .. include:: <isonum.txt>\n"
+                             "    .. role:: x(literal)\n       :format: no\n"),
+    "table_cell": ".. csv-table::\n\n    .. include:: <isonum.txt>\n   .. _ftarget:\n",
+    "line_block_after": ".. include:: <isonum.txt>\n\n.. line-block::\n\n   a\n    *b\n",
+}
+
+
+@pytest.mark.parametrize("name", sorted(INCLUDE_STATE_CASES))
+def test_include_state(name):
+    import docodin
+
+    text = INCLUDE_STATE_CASES[name]
+    assert (_document_state(docodin.Parser(), text)
+            == _document_state(docutils.parsers.rst.Parser(), text))
+
+
+def test_directive_content_spliced_around_options():
+    """Content before and after the options: docutils numbers its lines
+    through the directive's input lines."""
+    import docodin
+
+    text = ".. note:: x\n   :name: a b\n\n   Sub\n   ---\n"
+    assert (_document_state(docodin.Parser(), text)
+            == _document_state(docutils.parsers.rst.Parser(), text))

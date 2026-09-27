@@ -472,7 +472,8 @@ substitution_def :: proc(
 		parts := []string{"Substitution definition \"", subname, "\" missing contents."}
 		msg := strings.concatenate(parts, a)
 		line := source_line(sm, lineno)
-		list_append(t, &nodes, make_message_block(sm.p, WARNING, msg, blocktext, line))
+		message := make_message_block(sm.p, WARNING, msg, blocktext, line)
+		list_append(t, &nodes, mark_source_line(sm.p, message))
 		return
 	}
 	block[0] = strip(block[0])
@@ -484,6 +485,7 @@ substitution_def :: proc(
 	t.nodes[sub].num[0] = i32(blockindex)
 	nsm := make_state_machine(sm.p, block, offset, sub)
 	nsm.line_delta = sm.line_delta + blockindex
+	nsm.disconnected = true // ``block.disconnect()``
 	blank_finish = substitution_def_state(&nsm, sub, blank_finish)
 	t.nodes[sub].cur_line = i32(sm.p.cur_line) // validated and registered here
 	list_append(t, &nodes, sub)
@@ -575,6 +577,13 @@ directive :: proc(
 		blank_finish = r.blank_finish,
 	})
 	list_append(t, &nodes, d)
+	p := sm.p
+	if p.include_hook != nil && !sm.disconnected {
+		if lines, insert := p.include_hook(p.hook_data, p, sm, d); insert {
+			insert_input(sm, lines)
+			t.nodes[d].num[0] = 1 // the host must not insert them again
+		}
+	}
 	return nodes, r.blank_finish || is_next_line_blank(sm)
 }
 

@@ -20,11 +20,14 @@ import rst "../rst"
 //   Footnote/Citation_Reference   (K, label)
 //   Interpreted                   (K, raw, text, role)
 //   Problematic                   (K, text, level, message)
-//   System_Message                (K, line, level, message, children, cur)
+//   System_Message                (K, line, level, message, children, cur,
+//                                  source_line: map the line through the
+//                                  parse's input lines, see rst.mark_source_line)
 //   Section_Title                 (K, line, style, source, title_raw, title_children,
 //                                  messages, cur_line)
 //   Directive                     (K, line, name, block_text, lines, line_offset,
-//                                  end_offset, blank_finish)
+//                                  end_offset, blank_finish, reporter_line,
+//                                  inserted: the include hook inserted its lines)
 //   Target                        (K, line, raw, name, type, data, cur)
 //   Footnote, Citation            (K, line, label, raw, children, cur)
 //   Comment                       (K, line, text, cur)
@@ -33,7 +36,9 @@ import rst "../rst"
 //   <other block elements>        see ``write_node``
 //
 // ``cur`` values are docutils' ``document.current_line`` (rst.Parser.cur_line):
-// a line number, 0 (None) or -1 (None, and no current source).
+// a line number, 0 (None), -1 (None, and no current source), or at most -2:
+// line None past the end of an input whose last line is ``-cur - 1`` (the
+// current source is that line's).
 
 MARSHAL_NONE  :: 'N'
 MARSHAL_TRUE  :: 'T'
@@ -47,7 +52,7 @@ MARSHAL_ASCII :: 'a'
 MARSHAL_UNICODE :: 'u'
 
 // Wire format version, bumped whenever the layout changes.
-WIRE_VERSION :: 2
+WIRE_VERSION :: 3
 
 Writer :: struct {
 	buf: [dynamic]u8,
@@ -193,9 +198,9 @@ write_parser_node :: proc(w: ^Writer, t: ^rst.Tree, n: rst.Node, d: rst.Node_Dat
 	line := int(d.line)
 	#partial switch d.kind {
 	case .System_Message:
-		w_tuple(w, 6); w_int(w, k); w_int(w, line); w_int(w, int(d.num[0])); w_str(w, d.text)
+		w_tuple(w, 7); w_int(w, k); w_int(w, line); w_int(w, int(d.num[0])); w_str(w, d.text)
 		write_children(w, t, n)
-		w_int(w, int(d.cur_line))
+		w_int(w, int(d.cur_line)); w_bool(w, d.num[1] != 0)
 
 	case .Section_Title:
 		w_tuple(w, 8); w_int(w, k); w_int(w, line)
@@ -210,10 +215,11 @@ write_parser_node :: proc(w: ^Writer, t: ^rst.Tree, n: rst.Node, d: rst.Node_Dat
 
 	case .Directive:
 		info, _ := rst.directive_info(t, n)
-		w_tuple(w, 8); w_int(w, k); w_int(w, line); w_str(w, d.name); w_str(w, d.raw)
+		w_tuple(w, 10); w_int(w, k); w_int(w, line); w_str(w, d.name); w_str(w, d.raw)
 		w_list(w, len(info.lines))
 		for l in info.lines do w_str(w, l)
 		w_int(w, info.line_offset); w_int(w, info.end_offset); w_bool(w, info.blank_finish)
+		w_int(w, int(d.num[1])); w_bool(w, d.num[0] != 0)
 
 	case .Target:
 		w_tuple(w, 7); w_int(w, k); w_int(w, line); w_str(w, d.raw); w_str(w, d.name)

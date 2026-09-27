@@ -234,7 +234,7 @@ body_enumerator :: proc(sm: ^State_Machine, line: string, m: Enum_Match) -> bool
 		}, sm.p.allocator)
 		// reported with ``base_node=enumlist``: the node's (source) line
 		lineno := source_line(sm, int(t.nodes[el].line))
-		append_child(t, sm.parent, make_message(sm.p, INFO, msg, lineno))
+		append_child(t, sm.parent, mark_source_line(sm.p, make_message(sm.p, INFO, msg, lineno)))
 	}
 	item, blank_finish := list_item(sm, m.end)
 	append_child(t, el, item)

@@ -24,11 +24,19 @@ from docutils.nodes import fully_normalize_name as normalize_name
 from docutils.nodes import whitespace_normalize_name
 from docutils.parsers.rst import Directive, DirectiveError, directives, roles, states
 from docutils.parsers.rst import languages as rst_languages
-from docutils.parsers.rst.directives import body as _body_directives
 from docutils.parsers.rst.states import Inliner, MarkupError, Struct
 from docutils.statemachine import StringList
 
 from docodin import _native
+from docodin._include import (
+    IncludeHook,
+    ends_with_insertion,
+    note_directive_lines,
+    note_line,
+    process_inserted_input,
+    remove_insertions,
+    restore_insertions,
+)
 from docodin._machine import (
     OdinBody,
     OdinInliner,
@@ -38,6 +46,7 @@ from docodin._machine import (
     patched_transition,
     replay_transition,
 )
+from docodin._nodes import _append, _element, _extend, _fixed_text_element, _str_new, _text_element
 
 # Node kinds, in the order of ``Node_Kind`` in odin/rst/node_kinds.odin.
 (K_DOCUMENT, K_SECTION, K_SECTION_TITLE, K_TITLE, K_PARAGRAPH, K_BULLET_LIST,
@@ -63,87 +72,8 @@ TARGET_REFURI, TARGET_REFNAME = range(2)
 Text = nodes.Text
 # Constructs after which docutils attaches a message it reported before
 # parsing the construct's content (see TreeBuilder._early_message).
-_EARLY_MESSAGE_KINDS = frozenset((K_PARAGRAPH, K_ENUMERATED_LIST))
+_EARLY_MESSAGE_KINDS = frozenset((K_PARAGRAPH, K_ENUMERATED_LIST, K_TABLE))
 _EXPLICIT_UNINDENT = "Explicit markup ends without a blank line; unexpected unindent."
-
-
-# ---------------------------------------------------------------------------
-# fast node construction
-#
-# ``Element.__init__`` + ``extend()``/``setup_child()`` dominate tree building.
-# For a *fresh, unattached* node ``setup_child`` only sets ``child.parent``
-# (``document`` is None), so the helpers below build nodes that are
-# indistinguishable from constructor-built ones (same attributes, rawsource,
-# tagname, parent links).  Nodes are attached to the live tree with docutils'
-# own ``append`` so ``document``/``source``/``line`` propagation is unchanged.
-# ---------------------------------------------------------------------------
-
-_object_new = object.__new__
-_BASE_ATTS = ("ids", "classes", "names", "dupnames")
-_BACKLINK_ATTS = _BASE_ATTS + ("backrefs",)
-_str_new = str.__new__
-_list_atts_cache: dict[type, tuple[str, ...]] = {}
-
-
-def _text(data: str) -> nodes.Text:
-    """``nodes.Text(data)`` (without the bytes/rawsource argument checks)."""
-    return _str_new(Text, data)
-
-
-def _element(cls: type, rawsource: str, children: list) -> Any:
-    """``cls(rawsource, *children)`` for classes using ``Element.__init__``."""
-    node = _object_new(cls)
-    node.rawsource = rawsource
-    node.children = children
-    for child in children:
-        child.parent = node
-    atts = _list_atts_cache.get(cls)
-    if atts is None:
-        atts = _list_atts_cache[cls] = tuple(cls.list_attributes)
-    if atts == _BASE_ATTS:
-        node.attributes = {"ids": [], "classes": [], "names": [], "dupnames": []}
-    elif atts == _BACKLINK_ATTS:
-        node.attributes = {"ids": [], "classes": [], "names": [], "dupnames": [], "backrefs": []}
-    else:
-        node.attributes = {att: [] for att in atts}
-    if cls.tagname is None:
-        node.tagname = cls.__name__
-    return node
-
-
-def _text_element(cls: type, rawsource: str, text: str) -> Any:
-    """``cls(rawsource, text)`` for ``TextElement`` subclasses."""
-    return _element(cls, rawsource, [_str_new(Text, text)] if text else [])
-
-
-def _fixed_text_element(cls: type, rawsource: str, text: str) -> Any:
-    """``cls(rawsource, text)`` for ``FixedTextElement`` subclasses."""
-    node = _element(cls, rawsource, [_str_new(Text, text)] if text else [])
-    node.attributes["xml:space"] = "preserve"
-    return node
-
-
-def _append(parent: nodes.Element, child: nodes.Node) -> None:
-    """``parent.append(child)`` (``Node.setup_child`` semantics, inlined)."""
-    doc = parent._document
-    if doc is not None:
-        child.parent = parent
-        child._document = doc
-        if child.source is None:
-            child.source = doc.current_source
-        if child.line is None:
-            child.line = doc.current_line
-        parent.children.append(child)
-    elif parent.parent is None:  # detached subtree under construction
-        child.parent = parent
-        parent.children.append(child)
-    else:
-        parent.append(child)
-
-
-def _extend(parent: nodes.Element, children: list) -> None:
-    for child in children:
-        _append(parent, child)
 
 
 def _setting_int(settings: Any, name: str, default: int) -> int:
@@ -214,6 +144,10 @@ class DocumentContext:
         self.source = document.get("source") or getattr(document, "current_source", None) or ""
         self.line_count = 0
         self.top_sm: OdinStateMachine | None = None
+        # the line of docutils' root state machine (the reporter's current
+        # line): it stays behind the top machine in explicit lists and nested
+        # constructs; 0: the top machine's own position
+        self.root_line = 0
         # ``insert_input`` bookkeeping (see TreeBuilder._process_inserted_input):
         # inserted blocks (absolute offset, lines) in removal order, the number
         # of lines removed so far, and nodes whose ``line`` is an absolute line
@@ -222,6 +156,9 @@ class DocumentContext:
         self.last_removal_top = False  # the last insertion was made by the top machine
         self.removed_lines = 0
         self.absolute_lines: dict[int, tuple[nodes.Node, int]] = {}
+        self.capture_insert: list | bool | None = None  # see OdinStateMachine.insert_input
+        # (native ``cur`` value, source, line) of a cursor moved past inserted lines
+        self.moved_cursor: tuple | None = None
         self.builder = TreeBuilder(self)
 
     # -- input lines ---------------------------------------------------------
@@ -238,9 +175,9 @@ class DocumentContext:
         self._start(sm)
         children, self.line_count, final_offset, _ = self.native.parse(
             text, flags=self.flags, tab_width=self.tab_width,
-            line_length_limit=self._line_length_limit())
+            line_length_limit=self._line_length_limit(), include_hook=IncludeHook(self, sm))
         self.builder.build_top(children, sm)
-        self._finish(sm, final_offset, self.line_count)
+        self._finish(sm, final_offset)
 
     def parse_document_lines(self, lines: StringList, input_offset: int = 0,
                              match_titles: bool = True, node: nodes.Element | None = None) -> None:
@@ -252,13 +189,22 @@ class DocumentContext:
         self.top_sm = sm
         reporter = self.reporter
         if not hasattr(reporter, "get_source_and_line"):
-            reporter.get_source_and_line = sm.get_source_and_line
+            reporter.get_source_and_line = self.reporter_source_and_line
         self.document.current_source = self.source or None
+
+    def reporter_source_and_line(self, lineno: int | None = None):
+        """``reporter.get_source_and_line``: docutils binds the root state machine's."""
+        if lineno is None and self.root_line:
+            lineno = self.root_line
+        return self.top_sm.get_source_and_line(lineno)
 
     def _line_length_limit(self) -> int:
         return _setting_int(self.settings, "line_length_limit", 10_000)
 
-    def parse_lines(self, sm: OdinStateMachine, lines, match_titles: bool, top: bool = False) -> None:
+    def parse_lines(self, sm: OdinStateMachine, lines, match_titles: bool,
+                    top: bool = False) -> IncludeHook:
+        """Parse ``lines`` natively into ``sm.node``; the include hook tells
+        which lines the parser inserted (a nested parse removes them again)."""
         data = lines.data if isinstance(lines, StringList) else list(lines)
         flags = self.flags if match_titles else self.flags & ~_native.MATCH_TITLES
         if not top:
@@ -266,38 +212,43 @@ class DocumentContext:
         root = self.top_sm
         root_line = 0
         if root is not None and root is not sm:
-            root_line = root.line_offset + root.input_offset + 1
+            root_line = self.root_line or root.line_offset + root.input_offset + 1
+        hook = IncludeHook(self, sm)
         children, _count, final_offset, current_line = self.native.parse(
             "\n".join(data), input_offset=sm.input_offset, line_count=len(data), flags=flags,
             tab_width=self.tab_width,
             line_length_limit=0,  # only Parser.parse (string input) checks it
-            root_line=max(root_line, 0))
+            root_line=max(root_line, 0), include_hook=hook)
         if top:
             self.line_count = len(data)
         self.builder.build_top(children, sm)
         if top:
-            self._finish(sm, final_offset, len(data))
+            self._finish(sm, final_offset)
         else:
             sm.line_offset = len(data)
             # where docutils' nested state machines left the document
             self.builder.set_current_line(sm, current_line)
+        return hook
 
-    def _finish(self, sm: OdinStateMachine, final_offset: int, count: int) -> None:
+    def _finish(self, sm: OdinStateMachine, final_offset: int) -> None:
         """Leave the top state machine and ``document.current_*`` where
         docutils' own run leaves them (affects messages from transforms)."""
+        # the input lines include the lines the parser inserted
+        count = len(sm._input_lines) if sm._input_lines is not None else self.line_count
         if final_offset < 0:  # parse aborted (line-length limit): never ran
             final_offset = -1
         if self.insertions:
-            self._restore_insertions(sm)
+            restore_insertions(self, sm)
             if final_offset >= 0:
                 final_offset += self.removed_lines
                 count += self.removed_lines
                 if (final_offset > count and self.last_removal_top
-                        and _ends_with_insertion(sm.input_lines)):
+                        and ends_with_insertion(sm.input_lines)):
                     # the input ended inside a top-level ``include`` directive:
                     # docutils went on through the inserted lines, which end cleanly
                     final_offset = count
         sm.line_offset = final_offset
+        self.root_line = 0
         document = self.document
         document.current_line = None
         if final_offset == count:
@@ -305,32 +256,13 @@ class DocumentContext:
         else:
             document.current_source = None
 
-    def _restore_insertions(self, sm: OdinStateMachine) -> None:
-        """Give transforms docutils' view of the input after an ``include``.
-
-        docutils keeps inserted lines in ``input_lines``, so absolute line
-        numbers after an insertion grow by its length.  The builder removes
-        them after parsing (the native items of the enclosing input carry the
-        original numbering), so restore both here: re-insert the blocks
-        (latest removal first: each offset was taken with the later-removed
-        enclosing blocks present and the earlier-removed ones absent) and
-        renumber nodes that only carry an absolute line.
-        """
-        lines = sm.input_lines
-        for offset, block in reversed(self.insertions):
-            lines.insert(offset - sm.input_offset, block)
-        for node, removed in self.absolute_lines.values():
-            if node.line is not None:
-                node.line += removed
-        self.insertions = []
-        self.absolute_lines = {}
-
-    def note_absolute_line(self, node: nodes.Node) -> None:
+    def note_absolute_line(self, node: nodes.Node, removed: int | None = None) -> None:
         """Record a node whose ``line`` is an absolute line number (docutils
         sets it without source lookup), to be renumbered by
-        ``_restore_insertions``."""
-        if self.removed_lines:
-            self.absolute_lines.setdefault(id(node), (node, self.removed_lines))
+        ``restore_insertions``."""
+        removed = self.removed_lines if removed is None else removed
+        if removed:
+            self.absolute_lines.setdefault(id(node), (node, removed))
 
     def inline(self, text: str, lineno: int, container: nodes.Element):
         """``RSTState.inline_text``: (nodes, system_messages)."""
@@ -339,11 +271,27 @@ class DocumentContext:
         out = self.builder.inline(items, lineno, container, msgs)
         return out, msgs
 
-
-def _ends_with_insertion(lines: StringList) -> bool:
-    """The last input line is the padding ``insert_input()`` puts after an insertion."""
-    source = lines.info(len(lines) - 1)[0] if len(lines) else None
-    return bool(source) and source.startswith("internal padding after ")
+def _reported_early(items: list, index: int, line_delta: int) -> bool:
+    """Is ``items[index + 1]`` a message docutils reports before parsing the
+    construct ``items[index]`` (see ``TreeBuilder._early_message``)?"""
+    construct, following = items[index], items[index + 1]
+    text = following[3]
+    kind = construct[0]
+    if kind == K_PARAGRAPH:
+        # ``Text.text``: an indented line right after the paragraph (the
+        # message has the source line, the paragraph the absolute line)
+        return (text == "Unexpected indentation."
+                and following[1] == construct[1] + construct[2].count("\n") + 1 + line_delta)
+    if kind == K_ENUMERATED_LIST:
+        # ``Body.enumerator`` reports the start before the items
+        return text.startswith("Enumerated list start value not ordinal-1")
+    # K_TABLE: ``isolate_grid_table`` reports an indented line in the text
+    # block of the table before the cells are parsed; ``table_top`` then
+    # reports the missing blank line
+    if text != "Unexpected indentation." or index + 2 >= len(items):
+        return False
+    after = items[index + 2]
+    return after[0] == K_SYSTEM_MESSAGE and after[3] == "Blank line required after table."
 
 
 class TreeBuilder:
@@ -403,15 +351,10 @@ class TreeBuilder:
         construct, following = items[index], items[index + 1]
         if following[0] != K_SYSTEM_MESSAGE:
             return None
-        if construct[0] == K_PARAGRAPH:
-            # ``Text.text``: an indented line right after the paragraph
-            if (following[3] != "Unexpected indentation."
-                    or following[1] != construct[1] + construct[2].count("\n") + 1):
-                return None
-        elif not following[3].startswith("Enumerated list start value not ordinal-1"):
-            return None  # ``Body.enumerator`` reports the start before the items
+        if not _reported_early(items, index, sm.line_delta):
+            return None
         self.set_current_line(sm, following[5])
-        message = self.message(following)
+        message = self.message(following, sm)
         if construct[0] == K_ENUMERATED_LIST:
             self.start_message = message  # attached by b_enumerated_list
         return message
@@ -421,9 +364,8 @@ class TreeBuilder:
         # (K, line, raw, children, cur_line, cur)
         lineno = item[1]
         cur_line = item[4]
-        top = self.ctx.top_sm
-        if cur_line and top is not None:
-            top.line_offset = cur_line - top.input_offset - 1
+        if cur_line:
+            self.ctx.root_line = cur_line
         cur = item[5]
         if linear and cur > 0:
             self.document.current_line = cur
@@ -519,6 +461,12 @@ class TreeBuilder:
         """Set ``document.current_source``/``current_line`` from a native
         ``cur`` value (docutils ``note_source`` of the last cursor move)."""
         document = self.document
+        moved = self.ctx.moved_cursor
+        if moved is not None:
+            self.ctx.moved_cursor = None
+            if cur == moved[0]:  # the cursor was moved past inserted lines
+                document.current_source, document.current_line = moved[1:]
+                return
         if cur > 0:
             if sm._is_linear():
                 document.current_source, document.current_line = sm._linear_source, cur
@@ -526,15 +474,21 @@ class TreeBuilder:
                 document.current_source, document.current_line = sm.srcline(cur - sm.line_delta)
         elif cur == 0:
             document.current_line = None
+        elif cur < -1:  # just past the end of an input: the source of its last line
+            last = -cur - 1
+            if sm._is_linear():
+                document.current_source = sm._linear_source
+            else:
+                document.current_source = sm.srcline(last - sm.line_delta)[0]
+            document.current_line = None
         else:
             document.current_source = document.current_line = None
 
     def at_line(self, cur_line: int) -> None:
-        """Position the reporter's state machine like docutils' during an
-        inline parse (messages without an explicit line use it)."""
-        top = self.ctx.top_sm
-        if top is not None and cur_line:
-            top.line_offset = cur_line - top.input_offset - 1
+        """Position the reporter's line like docutils' root state machine
+        (messages without an explicit line use it)."""
+        if cur_line:
+            self.ctx.root_line = cur_line
 
     def inline(self, items: list, lineno: int, container: nodes.Element, msgs: list) -> list:
         out: list = []
@@ -556,10 +510,16 @@ class TreeBuilder:
 
     # -- system messages -------------------------------------------------------
 
-    def message(self, item) -> nodes.system_message:
-        # (K, line, level, message, children, cur)
-        _, line, level, text, children, _cur = item
+    def message(self, item, sm: OdinStateMachine | None = None) -> nodes.system_message:
+        # (K, line, level, message, children, cur, source_line)
+        _, line, level, text, children, _cur, source_line = item
         kids = [self._message_child(c) for c in children]
+        if source_line and sm is not None:
+            # docutils reports it with the state machine's (source, line)
+            source, srcline = sm.srcline(line - sm.line_delta)
+            if source is not None:
+                return self.reporter.system_message(level, text, *kids, source=source,
+                                                    line=srcline)
         if line:
             return self.reporter.system_message(level, text, *kids, line=line)
         return self.reporter.system_message(level, text, *kids)
@@ -577,7 +537,7 @@ class TreeBuilder:
         if item[3].endswith("unexpected unindent."):
             parent += self.unindent_warning(item)
         else:
-            parent += self.message(item)
+            parent += self.message(item, sm)
 
     def unindent_warning(self, item) -> nodes.system_message:
         """``RSTState.unindent_warning`` ("... ends without a blank line")."""
@@ -588,7 +548,7 @@ class TreeBuilder:
     def b_section_title(self, item, parent, sm):
         # (K, line, style, source, title_raw, title_children, messages, cur_line)
         _, lineno, style, source, title, title_items, message_items, cur_line = item
-        messages = [self.message(m) for m in message_items]
+        messages = [self.message(m, sm) for m in message_items]
         if len(style) == 2:
             style = (style[0], style[1])
         state = sm.state()
@@ -964,6 +924,7 @@ class TreeBuilder:
         node["names"].append(nodes.whitespace_normalize_name(subname))
         sub_sm = self._context_sm(sm, node)
         sub_sm.line_delta = sm.line_delta + sub_delta
+        sub_sm.disconnected = True  # ``block.disconnect()``
         state = _make_state(OdinSubstitutionDef, sub_sm)
         sub_sm._state = state
         document = self.document
@@ -1024,8 +985,10 @@ class TreeBuilder:
 
     def b_directive(self, item, parent, sm, state=None, option_presets=None) -> bool:
         """Run a directive; returns True when it inserted input lines."""
-        # (K, line, name, block_text, lines, line_offset, end_offset, blank_finish)
-        _, lineno, type_name, block_text, lines, line_offset, end_offset, _bf = item
+        # (K, line, name, block_text, lines, line_offset, end_offset, blank_finish,
+        #  reporter_line, inserted)
+        (_, lineno, type_name, block_text, lines, line_offset, end_offset, _bf, root_line,
+         inserted) = item
         if parent is not sm.node:
             sm = self._context_sm(sm, parent)
         if state is None:
@@ -1045,6 +1008,7 @@ class TreeBuilder:
             from docutils.parsers.rst import convert_directive_function
             directive_class = convert_directive_function(directive_class)
         sm.line_offset = end_offset - sm.input_offset
+        self.at_line(root_line)  # docutils' root machine (explicit lists stay behind)
         before = len(sm._input_lines) if sm._input_lines is not None else self.ctx.line_count
         indented = self._block_lines(sm, lines, line_offset)
         try:
@@ -1058,12 +1022,19 @@ class TreeBuilder:
         directive_instance = directive_class(
             type_name, arguments, options, content, lineno,
             content_offset, block_text, state, sm)
-        result = self._run_directive(directive_instance)
+        removed = self.ctx.removed_lines
+        if inserted:  # the parser inserted the lines and parsed them in place
+            self.ctx.capture_insert = True
+        try:
+            result = self._run_directive(directive_instance)
+        finally:
+            self.ctx.capture_insert = None
         parent += result
-        if self.ctx.removed_lines:
-            self._note_directive_lines(result, directive_class, content_offset)
-        if sm._input_lines is not None and len(sm._input_lines) != before:
-            self._process_inserted_input(sm, before)
+        if removed:  # the lines removed before the directive's nested parses
+            note_directive_lines(self.ctx, result, directive_class, content_offset, removed)
+        if sm._input_lines is not None and len(sm._input_lines) > before:
+            start = sm.line_offset + 1
+            process_inserted_input(self.ctx, sm, start, len(sm._input_lines) - before)
             return True
         return False
 
@@ -1081,24 +1052,13 @@ class TreeBuilder:
                 'Directive "%s" returned non-Node object (index %s): %r' % (type_name, i, node))
         return result
 
-    def _note_directive_lines(self, result: list, directive_class: type,
-                              content_offset: int) -> None:
-        """Directive nodes without a source carry an absolute line, and so does
-        ``parsed-literal``'s block (``content_offset + 1``)."""
-        for node in result:
-            for n in node.findall(nodes.Element):
-                if n.source is None and n.line is not None:
-                    self.ctx.note_absolute_line(n)
-        if (issubclass(directive_class, _body_directives.ParsedLiteral) and result
-                and result[0].line == content_offset + 1):
-            self.ctx.note_absolute_line(result[0])
-
     def _cell_sm(self, sm: OdinStateMachine, delta: int) -> OdinStateMachine:
         """View of ``sm`` for table cells: docutils nests them with a 1-based
         ``input_offset``, so absolute lines run ahead of the source (by one,
         or more after an ``isolate_grid_table`` back-up; see rst.body_table)."""
         cell = self._context_sm(sm, sm.node)
         cell.line_delta = sm.line_delta + delta
+        cell.disconnected = True  # docutils parses cells from disconnected blocks
         return cell
 
     def _context_sm(self, sm: OdinStateMachine, node: nodes.Element) -> OdinStateMachine:
@@ -1108,6 +1068,7 @@ class TreeBuilder:
                                  parent_sm=sm, lines_owner=sm._lines_owner or sm)
         child._linear_source = sm._linear_source
         child.line_delta = sm.line_delta
+        child.disconnected = sm.disconnected
         return child
 
     def _block_lines(self, sm: OdinStateMachine, lines: list, line_offset: int) -> StringList:
@@ -1118,39 +1079,11 @@ class TreeBuilder:
         end = start + len(lines)
         if 0 <= start and end <= len(input_lines):
             block = input_lines[start:end]
+            if sm.disconnected:  # insertions do not reach the enclosing input
+                return StringList(list(lines), items=list(block.items))
             block.data = list(lines)
             return block
         return StringList(list(lines), self.ctx.source)
-
-    def _process_inserted_input(self, sm: OdinStateMachine, before: int) -> None:
-        """Parse lines inserted by ``state_machine.insert_input()`` (``include``)
-        right after the directive, then drop them again so that absolute line
-        offsets of the remaining (already parsed) input stay valid."""
-        input_lines = sm._input_lines
-        start = sm.line_offset + 1
-        count = len(input_lines) - before
-        if count <= 0:
-            return
-        # A connected slice: nested insertions (includes inside the included
-        # text) propagate to the parent lists, as in docutils, so reporter
-        # line lookups keep working; they are removed again the same way.
-        inserted = input_lines[start:start + count]
-        child = OdinStateMachine(self.ctx, inserted, sm.input_offset + start, sm.node,
-                                 sm.match_titles, parent_sm=sm.parent_state_machine)
-        child.section_level_offset = sm.section_level_offset
-        self.ctx.parse_lines(child, inserted, sm.match_titles)
-        if sm.match_titles:
-            sm.node = child.node
-        # recorded in removal order, without the (already removed) nested insertions
-        self.ctx.insertions.append(
-            (sm.input_offset + start, StringList(list(inserted.data), items=list(inserted.items))))
-        self.ctx.last_removal_top = sm is self.ctx.top_sm
-        # Remove item by item: ``ViewList.__delitem__`` with a slice deletes
-        # twice when the list has a parent (docutils bug), integer deletion
-        # propagates correctly.
-        for _ in range(count):
-            del input_lines[start]
-        self.ctx.removed_lines += count
 
     # -- inline elements -------------------------------------------------------
 
@@ -1352,7 +1285,21 @@ def nested_parse(state: Any, block: Any, input_offset: int, node: nodes.Element 
         l_start = min(len(sm.node.section_hierarchy()), len(state.memo.title_styles))
         child.section_level_offset = l_start - l_node
     block_length = len(block)
-    ctx.parse_lines(child, block, match_titles)
+    hook = ctx.parse_lines(child, block, match_titles)
+    inserted = hook.line_count()
+    disconnected = getattr(sm, "disconnected", False)
+    if inserted and (block.parent or disconnected):
+        # docutils moves the state machine past the inserted lines
+        # (``next_line``, which notes the source of the new line)
+        if block.parent:
+            note_line(ctx.document, sm.input_lines, sm.line_offset + inserted)
+        else:  # the enclosing input is a disconnected block: find the line in ``block``
+            index = sm.line_offset + sm.input_offset - input_offset + inserted
+            note_line(ctx.document, block, index)
+        # the native cursor
+        cur = sm.line_offset + sm.input_offset + 1 + getattr(sm, "line_delta", 0)
+        ctx.moved_cursor = (cur, ctx.document.current_source, ctx.document.current_line)
+    remove_insertions(ctx, child, hook)
     if match_titles and node is sm.node:
         machine = sm
         while machine is not None:

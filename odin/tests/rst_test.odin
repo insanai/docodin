@@ -173,7 +173,8 @@ current_line_tracking :: proc(t: ^testing.T) {
 	testing.expect_value(t, comment.cur_line, 3)
 	table := rst.node_data(&p.tree, rst.last_child(&p.tree, doc))
 	testing.expect_value(t, table.kind, rst.Node_Kind.Table)
-	testing.expect_value(t, table.cur_line, rst.CUR_NONE)
+	last, past_end := rst.past_end_line(int(table.cur_line))
+	testing.expect(t, past_end && last == 7)
 }
 
 @(test)

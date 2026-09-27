@@ -212,7 +212,8 @@ isolate_grid_table :: proc(
 	blank_finish = true
 	lines, err_line := get_text_block(sm, flush_left = true)
 	if err_line > 0 {
-		list_append(t, &messages, make_message(sm.p, ERROR, "Unexpected indentation.", err_line))
+		msg := make_message(sm.p, ERROR, "Unexpected indentation.", err_line)
+		list_append(t, &messages, mark_source_line(sm.p, msg))
 		blank_finish = false
 	}
 	block := make([][]rune, len(lines), a)
@@ -388,7 +389,10 @@ build_table_row :: proc(
 		has_text := false
 		for l in cell.lines do if len(l) > 0 { has_text = true; break }
 		if has_text {
-			nested_parse(sm, cell.lines, tableline + cell.offset, entry, line_delta = cell_delta)
+			nested_parse(
+				sm, cell.lines, tableline + cell.offset, entry, line_delta = cell_delta,
+				disconnected = true,
+			)
 		}
 	}
 	return r
