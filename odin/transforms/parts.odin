@@ -121,7 +121,7 @@ contents :: proc(r: ^Run, pending: dt.Node, _: []dt.Detail) {
 	}
 	toc := build_contents(&c, startnode, 0)
 	if toc != 0 {
-		dt.replace_self(doc, pending, toc)
+		py_replace_self(r, pending, toc)
 	} else {
 		topic := dt.parent(doc, pending)
 		py_remove(r, topic)

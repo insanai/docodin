@@ -79,7 +79,7 @@ class_attribute :: proc(r: ^Run, pending: dt.Node, _: []dt.Detail) {
 	text := fmt.tprintf(`No suitable element following "%s" directive`, directive)
 	line, has_line := dt.line(doc, pending)
 	msg := system_message_line(doc, .ERROR, text, {block}, line if has_line else nil)
-	dt.replace_self(doc, pending, msg)
+	py_replace_self(r, pending, msg)
 }
 
 // --- Transitions -------------------------------------------------------------------
@@ -176,13 +176,13 @@ filter :: proc(r: ^Run, pending: dt.Node, _: []dt.Detail) {
 	case "writer":
 		supported = WRITER_SUPPORTED[r.options.writer]
 	case:
-		fail(r, "KeyError: %q", component)
+		key_error(r, component)
 		return
 	}
 	for f in strings.split(formats, ",", context.temp_allocator) {
 		for s in supported {
 			if s != f do continue
-			dt.replace_self_list(doc, pending, detail_nodes(doc, pending, "nodes"))
+			py_replace_self(r, pending, ..detail_nodes(doc, pending, "nodes"))
 			return
 		}
 	}

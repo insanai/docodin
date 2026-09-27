@@ -241,16 +241,22 @@ language :: proc(r: ^Run) -> ^Language_Module {
 // ``language_cached`` the module is found silently.
 load_language :: proc(r: ^Run) {
 	r.language_loaded = true
-	doc := r.doc
-	code := doc.settings.language_code
-	loud := !r.options.language_cached
+	code := r.doc.settings.language_code
+	r.language = get_language(r.doc, code, r.options.docutils_dir, !r.options.language_cached)
+}
+
+// ``languages.get_language(code, reporter)``: the index of the language
+// module in ``LANGUAGE_MODULES``.  ``loud``: the cache is empty, so the
+// reporter gets an info message for each module name tried in vain, a
+// warning if none exists, and an info message naming the module used
+// (``docutils_dir`` is the package directory in its repr).
+get_language :: proc(doc: ^dt.Doc, code, docutils_dir: string, loud: bool) -> int {
 	ta := context.temp_allocator
-	found := false
 	for tag in normalize_language_tag(code) {
 		name, _ := strings.replace_all(tag, "-", "_", ta)
 		if i, ok := find_module(name); ok {
-			r.language, found = i, true
-			break
+			if loud do report_language_used(doc, code, docutils_dir, i)
+			return i
 		}
 		if loud {
 			full := strings.concatenate({"docutils.languages.", name}, ta)
@@ -258,22 +264,31 @@ load_language :: proc(r: ^Run) {
 			dt.info(doc, strings.concatenate({`Module "`, name, `" not found.`}, ta))
 		}
 	}
-	if !found {
-		if loud {
-			msg := `Language "%s" not supported: Docutils-generated text will be in English.`
-			dt.warning(doc, fmt.tprintf(msg, code))
-		}
-		r.language, _ = find_module("en")
+	if loud {
+		msg := `Language "%s" not supported: Docutils-generated text will be in English.`
+		dt.warning(doc, fmt.tprintf(msg, code))
 	}
-	if loud && code != "en" {
-		name := LANGUAGE_MODULES[r.language].name
-		repr := strings.concatenate(
-			{"<module 'docutils.languages.", name, "' from '", r.options.docutils_dir,
-			 "/languages/", name, ".py'>"},
-			ta,
-		)
-		dt.info(doc, strings.concatenate({"Using ", repr, ` for language "`, code, `".`}, ta))
-	}
+	i, _ := find_module("en")
+	if loud do report_language_used(doc, code, docutils_dir, i)
+	return i
+}
+
+@(private = "file")
+report_language_used :: proc(doc: ^dt.Doc, code, docutils_dir: string, module: int) {
+	if code == "en" do return
+	ta := context.temp_allocator
+	dir := docutils_dir if docutils_dir != "" else "<docutils>"
+	name := LANGUAGE_MODULES[module].name
+	repr := strings.concatenate(
+		{"<module 'docutils.languages.", name, "' from '", dir, "/languages/", name, ".py'>"},
+		ta,
+	)
+	dt.info(doc, strings.concatenate({"Using ", repr, ` for language "`, code, `".`}, ta))
+}
+
+// The label ``label`` of language module ``module`` (``language.labels``).
+language_label :: proc(module: int, label: Label) -> string {
+	return LANGUAGE_MODULES[module].labels[label]
 }
 
 // ``utils.normalize_language_tag(tag)``: the tag and its subtag

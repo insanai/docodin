@@ -120,7 +120,7 @@ note_nested :: proc(s: ^Substituter, ref: dt.Node, key: dt.Str, subdef_copy: dt.
 		k, has_k := dt.lookup(doc, nested_key)
 		nested_name, ok := dt.om_get(&doc.substitution_names, k)
 		if !has_k || !ok {
-			fail(s.r, "KeyError: %q", nested_key)
+			key_error(s.r, nested_key)
 			return .Error
 		}
 		list := s.nested[nested_name] or_else make([dynamic]dt.Str, context.temp_allocator)
@@ -244,7 +244,7 @@ target_notes :: proc(r: ^Run, pending: dt.Node, _: []dt.Detail) {
 		if !attr_truthy(doc, ref, "anonymous") || !dt.has_attr(doc, ref, dt.K_REFURI) do continue
 		add_note(&tn, &nodelist, attr_text(doc, ref, dt.K_REFURI), {ref})
 	}
-	dt.replace_self_list(doc, pending, nodelist[:])
+	py_replace_self(r, pending, ..nodelist[:])
 }
 
 @(private = "file")

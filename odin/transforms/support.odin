@@ -37,6 +37,33 @@ replace_self :: proc(doc: ^dt.Doc, n, new: dt.Node) {
 	dt.replace_self(doc, n, new)
 }
 
+// ``node.replace_self(new)`` (a list of nodes) of a node that may have left
+// the tree: the run fails as docutils does.
+py_replace_self :: proc(r: ^Run, n: dt.Node, news: ..dt.Node) {
+	doc := r.doc
+	if len(news) == 0 || dt.tag(doc, news[0]) == .Text {
+		// no element to take the basic attributes: docutils asserts there are none
+		for att in ([]dt.Str{dt.K_IDS, dt.K_CLASSES, dt.K_NAMES, dt.K_DUPNAMES}) {
+			items := dt.attr_list(doc, n, att)
+			if len(items) == 0 do continue
+			b := strings.builder_make(context.temp_allocator)
+			fmt.sbprintf(&b, "AssertionError: Losing \"%s\" attribute: [", dt.str(doc, att))
+			for s, i in items {
+				if i > 0 do strings.write_string(&b, ", ")
+				dt.write_py_repr(&b, dt.str(doc, s))
+			}
+			strings.write_byte(&b, ']')
+			fail(r, "%s", strings.to_string(b))
+			return
+		}
+	}
+	if dt.parent(doc, n) == 0 {
+		fail(r, "AttributeError: 'NoneType' object has no attribute 'replace'")
+	} else if !dt.replace_self_list(doc, n, news) {
+		fail(r, "ValueError: list.index(x): x not in list")
+	}
+}
+
 // ``parent[-1] += item``: append to the last child, which is then set up
 // as a child again (``parent[-1] = child``).
 append_to_last :: proc(doc: ^dt.Doc, parent, item: dt.Node) {
@@ -220,32 +247,8 @@ system_message_line :: proc(
 	dt.set_attr(doc, msg, dt.K_LEVEL, int(level))
 	dt.set_attr(doc, msg, dt.K_TYPE, dt.LEVEL_NAMES[level])
 	dt.set_attr(doc, msg, dt.K_SOURCE, src.? or_else r.source)
-	report_message(doc, level, msg)
+	dt.report(doc, level, msg)
 	return msg
-}
-
-// The reporting part of ``Reporter.system_message`` for a built message.
-@(private = "file")
-report_message :: proc(doc: ^dt.Doc, level: dt.Level, msg: dt.Node) {
-	r := &doc.reporter
-	lv := int(level)
-	loud := lv >= r.report_level || (r.debug_flag && level == .DEBUG) || lv >= r.halt_level
-	if r.stream != .Discard && loud {
-		b := strings.builder_make(doc.allocator)
-		dt.write_astext(&b, doc, msg)
-		strings.write_byte(&b, '\n')
-		append(&r.written, dt.Written_Message{level, msg, strings.to_string(b)})
-		if r.stream == .Stderr do fmt.eprint(strings.to_string(b))
-	}
-	if lv >= r.halt_level {
-		r.halted = true
-		r.halt_message = msg
-		return
-	}
-	if level > .DEBUG || r.debug_flag {
-		for o in r.observers do o(doc, msg)
-	}
-	r.max_level = max(lv, r.max_level)
 }
 
 // --- str ----------------------------------------------------------------------------

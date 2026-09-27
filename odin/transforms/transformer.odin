@@ -296,6 +296,13 @@ fail :: proc(r: ^Run, format: string, args: ..any) {
 	r.err = Transform_Error{fmt.aprintf(format, ..args, allocator = r.doc.allocator)}
 }
 
+// ``KeyError(key)`` of a string key (Python shows its repr).
+key_error :: proc(r: ^Run, key: string) {
+	b := strings.builder_make(context.temp_allocator)
+	dt.write_py_repr(&b, key)
+	fail(r, "KeyError: %s", strings.to_string(b))
+}
+
 // ``Transform.__init__``: the language module is loaded (and cached) on the
 // first instantiation.
 @(private = "file")

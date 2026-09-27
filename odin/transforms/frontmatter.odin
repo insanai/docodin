@@ -319,8 +319,15 @@ reparse_author :: proc(st: ^Docinfo_State, body: dt.Node, raw: string) -> bool {
 	parse := st.r.options.parse_rst
 	if parse == nil do return false
 	text := strings.concatenate({"\\", raw}, context.temp_allocator)
-	sub := parse(text, doc.settings, "*DocInfo transform*")
+	settings := doc.settings
+	settings.rst_language_cached = true
+	sub := parse(text, settings, "*DocInfo transform*")
 	defer dt.destroy(sub)
+	// the new document's reporter writes to the same warning stream
+	for m in sub.reporter.written {
+		written := dt.Written_Message{m.level, 0, dt.clone(doc, m.text)}
+		append(&doc.reporter.written, written)
+	}
 	para := dt.first_child(sub, sub.root)
 	if length(sub, sub.root) != 1 || dt.tag(sub, para) != .paragraph do return false
 	st.reparsed = import_subtree(doc, sub, para)

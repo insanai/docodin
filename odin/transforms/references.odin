@@ -156,7 +156,7 @@ anonymous_hyperlinks :: proc(r: ^Run, _: dt.Node, _: []dt.Detail) {
 			// a propagated target
 			next, ok := lookup_str(doc, &doc.ids, attr_text(doc, target, dt.K_REFID))
 			if !ok {
-				fail(r, "KeyError: %s", attr_text(doc, target, dt.K_REFID))
+				key_error(r, attr_text(doc, target, dt.K_REFID))
 				return
 			}
 			target = next
@@ -287,8 +287,13 @@ indirect_target_error :: proc(st: ^Indirect, target: dt.Node, explanation: strin
 		if ref in seen do continue
 		seen[ref] = {}
 		prb := new_problematic(doc, ref, msg, msgid)
-		if dt.parent(doc, ref) == 0 || !dt.replace_self(doc, ref, prb) {
-			fail(st.r, "ValueError: problematic reference is not in the tree")
+		// ``ref.replace_self(prb)`` of a reference outside the tree
+		if dt.parent(doc, ref) == 0 {
+			fail(st.r, "AttributeError: 'NoneType' object has no attribute 'replace'")
+			return
+		}
+		if !dt.replace_self(doc, ref, prb) {
+			fail(st.r, "ValueError: list.index(x): x not in list")
 			return
 		}
 	}
@@ -479,10 +484,13 @@ number_footnote_references :: proc(r: ^Run, labels: []string) {
 			break
 		}
 		dt.append_child(doc, ref, dt.new_text(doc, labels[i]))
-		id, _ := lookup_str(doc, &doc.nameids, labels[i])
+		// ``self.document.ids[self.document.nameids[label]]``
+		id, named := lookup_str(doc, &doc.nameids, labels[i])
 		footnote, ok := dt.om_get(&doc.ids, id)
-		if id == 0 || !ok {
-			fail(r, "KeyError: %s", labels[i])
+		if !named || id == 0 || !ok {
+			if !named do key_error(r, labels[i])
+			else if id == 0 do fail(r, "KeyError: None")
+			else do key_error(r, dt.str(doc, id))
 			return
 		}
 		dt.set_attr(doc, ref, dt.K_REFID, dt.str(doc, id))
