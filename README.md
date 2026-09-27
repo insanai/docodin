@@ -155,6 +155,8 @@ odin/doctree/       native docutils document tree, registry, reporter, JSON inte
 odin/reader/        native reader: docutils document trees, directives and roles
 odin/transforms/    native docutils transforms
 odin/writers/       native pseudo-XML, XML, HTML5 and LaTeX/XeLaTeX writers
+odin/math/          native math2html and latex2mathml (package texmath)
+odin/text/          native smart quotes
 odin/publish/       native publisher (settings, reader, transforms, writer)
 odin/lib/           C ABI library used by the Python package
 cmd/                docodin-check and the docodin native CLI
