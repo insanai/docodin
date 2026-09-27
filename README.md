@@ -37,7 +37,7 @@ on macOS, clang or cc on Linux):
 
 ```bash
 uv build                        # sdist and platform wheel (hatchling)
-scripts/build_odin.sh           # development: library, docodin-check, docodin
+scripts/build_odin.sh           # development: library, docodin-check, docodin, docodin-lsp
 ```
 
 ## Using docodin instead of docutils
@@ -178,6 +178,139 @@ asterisk.
 The checker reports what the parser detects, including in the reST content
 of the standard directives. Directive execution, roles and reference
 resolution need Python; use `docodin` or Sphinx for those.
+
+## Editor support
+
+`docodin-lsp` is a language server for reStructuredText. Editors start it and
+talk to it over standard input and output (the Language Server Protocol);
+it runs no Python. `scripts/build_odin.sh` builds it into `bin/`.
+
+- **Diagnostics** as you type: docutils' own messages (text, level and line)
+  from the native parser, directives, roles and reference transforms, such as
+  `Unknown target name: "x".` or `Duplicate explicit target name`. Parser
+  messages carry the checker's title and hint, and point at the offending
+  inline markup.
+- **Quick fixes** where the hint is mechanical: extend a title's underline
+  (and overline) to the title's width, insert a missing blank line, escape an
+  unmatched start-string, turn a `::` without a literal block into `:`.
+- **Navigation**: go to definition and find references for hyperlink
+  references (named, anonymous and embedded), section titles, substitutions,
+  footnotes and citations, with docutils' name normalisation. Hover shows a
+  target's URI or section, a substitution's definition, a footnote's text,
+  and what a directive or role takes.
+- **Structure**: document symbols (the section tree, with targets,
+  substitution definitions, footnotes and citations), folding ranges
+  (sections, directives, lists, literal blocks, tables, comments) and
+  semantic tokens (titles and adornments, inline markup, roles, directive
+  names, arguments and options, field names, targets, comments).
+- **Completion**: directive names after `.. `, a directive's options, role
+  names after `:`, and the reference names, substitutions and footnote labels
+  the document defines.
+
+Settings go in the client's `initializationOptions` (or the `docodin`
+section of its workspace configuration):
+
+| Setting | Default | Meaning |
+|---------|---------|---------|
+| `reportLevel` | `"warning"` | lowest level reported: `info`, `warning`, `error`, `severe`, `none` |
+| `debounce` | `150` | milliseconds between the last edit and new diagnostics |
+| `sphinx` | `false` | Sphinx's roles and directives (and domain names such as `py:func`) are known |
+| `knownRoles`, `knownDirectives` | `[]` | further names defined by extensions |
+
+docutils reports the roles and directives of Sphinx and its extensions as
+unknown; `sphinx` and the known names silence those messages only.
+
+**Neovim** (0.11 or later):
+
+```lua
+vim.lsp.config("docodin", {
+  cmd = { "/path/to/docodin/bin/docodin-lsp" },
+  filetypes = { "rst" },
+  root_markers = { "conf.py", "docutils.conf", ".git" },
+  init_options = { reportLevel = "warning", sphinx = true },
+})
+vim.lsp.enable("docodin")
+```
+
+With nvim-lspconfig on older versions:
+
+```lua
+local lspconfig = require("lspconfig")
+local configs = require("lspconfig.configs")
+if not configs.docodin then
+  configs.docodin = {
+    default_config = {
+      cmd = { "/path/to/docodin/bin/docodin-lsp" },
+      filetypes = { "rst" },
+      root_dir = lspconfig.util.root_pattern("conf.py", "docutils.conf", ".git"),
+      init_options = { reportLevel = "warning" },
+    },
+  }
+end
+lspconfig.docodin.setup({})
+```
+
+The emphasis and strong tokens have their own types; link them to a
+highlight group, for example `vim.api.nvim_set_hl(0, "@lsp.type.emphasis.rst",
+{ italic = true })`.
+
+**VS Code**: any generic LSP client works. A minimal extension with
+`vscode-languageclient` (activated `onLanguage:restructuredtext`):
+
+```ts
+import { LanguageClient } from "vscode-languageclient/node";
+
+export function activate() {
+  const client = new LanguageClient(
+    "docodin", "docodin",
+    { command: "/path/to/docodin/bin/docodin-lsp" },
+    {
+      documentSelector: [{ language: "restructuredtext" }],
+      initializationOptions: { reportLevel: "warning", sphinx: true },
+    },
+  );
+  client.start();
+}
+```
+
+**Zed** starts language servers declared by extensions. A dev extension
+(`zed: install dev extension`) declares the server in `extension.toml`:
+
+```toml
+id = "docodin"
+name = "docodin"
+version = "0.1.0"
+schema_version = 1
+
+[language_servers.docodin-lsp]
+name = "docodin-lsp"
+languages = ["reStructuredText"]
+```
+
+and returns the command from its `language_server_command`
+(`zed::Command { command: "/path/to/docodin/bin/docodin-lsp".into(), args: vec![],
+env: vec![] }`). The server is then configured in `settings.json`:
+
+```json
+{
+  "languages": {
+    "reStructuredText": { "language_servers": ["docodin-lsp", "..."] }
+  },
+  "lsp": {
+    "docodin-lsp": {
+      "initialization_options": { "reportLevel": "warning", "sphinx": true }
+    }
+  }
+}
+```
+
+The reStructuredText language itself (file types, syntax highlighting) comes
+from a reStructuredText extension such as zed-rst.
+
+Limits: the server works on one file at a time (cross-document `:ref:` and
+`:doc:` are not resolved), includes are read from disk, and unknown
+languages of `code` directives are not reported (docutils asks Pygments,
+which the native pipeline does not have).
 
 ## Layout
 

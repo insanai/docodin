@@ -98,6 +98,39 @@ docodin replaces docutils 0.22 in two ways:
 | `odin/lib` | The C ABI for Python: `docodin_parse` (with an include callback), `docodin_parse_inline`, `docodin_split_lines`, `docodin_educate`, `docodin_publish`, `docodin_free`, and the version and init functions. Results use CPython's `marshal` format, so `marshal.loads` builds them in C. |
 | `cmd/docodin` | The native `docodin` command (docutils front-end options, `check`, `pdf`), which runs documents that need Python through `python -m docodin`. |
 | `cmd/docodin-check` | The parallel checker. |
+| `odin/lsp`, `cmd/docodin-lsp` | The language server (see below). |
+
+## Language server (`odin/lsp`)
+
+`docodin-lsp` serves the Language Server Protocol over standard input and
+output, as ruff server does:
+
+- **Loop.** A reader thread reads the Content-Length frames and records
+  `$/cancelRequest` at once. The main thread owns the state and handles the
+  messages in order, each in a scratch arena that is reset afterwards.
+  Diagnostics are pushed `debounce` milliseconds after the last change
+  (pulled with `textDocument/diagnostic` when the client supports it).
+- **Documents.** The text is kept on the heap and edited in place (full and
+  incremental changes, UTF-16 or UTF-8 positions). Each version gets a
+  snapshot in its own arena, built on first use: the whole file is parsed
+  again. `Line_Index` converts between LSP positions and the parser's
+  coordinates (lines, byte columns of the tab-expanded lines).
+- **Analysis.** One walk of the `odin/rst` parse tree fills flat tables of
+  items (definitions and uses of names), semantic tokens and folding ranges.
+  The reST content of standard directives is parsed as the directives parse
+  it. Names are matched with `fully_normalize_name`; anonymous references,
+  auto-numbered and auto-symbol footnotes are matched in order. Until the
+  parse tree carries spans, positions come from the node lines and a search
+  of each construct's source text (`locate_text`, the one place to change).
+- **Diagnostics.** The reader and the standard transforms run as `publish`
+  runs them (`report_level` 1, `halt_level` 5), so the texts, levels and
+  lines are docutils'. The checker adds the column of inline markup errors,
+  the Elm title (the diagnostic's `code`) and hint; mechanical hints come
+  with a quick fix. docutils' level and line travel in the diagnostic's
+  `data`.
+- **Verification.** `odin test odin/lsp/tests` (protocol and features) and
+  `tests/test_lsp.py`, which drives the binary and compares its diagnostics
+  with docutils' messages, on fixed cases and generated documents.
 
 ## Memory and safety
 
