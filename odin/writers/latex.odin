@@ -189,7 +189,7 @@ init_latex_settings :: proc(t: ^Latex) {
 	}
 	if len(s.use_bibtex) > 0 do t.use_latex_citations = true
 	t.lang = get_language(s.language_code)
-	t.babel = make_babel(s.language_code, t.is_xetex)
+	t.babel = make_babel(t.doc, s.language_code, t.is_xetex)
 	t.author_separator = t.lang.author_separators[0]
 	opts := make([dynamic]string, 0, 2, context.temp_allocator)
 	if s.documentoptions != "" do append(&opts, s.documentoptions)
@@ -319,7 +319,9 @@ embed_latex_stylesheet :: proc(t: ^Latex, path: string, is_package: bool) -> str
 	if is_package do p = cat(p[:len(p) - len(path_suffix(p))], ".sty")
 	content, err := read_text(p, context.temp_allocator)
 	if err != "" {
-		msg := cat("Cannot embed stylesheet:\n ", err)
+		msg, _ := strings.replace_all(cat("Cannot embed stylesheet:\n ", err), "\\\\", "/",
+			context.temp_allocator)
+		dt.error(t.doc, msg)
 		quoted, _ := strings.replace_all(msg, "\n", "\n% ", context.temp_allocator)
 		return cat("% ", quoted)
 	}

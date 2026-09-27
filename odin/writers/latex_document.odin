@@ -450,7 +450,12 @@ visit_contents :: proc(t: ^Latex, n: dt.Node) -> Visit {
 	if t.s.use_latex_toc && local {
 		ok: bool
 		mtc_name, ok = minitoc_name(t, n)
-		if !ok do return .Skip_Node
+		if !ok {
+			msg := cat("Skipping local ToC at \"", section_name(&t.d_class, t.section_level),
+				"\" level.\n  Feature not supported with option \"use-latex-toc\"")
+			dt.warning(doc, msg, {base_node = n})
+			return .Skip_Node
+		}
 	}
 	o(t, "\n")
 	if len(dt.attr_list(doc, n, dt.K_NAMES)) > 1 do put_labels(t, n, newline = true)
@@ -475,6 +480,10 @@ visit_contents :: proc(t: ^Latex, n: dt.Node) -> Visit {
 		if v, ok := dt.get_detail(doc, p, "depth"); ok {
 			if d, is_int := v.(int); is_int do depth = d
 		}
+	} else {
+		msg := "Setting \"use_latex_toc\" is True but \"contents\" details are missing. " +
+			"Directive option values may be lost."
+		dt.warning(doc, msg)
 	}
 	title := latex_encode(t, astext(doc, first)) if titled else ""
 	if local {

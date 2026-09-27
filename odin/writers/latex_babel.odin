@@ -1,8 +1,11 @@
 package writers
 
 import "base:runtime"
+import "core:fmt"
 import "core:slice"
 import "core:strings"
+
+import dt "../doctree"
 
 // Language support (``Babel``, and ``polyglossia`` for XeTeX), the preamble
 // building blocks (``PreambleCmds``) and ``DocumentClass``.
@@ -116,17 +119,23 @@ NO_POLYGLOSSIA := [?]string {
 }
 
 Babel :: struct {
+	doc:            ^dt.Doc, // for the warning about unsupported languages
 	xetex:          bool,
 	language:       string,
 	otherlanguages: map[string]bool,
+	warn_msg:       string, // ``Babel.warn_msg``, "%s": the language code
 }
 
-make_babel :: proc(language_code: string, xetex: bool) -> Babel {
+make_babel :: proc(doc: ^dt.Doc, language_code: string, xetex: bool) -> Babel {
 	b := Babel {
+		doc            = doc,
 		xetex          = xetex,
 		otherlanguages = make(map[string]bool, 4, context.temp_allocator),
+		warn_msg       = "Language \"%s\" not supported by LaTeX (babel)",
 	}
+	if xetex do b.warn_msg = "Language \"%s\" not supported by LaTeX (polyglossia)"
 	b.language = babel_language_name(&b, language_code)
+	if xetex do b.warn_msg = "Language \"%s\" not supported by Polyglossia."
 	return b
 }
 
@@ -146,6 +155,7 @@ babel_language_name :: proc(b: ^Babel, language_code: string) -> string {
 	for tag in normalize_language_tag(language_code) {
 		if name, ok := lookup_language(b, tag); ok do return name
 	}
+	if b.doc != nil do dt.warning(b.doc, fmt.tprintf(b.warn_msg, language_code))
 	return ""
 }
 

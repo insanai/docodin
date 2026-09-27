@@ -50,6 +50,7 @@ init_xml_dispatch :: proc "contextless" () {
 	xml_dispatch.visit[.Text] = xml_visit_text
 	xml_dispatch.depart[.Text] = nil
 	xml_dispatch.visit[.raw] = xml_visit_raw
+	xml_dispatch.names = &XML_METHOD_NAMES
 }
 
 // ``utils.xml_declaration(encoding)``.

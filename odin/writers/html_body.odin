@@ -578,7 +578,9 @@ SIMPLE_CHECKS := #partial [dt.Tag]Check {
 // ``check_simple_list(node)``: walk with ``SimpleListChecker``.
 @(private = "file")
 simple_list :: proc(doc: ^dt.Doc, n: dt.Node) -> bool {
-	switch SIMPLE_CHECKS[dt.tag(doc, n)] {
+	check := SIMPLE_CHECKS[dt.tag(doc, n)]
+	if doc.reporter.debug_flag do debug_simple_check(doc, n, check)
+	switch check {
 	case .Found:
 		return false
 	case .Ignore:
@@ -591,6 +593,28 @@ simple_list :: proc(doc: ^dt.Doc, n: dt.Node) -> bool {
 		if !simple_list(doc, c) do return false
 	}
 	return true
+}
+
+// The debug messages of ``Node.walk`` and ``dispatch_visit`` for the
+// checker's method (a ``GenericNodeVisitor``).
+@(private = "file")
+debug_simple_check :: proc(doc: ^dt.Doc, n: dt.Node, check: Check) {
+	tag := dt.tag(doc, n)
+	class := "Text" if tag == .Text else dt.TAG_NAMES[tag]
+	method: string
+	switch check {
+	case .Found:
+		method = "unknown_visit" if tag == .Element else "_call_default_visit"
+	case .Pass:
+		method = "pass_node"
+	case .Ignore:
+		method = "ignore_node"
+	case .Item:
+		method = "visit_list_item"
+	}
+	dt.debug(doc, cat("docutils.nodes.Node.walk calling dispatch_visit for ", class))
+	dispatch := "docutils.nodes.NodeVisitor.dispatch_visit calling "
+	dt.debug(doc, cat(dispatch, method, " for ", class))
 }
 
 // ``SimpleListChecker.visit_list_item``: at most a paragraph and a list.

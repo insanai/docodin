@@ -145,7 +145,12 @@ to_latex_length :: proc(t: ^Latex, length: string, n: dt.Node) -> (string, bool)
 	case "vh":
 		res = cat(float_g(as_f64(value) / 100), "\\paperheight")
 	case:
-		if _, known := preamble_lookup(unit); known {
+		if _, known := preamble_lookup(unit); !known {
+			msg := cat("Unit \"", unit, "\" not supported by LaTeX.\n",
+				"  Define lenght \"\\DU", unit, "dimen\" in preamble,",
+				" raw LaTeX, or custom stylesheet.")
+			dt.warning(t.doc, msg, {base_node = n})
+		} else {
 			if unit == "ch" {
 				t.fallbacks["ch"] = preamble_cmd("ch")
 			} else {
@@ -440,7 +445,11 @@ latex_visit_reference :: proc(t: ^Latex, n: dt.Node) -> Visit {
 			}
 		}
 		href := strings.to_string(b)
-		_ = has_unbalanced_braces(href) // reported by docutils as an error message
+		if strings.contains(href, "^^") || has_unbalanced_braces(href) {
+			msg := cat("External link \"", href, "\" not supported by LaTeX.\n",
+				" (Must not contain \"^^\" or unbalanced braces.)")
+			dt.error(doc, msg)
+		}
 		if refuri == astext(doc, n) {
 			o(t, cat("\\url{", href, "}"))
 			return .Skip_Node

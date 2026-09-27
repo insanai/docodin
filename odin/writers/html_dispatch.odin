@@ -70,6 +70,7 @@ html_visit_block_quote :: proc(t: ^Html, n: dt.Node) -> Visit {
 
 @(init, private = "file")
 init_html_dispatch :: proc "contextless" () {
+	html_dispatch.names = &HTML5_METHOD_NAMES
 	v := &html_dispatch.visit
 	d := &html_dispatch.depart
 	for c in CLOSING_TAGS do d[c.tag] = html_depart_closing

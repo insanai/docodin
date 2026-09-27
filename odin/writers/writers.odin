@@ -194,6 +194,8 @@ Visit :: enum u8 {
 Dispatch :: struct($T: typeid) {
 	visit:  [dt.Tag]proc(t: ^T, n: dt.Node) -> Visit,
 	depart: [dt.Tag]proc(t: ^T, n: dt.Node),
+	// the docutils method names, for the debug messages
+	names:  ^[dt.Tag][2]string,
 }
 
 // ``Node.walkabout(visitor)``.  A translator stops the walk by setting its
@@ -201,6 +203,7 @@ Dispatch :: struct($T: typeid) {
 walkabout :: proc(t: ^$T, d: ^Dispatch(T), n: dt.Node) {
 	if t.err != "" do return
 	tag := dt.tag(t.doc, n)
+	debug_dispatch(t.doc, d.names, tag, "visit")
 	visit := d.visit[tag]
 	if visit == nil {
 		unimplemented_visit(t, n)
@@ -217,8 +220,20 @@ walkabout :: proc(t: ^$T, d: ^Dispatch(T), n: dt.Node) {
 		}
 	}
 	if res != .Skip_Departure {
+		debug_dispatch(t.doc, d.names, tag, "departure")
 		if depart := d.depart[tag]; depart != nil do depart(t, n)
 	}
+}
+
+// With the ``debug`` setting: the messages of ``Node.walkabout`` and
+// ``NodeVisitor.dispatch_visit`` / ``dispatch_departure``.
+debug_dispatch :: proc(doc: ^dt.Doc, names: ^[dt.Tag][2]string, tag: dt.Tag, what: string) {
+	if !doc.reporter.debug_flag || names == nil do return
+	class := "Text" if tag == .Text else dt.TAG_NAMES[tag]
+	method := names[tag][0] if what == "visit" else names[tag][1]
+	dt.debug(doc, cat("docutils.nodes.Node.walkabout calling dispatch_", what, " for ", class))
+	dt.debug(doc, cat("docutils.nodes.NodeVisitor.dispatch_", what, " calling ", method, " for ",
+		class))
 }
 
 // ``NodeVisitor.unknown_visit`` / ``unimplemented_visit``.

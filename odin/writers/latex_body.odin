@@ -175,6 +175,7 @@ LATEX_DEPART := #partial [dt.Tag]proc(t: ^Latex, n: dt.Node) {
 latex_dispatch := Dispatch(Latex) {
 	visit  = LATEX_VISIT,
 	depart = LATEX_DEPART,
+	names  = &LATEX_METHOD_NAMES,
 }
 
 latex_visit_pass :: proc(t: ^Latex, n: dt.Node) -> Visit {
@@ -685,6 +686,10 @@ latex_visit_paragraph :: proc(t: ^Latex, n: dt.Node) -> Visit {
 	case index > 0 && dt.tag(doc, p) == .compound &&
 	     !dt.is(doc, dt.child_at(doc, p, index - 1), {.paragraph, .compound}):
 	case t.active_table.colwidths_auto:
+		if index == 1 {
+			msg := "LaTeX merges paragraphs in tables with auto-sized columns!"
+			dt.warning(doc, msg, {base_node = n})
+		}
 		if index > 0 do o(t, "\n")
 	case:
 		o(t, "\n")
