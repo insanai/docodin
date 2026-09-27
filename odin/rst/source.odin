@@ -2,7 +2,7 @@ package rst
 
 import "base:intrinsics"
 import "base:runtime"
-import "core:strings"
+import "core:unicode/utf8"
 
 // Parser configuration (the subset of docutils settings that affects parsing).
 Settings :: struct {
@@ -47,6 +47,7 @@ split_lines_table :: proc(
 	if table do table_out = make([dynamic]u32, 0, estimate + 1, allocator)
 	start, i, n := 0, 0, len(input)
 	rewrite := false // the current line has a \t, \v or \f
+	pool := Line_Pool{allocator = allocator}
 	for i < n {
 		if i + BLOCK <= n {
 			breaks := line_break_mask(input, i)
@@ -69,14 +70,14 @@ split_lines_table :: proc(
 			i += 1
 			continue
 		}
-		append(&out, normalize_line(input[start:i], rewrite, tab_width, allocator))
+		append(&out, normalize_line(input[start:i], rewrite, tab_width, &pool))
 		if table do append(&table_out, u32(start))
 		i += sep
 		start = i
 		rewrite = false
 	}
 	if start < n {
-		append(&out, normalize_line(input[start:], rewrite, tab_width, allocator))
+		append(&out, normalize_line(input[start:], rewrite, tab_width, &pool))
 		if table do append(&table_out, u32(start))
 	}
 	if table do append(&table_out, u32(n))
@@ -106,33 +107,110 @@ count_trailing_zeros16 :: #force_inline proc "contextless" (m: u16) -> u16 {
 }
 
 // One line of ``string2lines``: ``rewrite`` when it contains \t, \v or \f.
+// Python expands a tab to the next multiple of ``tab_width`` columns,
+// counting a column per code point, and turns \v and \f into spaces; other
+// characters are copied (an invalid UTF-8 byte becomes U+FFFD, as Odin
+// decodes it).  Lines are short: one scalar pass over the bytes, writing
+// into a buffer cut from a shared block.
 @(private = "file")
 normalize_line :: proc(
 	line: string,
 	rewrite: bool,
 	tab_width: int,
-	allocator: runtime.Allocator,
+	pool: ^Line_Pool,
 ) -> string {
 	if !rewrite do return rstrip(line)
-	b := strings.builder_make_len_cap(0, len(line) + 16, allocator)
-	column := 0
-	for r in line {
-		switch r {
-		case '\t':
-			if tab_width > 0 {
-				spaces := tab_width - column % tab_width
-				for _ in 0 ..< spaces do strings.write_byte(&b, ' ')
-				column += spaces
-			}
-		case '\v', '\f':
-			strings.write_byte(&b, ' ')
-			column += 1
-		case:
-			strings.write_rune(&b, r)
-			column += 1
+	// at most tab_width bytes per tab, 3 per invalid byte
+	buf := pool_take(pool, len(line) * max(tab_width, 3))
+	n, column := 0, 0
+	for i := 0; i < len(line); {
+		// a run of plain ASCII is copied at once
+		j := plain_ascii_end(line, i)
+		if j > i {
+			n += copy(buf[n:], line[i:j])
+			column += j - i
+			i = j
+			continue
 		}
+		c := line[i]
+		switch {
+		case c == '\t':
+			spaces := tab_width - column % tab_width if tab_width > 0 else 0
+			for k in 0 ..< spaces do buf[n + k] = ' '
+			n += spaces
+			column += spaces
+			i += 1
+			continue
+		case c == '\v' || c == '\f':
+			buf[n] = ' '
+			n += 1
+			i += 1
+		case:
+			r, size := utf8.decode_rune_in_string(line[i:])
+			bytes := line[i:i + size] if r != utf8.RUNE_ERROR else "\uFFFD" // or U+FFFD itself
+			n += copy(buf[n:], bytes)
+			i += size
+		}
+		column += 1
 	}
-	return rstrip(strings.to_string(b))
+	pool_return(pool, buf[n:])
+	return rstrip(string(buf[:n]))
+}
+
+// The end of the run of ASCII other than \t, \v and \f at ``i``: eight
+// bytes at a time (SWAR), then byte by byte.
+@(private = "file")
+plain_ascii_end :: proc "contextless" (s: string, i: int) -> int {
+	ONES :: 0x0101010101010101
+	HIGH :: 0x8080808080808080
+	has_byte :: #force_inline proc "contextless" (x: u64, b: u64) -> u64 {
+		y := x ~ (ONES * b)
+		return (y - ONES) & ~y & HIGH
+	}
+	j := i
+	for ; j + 8 <= len(s); j += 8 {
+		x := intrinsics.unaligned_load((^u64)(raw_data(s)[j:]))
+		if (x & HIGH) | has_byte(x, '\t') | has_byte(x, '\v') | has_byte(x, '\f') != 0 do break
+	}
+	for j < len(s) {
+		switch s[j] {
+		case '\t', '\v', '\f', 0x80 ..= 0xFF:
+			return j
+		}
+		j += 1
+	}
+	return j
+}
+
+// Rewritten lines are cut from shared blocks: one allocation per block,
+// not per line.
+@(private = "file")
+Line_Pool :: struct {
+	free:      []u8,
+	allocator: runtime.Allocator,
+}
+
+@(private = "file")
+LINE_BLOCK :: 64 * 1024
+
+// ``size`` bytes (not zeroed) at the start of the pool's free space.
+@(private = "file")
+pool_take :: proc(pool: ^Line_Pool, size: int) -> []u8 {
+	if size > len(pool.free) {
+		block, _ := runtime.mem_alloc_non_zeroed(max(size, LINE_BLOCK), 1, pool.allocator)
+		pool.free = block
+	}
+	buf := pool.free[:size]
+	pool.free = pool.free[size:]
+	return buf
+}
+
+// Give back ``unused``, the end of the last buffer taken.
+@(private = "file")
+pool_return :: proc(pool: ^Line_Pool, unused: []u8) {
+	if len(unused) > 0 && raw_data(unused[len(unused):]) == raw_data(pool.free) {
+		pool.free = ([^]u8)(raw_data(unused))[:len(unused) + len(pool.free)]
+	}
 }
 
 // First line (1-based) longer than ``limit`` code points, or 0.
