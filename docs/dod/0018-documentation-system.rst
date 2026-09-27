@@ -3,7 +3,7 @@ DOD 18: The Documentation System
 ==============================================================================
 
 :Authors: Vikrant Rathore
-:State: published
+:State: committed
 :Created: 2026-09-27
 :Discussion:
 :Labels: documentation, tooling, process
