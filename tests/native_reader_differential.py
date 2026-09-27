@@ -58,77 +58,6 @@ DEFAULT_DOCUTILS = os.environ.get("DOCUTILS_SOURCE", "")
 UNPORTED_MARK = "--unported--\n"  # the harness met a directive not ported yet
 REPORT_LEVELS = (5, 1)
 
-# Pieces of the ``directives`` category: the ported directives and roles,
-# with valid and invalid arguments, options and content.
-DIRECTIVE_PIECES = [
-    ".. note:: Body text.\n", ".. warning::\n\n   Para one.\n\n   Para two.\n",
-    ".. attention::\n", ".. caution:: x\n   :class: a b\n", ".. danger:: *emph* `ref`_\n",
-    ".. error:: :name: target\n", ".. hint::\n   :class: Hint Class\n   :name: n1\n\n   Body\n",
-    ".. important:: x\n\n   - item\n", ".. tip:: x\n   :bad: option\n",
-    ".. admonition:: My *Title*\n\n   Body.\n", ".. admonition::\n\n   No title.\n",
-    ".. admonition:: T\n   :class: special\n\n   Body.\n",
-    ".. topic:: Topic Title\n\n   Topic body.\n", ".. topic:: T\n",
-    ".. sidebar:: Side\n   :subtitle: Sub *title*\n\n   Side body.\n",
-    ".. sidebar::\n   :subtitle: S\n\n   Body\n", ".. sidebar:: A\n\n   .. sidebar:: B\n\n      x\n",
-    ".. topic:: Outer\n\n   .. topic:: Inner\n\n      x\n",
-    ".. line-block::\n\n   First line\n     indented *more*\n\n   back\n",
-    ".. parsed-literal::\n\n   code with *emphasis*\n   and `ref`_\n",
-    ".. parsed-literal::\n", ".. code:: python\n   :number-lines:\n\n   x = 1\n   y = 2\n",
-    ".. code::\n\n   plain\n", ".. code-block:: text\n   :number-lines: 9\n\n   a\n\n   b\n",
-    ".. sourcecode:: c\n   :number-lines: x\n\n   int\n",
-    ".. code:: c\n   :class: hl\n   :name: codename\n\n   int x;\n",
-    ".. math::\n\n   a^2 + b^2\n\n   c^2\n", ".. math::\n   :name: eq\n\n   e = mc^2\n\n   f\n",
-    ".. rubric:: A *rubric*\n", ".. rubric::\n", ".. rubric:: R\n   :class: x\n",
-    ".. epigraph::\n\n   Quote text.\n\n   -- Author\n", ".. highlights::\n\n   One.\n\n   Two.\n",
-    ".. pull-quote::\n\n   Pulled.\n\n   --- Somebody\n     continued\n",
-    ".. compound::\n   :class: c\n\n   Para.\n\n   ::\n\n      lit\n", ".. container:: a b\n\n   Inside.\n",
-    ".. container:: !!!\n\n   x\n", ".. container::\n",
-    ".. class:: special\n", ".. class:: a b\n\n   Para one.\n\n   Para two.\n", ".. class::\n",
-    ".. class:: ###\n", ".. rst-class:: x\n\n   y\n",
-    ".. role:: custom\n", ".. role:: custom2(emphasis)\n", ".. role:: raw-html(raw)\n   :format: html\n",
-    ".. role:: bad role\n", ".. role:: r(unknownbase)\n", ".. role:: c2(code)\n   :language: python\n",
-    ".. role::\n", ".. role:: x(literal)\n   :class: k\n   :format: no\n",
-    "Text :custom:`one` :custom2:`two` :raw-html:`<b>` :c2:`x=1` :x:`lit`\n",
-    ".. default-role:: literal\n", ".. default-role::\n", ".. default-role:: nope\n",
-    ".. default-role:: custom\n", "Default `role text` here.\n",
-    "Roles :emphasis:`e` :strong:`s` :literal:`l` :sub:`2` :sup:`3` :t:`title` :ab:`abbr`\n",
-    "Roles :pep:`8` :pep:`x` :rfc:`2822` :rfc:`2822#sec` :rfc:`0` :math:`a^2` :code:`c`\n",
-    "Roles :raw:`raw` :index:`i` :unknown:`u` :acronym:`ac` :title-reference:`t`\n",
-    "Roles :restructuredtext-unimplemented-role:`z` :Emphasis:`caps`\n",
-    ".. raw:: html\n\n   <b>raw</b>\n", ".. raw:: html\n", ".. raw:: HTML  Latex\n   :class: r\n\n   x\n",
-    ".. raw:: html\n   :file: nonexistent.html\n", ".. raw:: html\n   :file: a\n   :url: b\n",
-    ".. |r| replace:: replacement *text*\n", ".. |r2| replace:: two\n\n   paragraphs\n",
-    ".. |u| unicode:: U+2014 .. comment\n", ".. |u2| unicode:: 0x41 x42 &#x43; 68 abc\n   :trim:\n",
-    ".. |u3| unicode:: 99999999999\n", ".. |u4| unicode:: 1114112\n", ".. replace:: outside\n",
-    ".. unicode:: U+20\n", "Use |r| and |u| and |r2| and |missing|.\n",
-    ".. title:: Document Title\n", ".. title::\n",
-    ".. contents::\n", ".. contents:: Table\n   :depth: 2\n   :local:\n   :backlinks: top\n",
-    ".. contents::\n   :depth: -1\n", ".. contents::\n   :backlinks: sideways\n",
-    ".. contents::\n   :class: toc\n   :backlinks: none\n",
-    ".. sectnum::\n", ".. sectnum::\n   :depth: 2\n   :start: 3\n   :prefix: A.\n   :suffix: )\n",
-    ".. section-numbering::\n   :depth: x\n", ".. header:: Header *text*\n", ".. footer:: Footer\n",
-    ".. header::\n", ".. target-notes::\n", ".. target-notes::\n   :class: tn\n",
-    ".. restructuredtext-test-directive:: arg\n   :option: value\n\n   content\n",
-    ".. restructuredtext-test-directive::\n", ".. include:: <isonum.txt>\n",
-    ".. include:: <isolat1.txt>\n", ".. include:: nonexistent.rst\n",
-    ".. include:: <isonum.txt>\n   :literal:\n",
-    ".. include:: <isonum.txt>\n   :code: rst\n   :number-lines:\n",
-    ".. include:: <isonum.txt>\n   :start-line: 3\n   :end-line: 8\n   :literal:\n   :number-lines: 3\n",
-    ".. include:: <isonum.txt>\n   :start-after: frac12\n",
-    ".. include:: <isonum.txt>\n   :start-after: copyright\n",
-    ".. include:: <isonum.txt>\n   :end-before: nothing-like-this\n",
-    "Text |copy| |reg| |trade|.\n", ".. note:: x\n   :class:\n",
-    ".. note:: x\n   :class: a\n   :class: b\n",
-    ".. note:: x\n   :name: a b\n", ".. note::\n   :name:\n",
-    ".. topic:: T\n   :name: tn\n\n   Section\n   -------\n",
-    ".. note::\n\n   Section\n   =======\n\n   x\n", ".. note:: x\n   :alt_: ref\n",
-    ".. note:: x\n   :a\\:b: y\n", ".. note:: x\n   :class: a\n   not an option\n\n   body\n",
-    ".. |img| note:: x\n", "Section\n=======\n", "Sub\n---\n", "Para with `link <http://x>`_.\n",
-    ".. _tgt:\n", "- list\n\n  .. note:: in list\n", "| line\n|  block\n",
-    "See PEP 8, PEP-0287 and RFC 2822 and pep-0008.txt.\n", "Refs [1]_ [#]_ and [*]_ here.\n",
-    ".. [1] One.\n", ".. [#] Auto.\n", ".. [*] Symbol.\n", "Char*level*mark``up``x `r`_x\n",
-    "Title\n=====\n\n.. _dup:\n\nTitle\n=====\n",
-]
 
 BATCH = 200
 
@@ -244,21 +173,11 @@ def fuzz_cases(count: int, seed: int, corpus: list[str]) -> list[tuple[str, str]
 
 
 def directive_cases(count: int, seed: int) -> list[tuple[str, str]]:
-    cases = []
-    for i in range(count):
-        rng = random.Random(seed * 7_000_003 + i)
-        parts = []
-        for _ in range(rng.randint(1, 10)):
-            piece = rng.choice(DIRECTIVE_PIECES)
-            if rng.random() < 0.2:
-                indent = " " * rng.choice([1, 2, 3, 4])
-                piece = "".join(indent + ln if ln.strip() else ln
-                                for ln in piece.splitlines(True))
-            parts.append(piece)
-            if rng.random() < 0.8:
-                parts.append("\n")
-        cases.append((f"directives-{i}", "".join(parts)))
-    return cases
+    sys.path.insert(0, str(ROOT / "tests"))
+    from fuzz_differential import gen_directive_document
+
+    return [(f"directives-{i}", gen_directive_document(random.Random(seed * 7_000_003 + i)))
+            for i in range(count)]
 
 
 def file_cases(paths: list[Path]) -> list[tuple[str, str]]:

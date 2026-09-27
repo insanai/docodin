@@ -7,6 +7,10 @@ every node.  Every mismatch, crash or
 timeout is saved for inspection.
 
     python tests/fuzz_differential.py [--cases N] [--seed S] [--corpus DIR] [--out DIR]
+        [--directives]
+
+``--directives`` generates documents of directives and roles instead (with
+``include`` enabled) and also compares the warning stream of all messages.
 """
 
 from __future__ import annotations
@@ -43,6 +47,125 @@ PIECES = [
 ]
 
 
+# Pieces of directive documents (``--directives``): the standard directives
+# and roles, with valid and invalid arguments, options and content, and
+# ``include`` of the standard include files.
+DIRECTIVE_PIECES = [
+    ".. note:: Body text.\n", ".. warning::\n\n   Para one.\n\n   Para two.\n",
+    ".. attention::\n", ".. caution:: x\n   :class: a b\n", ".. danger:: *emph* `ref`_\n",
+    ".. error:: :name: target\n", ".. hint::\n   :class: Hint Class\n   :name: n1\n\n   Body\n",
+    ".. important:: x\n\n   - item\n", ".. tip:: x\n   :bad: option\n",
+    ".. admonition:: My *Title*\n\n   Body.\n", ".. admonition::\n\n   No title.\n",
+    ".. admonition:: T\n   :class: special\n\n   Body.\n",
+    ".. topic:: Topic Title\n\n   Topic body.\n", ".. topic:: T\n",
+    ".. sidebar:: Side\n   :subtitle: Sub *title*\n\n   Side body.\n",
+    ".. sidebar::\n   :subtitle: S\n\n   Body\n", ".. sidebar:: A\n\n   .. sidebar:: B\n\n      x\n",
+    ".. topic:: Outer\n\n   .. topic:: Inner\n\n      x\n",
+    ".. line-block::\n\n   First line\n     indented *more*\n\n   back\n",
+    ".. parsed-literal::\n\n   code with *emphasis*\n   and `ref`_\n",
+    ".. parsed-literal::\n", ".. code:: python\n   :number-lines:\n\n   x = 1\n   y = 2\n",
+    ".. code::\n\n   plain\n", ".. code-block:: text\n   :number-lines: 9\n\n   a\n\n   b\n",
+    ".. sourcecode:: c\n   :number-lines: x\n\n   int\n",
+    ".. code:: c\n   :class: hl\n   :name: codename\n\n   int x;\n",
+    ".. math::\n\n   a^2 + b^2\n\n   c^2\n", ".. math::\n   :name: eq\n\n   e = mc^2\n\n   f\n",
+    ".. rubric:: A *rubric*\n", ".. rubric::\n", ".. rubric:: R\n   :class: x\n",
+    ".. epigraph::\n\n   Quote text.\n\n   -- Author\n", ".. highlights::\n\n   One.\n\n   Two.\n",
+    ".. pull-quote::\n\n   Pulled.\n\n   --- Somebody\n     continued\n",
+    ".. compound::\n   :class: c\n\n   Para.\n\n   ::\n\n      lit\n", ".. container:: a b\n\n   Inside.\n",
+    ".. container:: !!!\n\n   x\n", ".. container::\n",
+    ".. class:: special\n", ".. class:: a b\n\n   Para one.\n\n   Para two.\n", ".. class::\n",
+    ".. class:: ###\n", ".. rst-class:: x\n\n   y\n",
+    ".. role:: custom\n", ".. role:: custom2(emphasis)\n", ".. role:: raw-html(raw)\n   :format: html\n",
+    ".. role:: bad role\n", ".. role:: r(unknownbase)\n", ".. role:: c2(code)\n   :language: python\n",
+    ".. role::\n", ".. role:: x(literal)\n   :class: k\n   :format: no\n",
+    "Text :custom:`one` :custom2:`two` :raw-html:`<b>` :c2:`x=1` :x:`lit`\n",
+    ".. default-role:: literal\n", ".. default-role::\n", ".. default-role:: nope\n",
+    ".. default-role:: custom\n", "Default `role text` here.\n",
+    "Roles :emphasis:`e` :strong:`s` :literal:`l` :sub:`2` :sup:`3` :t:`title` :ab:`abbr`\n",
+    "Roles :pep:`8` :pep:`x` :rfc:`2822` :rfc:`2822#sec` :rfc:`0` :math:`a^2` :code:`c`\n",
+    "Roles :raw:`raw` :index:`i` :unknown:`u` :acronym:`ac` :title-reference:`t`\n",
+    "Roles :restructuredtext-unimplemented-role:`z` :Emphasis:`caps`\n",
+    ".. raw:: html\n\n   <b>raw</b>\n", ".. raw:: html\n", ".. raw:: HTML  Latex\n   :class: r\n\n   x\n",
+    ".. raw:: html\n   :file: nonexistent.html\n", ".. raw:: html\n   :file: a\n   :url: b\n",
+    ".. |r| replace:: replacement *text*\n", ".. |r2| replace:: two\n\n   paragraphs\n",
+    ".. |u| unicode:: U+2014 .. comment\n", ".. |u2| unicode:: 0x41 x42 &#x43; 68 abc\n   :trim:\n",
+    ".. |u3| unicode:: 99999999999\n", ".. |u4| unicode:: 1114112\n", ".. replace:: outside\n",
+    ".. unicode:: U+20\n", "Use |r| and |u| and |r2| and |missing|.\n",
+    ".. title:: Document Title\n", ".. title::\n",
+    ".. contents::\n", ".. contents:: Table\n   :depth: 2\n   :local:\n   :backlinks: top\n",
+    ".. contents::\n   :depth: -1\n", ".. contents::\n   :backlinks: sideways\n",
+    ".. contents::\n   :class: toc\n   :backlinks: none\n",
+    ".. sectnum::\n", ".. sectnum::\n   :depth: 2\n   :start: 3\n   :prefix: A.\n   :suffix: )\n",
+    ".. section-numbering::\n   :depth: x\n", ".. header:: Header *text*\n", ".. footer:: Footer\n",
+    ".. header::\n", ".. target-notes::\n", ".. target-notes::\n   :class: tn\n",
+    ".. restructuredtext-test-directive:: arg\n   :option: value\n\n   content\n",
+    ".. restructuredtext-test-directive::\n", ".. include:: <isonum.txt>\n",
+    ".. include:: <isolat1.txt>\n", ".. include:: nonexistent.rst\n",
+    ".. include:: <isonum.txt>\n   :literal:\n",
+    ".. include:: <isonum.txt>\n   :code: rst\n   :number-lines:\n",
+    ".. include:: <isonum.txt>\n   :start-line: 3\n   :end-line: 8\n   :literal:\n   :number-lines: 3\n",
+    ".. include:: <isonum.txt>\n   :start-after: frac12\n",
+    ".. include:: <isonum.txt>\n   :start-after: copyright\n",
+    ".. include:: <isonum.txt>\n   :end-before: nothing-like-this\n",
+    "Text |copy| |reg| |trade|.\n", ".. note:: x\n   :class:\n",
+    ".. note:: x\n   :class: a\n   :class: b\n",
+    ".. note:: x\n   :name: a b\n", ".. note::\n   :name:\n",
+    ".. topic:: T\n   :name: tn\n\n   Section\n   -------\n",
+    ".. note::\n\n   Section\n   =======\n\n   x\n", ".. note:: x\n   :alt_: ref\n",
+    ".. note:: x\n   :a\\:b: y\n", ".. note:: x\n   :class: a\n   not an option\n\n   body\n",
+    ".. |img| note:: x\n", "Section\n=======\n", "Sub\n---\n", "Para with `link <http://x>`_.\n",
+    ".. _tgt:\n", "- list\n\n  .. note:: in list\n", "| line\n|  block\n",
+    "See PEP 8, PEP-0287 and RFC 2822 and pep-0008.txt.\n", "Refs [1]_ [#]_ and [*]_ here.\n",
+    ".. [1] One.\n", ".. [#] Auto.\n", ".. [*] Symbol.\n", "Char*level*mark``up``x `r`_x\n",
+    "Title\n=====\n\n.. _dup:\n\nTitle\n=====\n",
+    ".. image:: a.png\n", ".. image:: a b.png\n   :alt: Alt *text*\n   :width: 50 %\n   :height: 2.5em\n",
+    ".. image:: x.png\n   :align: middle\n", ".. image:: x.png\n   :scale: 50%\n   :target: http://x.org\n",
+    ".. image:: x.png\n   :target: `ref`_\n   :name: img\n", ".. image:: x.png\n   :width: 3 furlongs\n",
+    ".. image:: x.png\n   :loading: lazy\n   :class: c\n", ".. image::\n",
+    ".. |img2| image:: i.png\n   :align: top\n",
+    ".. |img3| image:: i.png\n   :align: left\n", "An |img2| inline.\n",
+    ".. figure:: f.png\n   :figwidth: 50%\n   :figclass: fc\n   :align: center\n\n   Caption *here*.\n\n"
+    "   Legend para.\n",
+    ".. figure:: f.png\n   :figwidth: image\n   :figname: fig\n\n   ..\n\n   Legend only.\n",
+    ".. figure:: f.png\n\n   - not a caption\n", ".. figure:: f.png\n   :align: top\n",
+    ".. figure:: f.png\n\n   .. _ftarget:\n\n   Cap.\n",
+    ".. table:: Title *t*\n   :widths: 1 2\n   :align: center\n\n"
+    "   =====  =====\n   a      b\n   =====  =====\n",
+    ".. table::\n   :widths: auto\n\n   +---+---+\n   | a | b |\n   +---+---+\n", ".. table::\n\n   para\n",
+    ".. table::\n", ".. table::\n   :widths: 1 2 3\n\n   ===  ===\n   a    b\n   ===  ===\n",
+    ".. csv-table:: CSV *title*\n   :header: \"A\", \"B\"\n   :widths: 30, 70\n\n"
+    "   1, \"two, three\"\n   \"*4*\", 5\n",
+    ".. csv-table::\n   :header-rows: 1\n   :stub-columns: 1\n\n   h1,h2\n   a,b\n\n   c\n",
+    ".. csv-table::\n   :delim: ;\n   :quote: '\n   :keepspace:\n\n   a; 'b;c'\n",
+    ".. csv-table::\n   :escape: \\\n\n   \"a\\\"b\", c\n", ".. csv-table::\n\n   \"unterminated\n",
+    ".. csv-table::\n\n   \"a\"b, c\n", ".. csv-table::\n   :header-rows: 3\n\n   a\n",
+    ".. csv-table::\n   :file: nonexistent.csv\n", ".. csv-table::\n   :delim: space\n\n   a b\n",
+    ".. csv-table::\n", ".. csv-table::\n   :widths: 1\n\n   a, b\n",
+    ".. list-table:: List *table*\n   :header-rows: 1\n   :widths: 1 1\n\n   * - H1\n     - H2\n"
+    "   * - a\n     - b\n",
+    ".. list-table::\n\n   * - a\n   * - b\n     - c\n", ".. list-table::\n\n   para\n",
+    ".. list-table::\n\n   * not a list\n", ".. list-table::\n   :stub-columns: 2\n\n   * - a\n     - b\n",
+    ".. list-table::\n",
+    ".. meta::\n   :keywords: a, b\n   :description lang=en: Desc\n"
+    "   :http-equiv=Content-Type: text/html\n",
+    ".. meta::\n   :empty:\n", ".. meta::\n   :name bad\"att: x\n", ".. meta::\n\n   not a field\n",
+    ".. meta::\n",
+]
+
+
+def gen_directive_document(rng: random.Random) -> str:
+    parts = []
+    for _ in range(rng.randint(1, 10)):
+        piece = rng.choice(DIRECTIVE_PIECES)
+        if rng.random() < 0.2:
+            indent = " " * rng.choice([1, 2, 3, 4])
+            piece = "".join(indent + ln if ln.strip() else ln for ln in piece.splitlines(True))
+        parts.append(piece)
+        if rng.random() < 0.8:
+            parts.append("\n")
+    return "".join(parts)
+
+
 def gen_document(rng: random.Random) -> str:
     parts = []
     for _ in range(rng.randint(1, 12)):
@@ -73,25 +196,34 @@ def mutate(rng: random.Random, text: str) -> str:
     return "".join(chars)
 
 
-def check(text: str) -> tuple[str, str] | None:
+def check(text: str, directives: bool = False) -> tuple[str, str] | None:
+    """Compare docodin with docutils on ``text``; ``directives``: with file
+    insertion (``include``) and the warning stream of all messages."""
+    import io
+
     import docodin
     import docutils.frontend
     import docutils.nodes
     import docutils.utils
     from docutils.parsers import rst
+    from docutils.parsers.rst import directives as directive_registry
+    from docutils.parsers.rst import roles
 
     def run(parser):
+        roles._roles.clear()  # docutils caches roles and directives per process
+        directive_registry._directives.clear()
         settings = docutils.frontend.get_default_settings(rst.Parser)
-        settings.warning_stream = ""
-        settings.report_level = 5
+        stream = io.StringIO()
+        settings.warning_stream = stream
+        settings.report_level = 1 if directives else 5
         settings.halt_level = 5
-        settings.file_insertion_enabled = False
+        settings.file_insertion_enabled = directives
         doc = docutils.utils.new_document("fuzz", settings)
         parser.parse(text, doc)
         # pseudo-XML plus the Python-level source/line of every node (used in
         # warnings by transforms and Sphinx, not shown in pseudo-XML)
         positions = [(n.tagname, n.source, n.line) for n in doc.findall(docutils.nodes.Element)]
-        return doc.pformat(), positions
+        return doc.pformat(), positions, stream.getvalue()
 
     try:
         expected = run(rst.Parser())
@@ -107,8 +239,11 @@ def check(text: str) -> tuple[str, str] | None:
 
 
 def worker(args):
-    seed, corpus = args
+    seed, corpus, directives = args
     rng = random.Random(seed)
+    if directives:
+        text = gen_directive_document(rng)
+        return seed, text, check(text, directives=True)
     if corpus and rng.random() < 0.5:
         text = mutate(rng, rng.choice(corpus))
     else:
@@ -125,6 +260,8 @@ def main() -> int:
     ap.add_argument("--seed", type=int, default=1)
     ap.add_argument("--corpus", default=None)
     ap.add_argument("--out", default="fuzz-failures")
+    ap.add_argument("--directives", action="store_true",
+                    help="generate directive documents (with include and the warning stream)")
     args = ap.parse_args()
     corpus: list[str] = []
     if args.corpus:
@@ -140,7 +277,7 @@ def main() -> int:
     failures = 0
     ctx = mp.get_context("spawn")
     with ctx.Pool(max(os.cpu_count() or 2, 2)) as pool:
-        jobs = [(args.seed * 1_000_003 + i, corpus) for i in range(args.cases)]
+        jobs = [(args.seed * 1_000_003 + i, corpus, args.directives) for i in range(args.cases)]
         for seed, text, result in pool.imap_unordered(worker, jobs, chunksize=16):
             if result is None:
                 continue
