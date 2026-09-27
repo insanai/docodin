@@ -34,16 +34,6 @@ html_css_files = ["docodin.css"]
 html_logo = "_static/docodin-mark.svg"
 html_favicon = "_static/docodin-mark.svg"
 html_show_sourcelink = False
-html_theme_options = {
-    "light_css_variables": {
-        "color-brand-primary": "#1f5f99",
-        "color-brand-content": "#1f5f99",
-    },
-    "dark_css_variables": {
-        "color-brand-primary": "#7fb4e6",
-        "color-brand-content": "#7fb4e6",
-    },
-}
 
 # --- LaTeX (lualatex) --------------------------------------------------------------------
 
