@@ -311,3 +311,37 @@ for _name, _value in vars(Inliner).items():
     if isinstance(_value, str) and not _name.startswith("__"):
         setattr(OdinInliner, _name, _value)
 del _name, _value
+
+
+# Only the shim's transitions can hand natively built nodes to a replacement
+# that wraps them (docutils' own would parse the input again).
+_REPLAYABLE = hasattr(states.Body, "_replayable")
+
+
+def patched_transition(cls: type, name: str) -> Any:
+    """An extension's replacement of the transition method ``cls.name``, or None
+    (sphinx-autodoc-typehints replaces ``Body.doctest`` and wraps ``Text.indent``)."""
+    method = getattr(cls, name)
+    if not _REPLAYABLE or getattr(method, "__module__", None) == states.__name__:
+        return None
+    return method
+
+
+def replay_transition(method: Any, cls: type, sm: OdinStateMachine, parent: nodes.Element,
+                      start: int, lineno: int, lines: list[str], pattern: str,
+                      context: list[str]) -> None:
+    """Run ``method``, a replaced transition of state ``cls``, for the construct the
+    native parser built into ``parent[start:]``, with the state machine on its
+    (dedented) ``lines`` from absolute line ``lineno`` like docutils; a wrapped
+    original adds the built nodes back."""
+    built = parent.children[start:]
+    del parent[start:]
+    source, line = sm.srcline(lineno)
+    line = lineno if line is None else line
+    block = StringList(lines, items=[(source, line - 1 + i) for i in range(len(lines))])
+    machine = OdinStateMachine(sm.ctx, block, line - 1, parent, False, parent_sm=sm)
+    machine.line_offset = 0
+    machine.line = lines[0] if lines else ""
+    state = _make_state(cls, machine)
+    state._docodin_replay = built
+    method(state, re.match(pattern, machine.line), context, "Body")

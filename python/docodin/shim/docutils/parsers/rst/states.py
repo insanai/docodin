@@ -383,7 +383,22 @@ class Body(BodyHelpers, RSTState):
         machine.line_offset = len(machine.input_lines) - 1
         raise EOFError
 
-    bullet = enumerator = field_marker = option_marker = doctest = _to_native
+    def _replayable(self, match: Any = None, context: Any = None, next_state: Any = None) -> Any:
+        """A transition that extensions replace or wrap (``doctest``, ``Text.indent``).
+
+        For a construct the native parser has built, `docodin.builder` runs the
+        replacement with ``_docodin_replay`` holding the built nodes; the original
+        then adds them to the parent, like the docutils transition method.
+        """
+        replay = getattr(self, "_docodin_replay", None)
+        if replay is None:
+            return Body._to_native(self, match, context, next_state)
+        for node in replay:
+            self.parent += node
+        return [], next_state, []
+
+    bullet = enumerator = field_marker = option_marker = _to_native
+    doctest = _replayable
     line_block = grid_table_top = simple_table_top = explicit_markup = _to_native
     anonymous = line = text = _to_native
 
@@ -500,7 +515,8 @@ class Text(RSTState):
 
     patterns = {"underline": Body.patterns["line"], "text": r""}
     initial_transitions = [("underline", "Body"), ("text", "Body")]
-    underline = text = indent = Body._to_native
+    underline = text = Body._to_native
+    indent = Body._replayable
 
     def blank(self, match: Any, context: Any, next_state: Any) -> Any:
         return Body._to_native(self, match, context, next_state)

@@ -35,6 +35,8 @@ from docodin._machine import (
     OdinStateMachine,
     OdinSubstitutionDef,
     _make_state,
+    patched_transition,
+    replay_transition,
 )
 
 # Node kinds, in the order of ``Node_Kind`` in odin/rst/node_kinds.odin.
@@ -660,6 +662,7 @@ class TreeBuilder:
         # (K, line, items)
         dl = _element(nodes.definition_list, "", [])
         dl.source, dl.line = sm.srcline(item[1])
+        start = len(parent)
         first = True
         for dli in item[2]:
             _append(dl, self._definition_list_item(dli, sm, parent if first else dl))
@@ -668,6 +671,11 @@ class TreeBuilder:
                 first = False
         if first:
             _append(parent, dl)
+        method = patched_transition(states.Text, "indent")
+        if method is not None and item[2]:  # docutils: at the first definition line
+            raw = item[2][0][2].split("\n")
+            replay_transition(method, states.Text, sm, parent, start, item[2][0][1] + 1,
+                              raw[1:], " +", raw[:1])
 
     def _definition_list_item(self, item, sm, container):
         # (K, line, raw, [Term, Classifier*, Definition])
@@ -768,6 +776,10 @@ class TreeBuilder:
         n = _fixed_text_element(nodes.doctest_block, text, text)
         n.line = self.document.current_line  # docutils: the line where it starts
         _append(parent, n)
+        method = patched_transition(states.Body, "doctest")
+        if method is not None:
+            replay_transition(method, states.Body, sm, parent, len(parent) - 1, item[1],
+                              text.split("\n"), states.Body.patterns["doctest"], [])
 
     def b_line_block(self, item, parent, sm):
         # (K, line, children: Line | Line_Block, cur)
