@@ -7,10 +7,13 @@ every node.  Every mismatch, crash or
 timeout is saved for inspection.
 
     python tests/fuzz_differential.py [--cases N] [--seed S] [--corpus DIR] [--out DIR]
-        [--directives]
+        [--directives | --inline]
 
 ``--directives`` generates documents of directives and roles instead (with
 ``include`` enabled) and also compares the warning stream of all messages.
+``--inline`` generates paragraphs dense in the inliner's hard cases (standalone
+URIs, e-mail addresses, ``name_`` reference chains, escapes, non-ASCII words)
+under random inline settings.
 """
 
 from __future__ import annotations
@@ -166,6 +169,48 @@ def gen_directive_document(rng: random.Random) -> str:
     return "".join(parts)
 
 
+# Words of ``--inline`` documents: the candidates of the inliner's fast paths
+# (URI and e-mail pre-filters, the ``name_`` chain scan, the candidate scanner).
+INLINE_WORDS = [
+    "http://example.org", "https://x.org/a/b?q=1&r=2#frag", "HTTP://UPPER.ORG/", "ftp://f.io/x.",
+    "mailto:someone@example.com", "news:comp.lang", "urn:isbn:0451450523", "file:///tmp/x",
+    "unknown-scheme:foo", "a:b", "x:y:z", "10:30", "http:", "http://", "http://x.org/(paren)",
+    "<http://angle.org>", "http://x.org/path_", "http://x.org/a\\ b", "http://x.org/*star*",
+    "user@example.com", "first.last@sub.example.co.uk", "a@b", "a@b.", "@at", "at@", "x\\@y.org",
+    "trailing.dot.@x.org", "e@x.org.", "e@x.org>", "a+b@c-d.org", "'q'@x.io", "üser@x.org",
+    "name_", "name__", "a-b.c+d:e_", "a_b_c_", "long-chain.with+many:seps_", "a-_", "a._", "a:_",
+    "1_", "é_", "テキスト_", "naïve-word_", "a__b_", "_lead", "trail_.", "x_y", "ref_,", "ref_)",
+    "(ref_)", "\\name_", "name\\_", "`phrase`_", "`anon`__", "`a <u_>`_", "`b <http://u>`_",
+    ":role:`x`", "`x`:role:", "*em*", "**st**", "``lit``", "|sub|_", "[1]_", "[#a]_", "[CIT]_",
+    "pep-0008.txt", "PEP 287", "RFC 2822", "RFC-822", "word", "Wörter", "日本語", "«q»_", "‘q’",
+    "a*b", "*", "_", ":", "@", "`", "|", "[", "\\", "a\\:b", "x\u00a0y_", "\u3000w_",
+]
+INLINE_SEPARATORS = [" ", " ", " ", "  ", "\n", ", ", ". ", "(", ")", "-", "/", "'", '"', "", ":"]
+
+
+def gen_inline_document(rng: random.Random) -> str:
+    paragraphs = []
+    for _ in range(rng.randint(1, 4)):
+        words = []
+        for _ in range(rng.randint(1, 24)):
+            words.append(rng.choice(INLINE_WORDS))
+            words.append(rng.choice(INLINE_SEPARATORS))
+        text = "".join(words).strip() or "x"
+        if rng.random() < 0.2:
+            text = "- " + text.replace("\n", "\n  ")
+        paragraphs.append(text + "\n")
+    return "\n".join(paragraphs)
+
+
+def gen_inline_settings(rng: random.Random) -> dict:
+    return {
+        "character_level_inline_markup": rng.random() < 0.25,
+        "pep_references": rng.random() < 0.5,
+        "rfc_references": rng.random() < 0.5,
+        "trim_footnote_reference_space": rng.random() < 0.25,
+    }
+
+
 def gen_document(rng: random.Random) -> str:
     parts = []
     for _ in range(rng.randint(1, 12)):
@@ -196,9 +241,12 @@ def mutate(rng: random.Random, text: str) -> str:
     return "".join(chars)
 
 
-def check(text: str, directives: bool = False) -> tuple[str, str] | None:
+def check(
+    text: str, directives: bool = False, overrides: dict | None = None
+) -> tuple[str, str] | None:
     """Compare docodin with docutils on ``text``; ``directives``: with file
-    insertion (``include``) and the warning stream of all messages."""
+    insertion (``include``) and the warning stream of all messages;
+    ``overrides``: further settings."""
     import io
 
     import docodin
@@ -218,6 +266,8 @@ def check(text: str, directives: bool = False) -> tuple[str, str] | None:
         settings.report_level = 1 if directives else 5
         settings.halt_level = 5
         settings.file_insertion_enabled = directives
+        for key, value in (overrides or {}).items():
+            setattr(settings, key, value)
         doc = docutils.utils.new_document("fuzz", settings)
         parser.parse(text, doc)
         # pseudo-XML plus the Python-level source/line of every node (used in
@@ -239,9 +289,14 @@ def check(text: str, directives: bool = False) -> tuple[str, str] | None:
 
 
 def worker(args):
-    seed, corpus, directives = args
+    seed, corpus, mode = args
     rng = random.Random(seed)
-    if directives:
+    if mode == "inline":
+        text = gen_inline_document(rng)
+        if rng.random() < 0.2:
+            text = mutate(rng, text)
+        return seed, text, check(text, overrides=gen_inline_settings(rng))
+    if mode == "directives":
         text = gen_directive_document(rng)
         return seed, text, check(text, directives=True)
     if corpus and rng.random() < 0.5:
@@ -262,7 +317,10 @@ def main() -> int:
     ap.add_argument("--out", default="fuzz-failures")
     ap.add_argument("--directives", action="store_true",
                     help="generate directive documents (with include and the warning stream)")
+    ap.add_argument("--inline", action="store_true",
+                    help="generate paragraphs of URIs, e-mail addresses and name_ chains")
     args = ap.parse_args()
+    mode = "directives" if args.directives else "inline" if args.inline else "blocks"
     corpus: list[str] = []
     if args.corpus:
         for root, _, files in os.walk(args.corpus):
@@ -277,7 +335,7 @@ def main() -> int:
     failures = 0
     ctx = mp.get_context("spawn")
     with ctx.Pool(max(os.cpu_count() or 2, 2)) as pool:
-        jobs = [(args.seed * 1_000_003 + i, corpus, args.directives) for i in range(args.cases)]
+        jobs = [(args.seed * 1_000_003 + i, corpus, mode) for i in range(args.cases)]
         for seed, text, result in pool.imap_unordered(worker, jobs, chunksize=16):
             if result is None:
                 continue
