@@ -2,23 +2,33 @@ package docodin
 
 import "base:runtime"
 import "core:mem"
+import "core:mem/virtual"
 
 // Lock-free bump allocator for per-thread parse arenas.
 //
 // Every parse allocates many small, same-lifetime objects (nodes, line
 // slices, strings) that are released together.  ``core:mem/virtual.Arena``
 // takes a mutex on every allocation; this arena is owned by one thread, so
-// it needs none.  Blocks come from the heap; ``bump_reset`` keeps the most
-// recent block (up to ``BUMP_RETAIN_MAX``) so steady-state parsing performs no
-// heap calls at all.
+// it needs none.  Blocks are mapped from the OS directly (not from the C
+// heap, which may keep freed memory), so a released block returns its
+// memory at once.  ``bump_reset`` keeps the largest block of at most
+// ``BUMP_RETAIN_MAX``: steady-state parsing maps no memory, and a large parse
+// does not leave a large block resident.
 
 BUMP_MIN_BLOCK  :: 1 * mem.Megabyte
-BUMP_RETAIN_MAX :: 64 * mem.Megabyte
+BUMP_MAX_GROWTH :: 64 * mem.Megabyte // blocks double up to this size
+BUMP_RETAIN_MAX :: 4 * mem.Megabyte
 
 Bump_Block :: struct {
 	prev: ^Bump_Block,
 	size: int, // usable bytes after the header
 	used: int,
+}
+
+// A block takes `size_of(Bump_Block) + size` bytes of its mapping.
+@(private = "file")
+free_block :: proc "contextless" (b: ^Bump_Block) {
+	virtual.release(b, uint(size_of(Bump_Block) + b.size))
 }
 
 Bump_Arena :: struct {
@@ -33,12 +43,14 @@ block_data :: #force_inline proc "contextless" (b: ^Bump_Block) -> [^]byte {
 
 @(private = "file")
 new_block :: proc "contextless" (a: ^Bump_Arena, min_size: int) -> bool {
-	size := max(min_size, BUMP_MIN_BLOCK)
-	if a.block != nil do size = max(size, min(a.block.size * 2, BUMP_RETAIN_MAX))
-	raw := runtime.heap_alloc(size_of(Bump_Block) + size, zero_memory = false)
-	if raw == nil do return false
-	b := (^Bump_Block)(raw)
-	b^ = Bump_Block{prev = a.block, size = size}
+	total := max(min_size + size_of(Bump_Block), BUMP_MIN_BLOCK)
+	if a.block != nil {
+		total = max(total, min((size_of(Bump_Block) + a.block.size) * 2, BUMP_MAX_GROWTH))
+	}
+	raw, err := virtual.reserve_and_commit(uint(total))
+	if err != nil do return false
+	b := (^Bump_Block)(raw_data(raw))
+	b^ = Bump_Block{prev = a.block, size = total - size_of(Bump_Block)}
 	a.block = b
 	return true
 }
@@ -103,13 +115,17 @@ bump_resize :: proc "contextless" (
 	return data, nil
 }
 
-// Release everything; keep one block for reuse.
+// Release everything; keep one block for reuse: the newest one of at most
+// ``BUMP_RETAIN_MAX`` bytes (blocks grow, so the largest such block).
 bump_reset :: proc "contextless" (a: ^Bump_Arena) {
-	keep := a.block
-	if keep != nil && keep.size > BUMP_RETAIN_MAX do keep = nil
+	keep: ^Bump_Block
 	for b := a.block; b != nil; {
 		prev := b.prev
-		if b != keep do runtime.heap_free(b)
+		if keep == nil && size_of(Bump_Block) + b.size <= BUMP_RETAIN_MAX {
+			keep = b
+		} else {
+			free_block(b)
+		}
 		b = prev
 	}
 	a.block = keep
@@ -123,7 +139,7 @@ bump_reset :: proc "contextless" (a: ^Bump_Arena) {
 bump_destroy :: proc "contextless" (a: ^Bump_Arena) {
 	for b := a.block; b != nil; {
 		prev := b.prev
-		runtime.heap_free(b)
+		free_block(b)
 		b = prev
 	}
 	a^ = {}
