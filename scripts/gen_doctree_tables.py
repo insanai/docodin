@@ -13,10 +13,14 @@ Two tables are generated, each to standard output:
     ``child_text_separator``, list and valid attributes and content models,
     introspected from ``docutils.nodes``.
 
-Run with the interpreter (and docutils version) that docodin mirrors:
+Run with the interpreter (and docutils version) that docodin mirrors; all
+native Unicode tables (see scripts/gen_unicode_tables.py) must come from the
+same Unicode version (currently CPython 3.14, Unicode 16):
 
-    uv run python scripts/gen_doctree_tables.py unicode > odin/doctree/unicode_tables.odin
-    uv run python scripts/gen_doctree_tables.py nodes > odin/doctree/node_classes.odin
+    PY="uv run --no-project --python 3.14 --with docutils==0.22.4 python"
+    $PY scripts/gen_doctree_tables.py unicode > odin/doctree/unicode_tables.odin
+    $PY scripts/gen_doctree_tables.py nodes > odin/doctree/node_classes.odin
+    $PY scripts/doctree_fixtures.py
 """
 
 from __future__ import annotations
