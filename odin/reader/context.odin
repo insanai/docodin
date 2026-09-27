@@ -142,8 +142,8 @@ parse :: proc(
 }
 
 // ``parse`` with information about the run.  With a ``tree_allocator``,
-// the parse tree is kept in ``info.tree`` (views of ``text``, which must
-// outlive it).
+// the parse tree is kept in ``info.tree``, with source spans (views of
+// ``text``, which must outlive it).
 parse_document :: proc(
 	text: string,
 	settings: dt.Settings,
@@ -173,7 +173,12 @@ parse_document :: proc(
 	start(&c, &top)
 	p := new_parser(&c, c.flags, int(doc.settings.line_length_limit))
 	keep_tree := tree_allocator.procedure != nil
-	if keep_tree do p.allocator = tree_allocator
+	if keep_tree {
+		// the tree is for tools that need positions (the spans leave the
+		// tree and the messages unchanged)
+		p.allocator = tree_allocator
+		p.settings.spans = true
+	}
 	setup_include_hook(&c, &top, &p)
 	tree_doc, count, final_offset := rst.parse_text(&p, text, 0, true)
 	// ``RSTStateMachine.run`` (not run when a line is too long)
