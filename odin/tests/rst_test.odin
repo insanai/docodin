@@ -48,6 +48,34 @@ split_lines_matches_string2lines :: proc(t: ^testing.T) {
 	testing.expect_value(t, lines[3], "")
 }
 
+// Tab expansion as Python's ``str.expandtabs`` after \v and \f became
+// spaces: a column per code point; an invalid byte becomes U+FFFD.
+@(test)
+split_lines_expands_tabs :: proc(t: ^testing.T) {
+	context.allocator = context.temp_allocator
+	Case :: struct {
+		text:      string,
+		tab_width: int,
+		want:      string,
+	}
+	cases := []Case {
+		{"\u00e9\tx", 8, "\u00e9       x"},
+		{"a\v\tb", 4, "a   b"},
+		{"\xff\tb", 8, "\uFFFD       b"},
+		{"\U0001F600\tz", 8, "\U0001F600       z"},
+		{"e\u0301\tq", 4, "e\u0301  q"},
+		{"\t\ta", 0, "a"},
+		{"ab\tc\td", 3, "ab c  d"},
+		{"x\f\t", 8, "x"},
+		{"a long line with plain text\there", 8, "a long line with plain text     here"},
+	}
+	for c in cases {
+		lines := rst.split_lines(c.text, c.tab_width, context.allocator)
+		testing.expect_value(t, len(lines), 1)
+		if len(lines) == 1 do testing.expect_value(t, lines[0], c.want)
+	}
+}
+
 @(test)
 block_structure :: proc(t: ^testing.T) {
 	context.allocator = context.temp_allocator
