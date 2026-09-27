@@ -99,6 +99,8 @@ Context :: struct {
 	rst_language:     int,
 	// ``directives._directives``: directives by (lowercase) local name
 	directives:       map[string]^Directive_Spec,
+	// directives and roles beyond docutils' (nil: none)
+	extension:        ^Extension,
 	// the first Python exception docutils raises (see ``raise_exception``)
 	exception:        string,
 	exception_at:     int, // ``len(reporter.written)`` then
@@ -143,13 +145,15 @@ parse :: proc(
 
 // ``parse`` with information about the run.  With a ``tree_allocator``,
 // the parse tree is kept in ``info.tree``, with source spans (views of
-// ``text``, which must outlive it).
+// ``text``, which must outlive it).  An ``extension`` adds directives and
+// roles (see ``Extension``).
 parse_document :: proc(
 	text: string,
 	settings: dt.Settings,
 	source_path: string,
 	allocator := context.allocator,
 	tree_allocator := runtime.Allocator{},
+	extension: ^Extension = nil,
 ) -> (
 	doc: ^dt.Doc,
 	info: Parse_Info,
@@ -157,6 +161,7 @@ parse_document :: proc(
 	doc = dt.new_document(source_path, settings, allocator)
 	c: Context
 	context_init(&c, doc)
+	c.extension = extension
 	defer virtual.arena_destroy(&c.arena)
 	context.temp_allocator = c.allocator
 	c.text = text

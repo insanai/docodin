@@ -63,12 +63,30 @@ DIRECTIVE_REGISTRY := [?]Registry_Entry {
 	{"restructuredtext-test-directive", &TEST_DIRECTIVE},
 }
 
+// Directives and roles beyond docutils' own, such as Sphinx's (see
+// ``odin/site``).  They are looked up as the directives and roles that
+// ``directives.register_directive`` and ``roles.register_local_role`` add:
+// before the language module and the standard registry, without lookup
+// messages.  A reader without an extension is plain docutils.
+Extension :: struct {
+	directives: []Registry_Entry, // by lowercase name
+	roles:      []Role, // ``kind = .Extension``, by lowercase ``name``
+	data:       rawptr, // the extension's state, for its directives and roles
+}
+
 // ``directives.directive(name, language, document)``: the spec (nil if
 // unknown or not ported) and the lookup messages.
 lookup_directive :: proc(c: ^Context, name: string) -> (^Directive_Spec, [dynamic]dt.Node) {
 	msgs := make([dynamic]dt.Node, c.allocator)
 	normname := dt.py_lower(name, c.allocator)
 	if spec, cached := c.directives[normname]; cached do return spec, msgs
+	if ext := c.extension; ext != nil {
+		for e in ext.directives {
+			if e.name != normname do continue
+			c.directives[normname] = e.spec
+			return e.spec, msgs
+		}
+	}
 	canonical, text := canonical_name(c, .Directive, name, normname)
 	if text != "" do append(&msgs, dt.info(c.doc, text, {line = c.doc.current_line}))
 	for e in DIRECTIVE_REGISTRY {

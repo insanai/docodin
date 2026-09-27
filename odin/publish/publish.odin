@@ -73,6 +73,9 @@ Options :: struct {
 	// ``stylesheet_dirs``, module paths of language messages); default
 	// ``DEFAULT_DOCUTILS_DIR``.
 	docutils_dir: string,
+	// Directives and roles beyond docutils' (Sphinx's, see ``odin/site``);
+	// nil: plain docutils.
+	extension:    ^rd.Extension,
 }
 
 // ``publish_string(text, source_path, writer_name=writer,
@@ -214,6 +217,7 @@ read :: proc(p: ^Pipeline, text: string) -> bool {
 	info: rd.Parse_Info
 	p.doc, info = rd.parse_document(
 		text, parse_settings, document_source, context.allocator, p.tree_allocator,
+		p.options.extension,
 	)
 	p.tree = info.tree
 	p.doc.settings = settings

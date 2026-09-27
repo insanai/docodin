@@ -17,7 +17,19 @@ Role_Kind :: enum u8 {
 	Unimplemented,
 	Generic_Custom, // ``generic_custom_role``: an ``inline`` element
 	Custom, // ``CustomRole``: ``base`` with supplied options and content
+	Extension, // a role of the reader's ``Extension``: ``run``
 }
+
+// The function of an ``Extension`` role (``role_fn`` with the normalized
+// options).
+Role_Run :: proc(
+	c: ^Context,
+	r: ^Role,
+	rawtext, text: string,
+	lineno: int,
+	opts: ^Options,
+	out, msgs: Node_Out,
+)
 
 Role :: struct {
 	kind:    Role_Kind,
@@ -27,6 +39,7 @@ Role :: struct {
 	options: Options, // Custom: the supplied options
 	content: []string, // Custom: the supplied content
 	spec:    []Option_Spec, // ``role_fn.options``
+	run:     Role_Run, // Extension
 }
 
 @(private = "file")
@@ -81,6 +94,8 @@ role_option_spec :: proc(r: ^Role) -> []Option_Spec {
 		return CODE_SPEC[:]
 	case .Custom:
 		return r.spec
+	case .Extension:
+		if r.spec != nil do return r.spec
 	case .Generic, .Pep, .Rfc, .Math, .Unimplemented, .Generic_Custom:
 	}
 	return CLASS_SPEC[:]
@@ -98,6 +113,13 @@ lookup_role :: proc(c: ^Context, role_name: string, lineno: int) -> (^Role, [dyn
 	msgs := make([dynamic]dt.Node, c.allocator)
 	normname := dt.py_lower(role_name, c.allocator)
 	if r, ok := c.roles[normname]; ok do return r, msgs
+	if ext := c.extension; ext != nil && role_name != "" {
+		for &r in ext.roles {
+			if r.name != normname do continue
+			c.roles[dt.clone(c.doc, normname)] = &r
+			return &r, msgs
+		}
+	}
 	canonical := DEFAULT_INTERPRETED_ROLE
 	if role_name != "" {
 		text: string
@@ -169,6 +191,8 @@ call_role :: proc(
 		append(msgs, msg)
 	case .Custom:
 		custom_role(c, r, role_name, rawtext, text, lineno, options, content, out, msgs)
+	case .Extension:
+		r.run(c, r, rawtext, text, lineno, &opts, out, msgs)
 	}
 }
 
