@@ -5,6 +5,8 @@ package main
 //     docodin [--writer=NAME] [options] [SOURCE [DESTINATION]]
 //     docodin check [options] FILE...
 //     docodin pdf [options] SOURCE [OUTPUT.pdf]
+//     docodin book build [DIR] [options]
+//     docodin dod new|list|index|check [options]
 //
 // Publishing works as ``docutils`` (``python -m docutils``) does, with the
 // same output, messages and exit status: the standalone reader and the rST
@@ -35,6 +37,8 @@ Command :: enum u8 {
 	Publish,
 	Check,
 	Pdf,
+	Book,
+	Dod,
 }
 
 main :: proc() {
@@ -47,6 +51,10 @@ main :: proc() {
 			cmd, args = .Check, args[1:]
 		case "pdf":
 			cmd, args = .Pdf, args[1:]
+		case "book":
+			cmd, args = .Book, args[1:]
+		case "dod":
+			cmd, args = .Dod, args[1:]
 		case:
 			if w, ok := command_writer(args[0]); ok do writer, args = w, args[1:]
 		}
@@ -56,6 +64,10 @@ main :: proc() {
 		os.exit(run_check(args))
 	case .Pdf:
 		os.exit(run_pdf(args))
+	case .Book:
+		os.exit(run_book(args))
+	case .Dod:
+		os.exit(run_dod(args))
 	case .Publish:
 		os.exit(run_publish(args, writer))
 	}
@@ -303,7 +315,6 @@ parse_check_args :: proc(args: []string) -> Check_Options {
 	return opts
 }
 
-@(private = "file")
 error_format :: proc(value: string) -> check.Error_Format {
 	switch value {
 	case "elm":
@@ -314,7 +325,6 @@ error_format :: proc(value: string) -> check.Error_Format {
 	invalid_value("--error-format", value, "", {"elm", "docutils"})
 }
 
-@(private = "file")
 check_level :: proc(key, value: string) -> int {
 	level, err := pb.parse_threshold(value)
 	if err != "" do invalid_value(key, value, err, LEVEL_NAMES)

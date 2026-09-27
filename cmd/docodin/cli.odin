@@ -32,6 +32,8 @@ Cli :: struct {
 USAGE_HEAD :: `Usage: docodin [--writer=NAME] [options] [SOURCE [DESTINATION]]
        docodin check [options] FILE...
        docodin pdf [options] SOURCE [OUTPUT.pdf]
+       docodin book build [DIR] [-o OUTDIR] [--html] [--pdf] [--engine=NAME]
+       docodin dod new|list|index|check [options]
 
 Convert reStructuredText into HTML5, LaTeX, XeLaTeX, Docutils XML or
 pseudo-XML, exactly as docutils 0.22 does, without Python.  Reads SOURCE
@@ -39,6 +41,10 @@ pseudo-XML, exactly as docutils 0.22 does, without Python.  Reads SOURCE
 output).  The programs rst2html, rst2latex, rst2xetex, rst2xml and
 rst2pseudoxml, and the commands html, latex, xetex, xml and pseudoxml, select
 the writer.  Configuration files are not read.
+
+"docodin book build" builds a Sphinx project (HTML site and PDF book) and
+"docodin dod" manages DocOdin Discussions (design records); see
+"docodin book --help" and "docodin dod --help".
 `
 
 parse_command_line :: proc(args: []string, default_writer: string) -> Cli {
