@@ -227,3 +227,16 @@ def test_sphinx_build_wrapper_uses_the_shim(tmp_path: Path) -> None:
     proc = _python(code)
     assert proc.stdout.split() == ["0", "True"], proc.stderr
     assert "<em>world</em>" in (tmp_path / "out" / "index.html").read_text(encoding="utf-8")
+
+
+def test_sphinx_build_wrapper_tunes_the_collector(tmp_path: Path) -> None:
+    pytest.importorskip("sphinx")
+    (tmp_path / "conf.py").write_text("project = 'P'\n", encoding="utf-8")
+    (tmp_path / "index.rst").write_text("Title\n=====\n\nText.\n", encoding="utf-8")
+    code = ("import gc, docodin.sphinx_build as b\n"
+            "frozen = gc.get_freeze_count()  # the interpreter may freeze some at start-up\n"
+            f"rc = b.main(['-q', '-b', 'html', {str(tmp_path)!r}, {str(tmp_path / 'out')!r}])\n"
+            "print(rc, gc.get_threshold() == b.GC_THRESHOLDS, gc.get_freeze_count() > frozen)")
+    assert _python(code).stdout.split() == ["0", "True", "True"]
+    default = _python(code, DOCODIN_GC="default").stdout.split()
+    assert default == ["0", "False", "False"]
