@@ -2,8 +2,8 @@
 
 The native pipeline (``odin/doctree``) loads these dumps with ``doctree.load_json`` so
 that transforms and writers can be developed and tested against docutils independently
-of the native parser.  The format is described in docs/NATIVE_PIPELINE.md
-("Doctree interchange").
+of the native parser.  The format is described in The docodin Book, chapter "The doctree
+interchange" (docs/book/internals/interchange.rst).
 
 The document is taken from real docutils, driven as ``Publisher.publish`` does, at one
 of three stages:
