@@ -1,4 +1,17 @@
-"""Configuration tables of `math2html` (converted from the eLyXer config file)."""
+"""Translation tables of `math2html` (from eLyXer's configuration file).
+
+The tables map LaTeX command names (with the leading backslash) to their HTML
+translation. What kind of HTML a command yields depends on the table it is found in:
+
+* plain replacement text (`FormulaConfig.commands`, `alphacommands`, `limitcommands`,
+  `spacedcommands`),
+* a tag that wraps the single argument (`onefunctions`, `fontfunctions`, `textfunctions`),
+* a combining character added to the argument (`combiningfunctions`),
+* a symbol set over or under the argument (`oversetfunctions`, `undersetfunctions`),
+* read and write templates for commands with several arguments (`hybridfunctions`).
+
+The tables are public and may be extended at run time.
+"""
 
 from __future__ import annotations
 
@@ -7,95 +20,58 @@ from docutils.utils.math import tex2unichar
 __docformat__ = "reStructuredText"
 
 
+def _commands(table: dict[str, str]) -> dict[str, str]:
+    """Return `table` with a backslash prepended to every key."""
+    return {"\\" + name: value for name, value in table.items()}
+
+
+def _bigoperators(css_class: str, **symbols: str) -> dict[str, str]:
+    """Return a table of big-operator commands rendered in a styled span."""
+    return {"\\" + name: f'<span class="{css_class}">{symbol}</span>'
+            for name, symbol in symbols.items()}
+
+
 class ContainerConfig:
-    """Configuration class from elyxer.config file"""
+    """Which containers hold (or lead to) the plain text of a formula."""
 
     extracttext = {
         "allowed": ["FormulaConstant"],
         "extracted": [
-            "AlphaCommand",
-            "Bracket",
-            "BracketCommand",
-            "CombiningFunction",
-            "EmptyCommand",
-            "FontFunction",
-            "Formula",
-            "FormulaNumber",
-            "FormulaSymbol",
-            "OneParamFunction",
-            "OversetFunction",
-            "RawText",
-            "SpacedCommand",
-            "SymbolFunction",
-            "TextFunction",
+            "AlphaCommand", "Bracket", "BracketCommand", "CombiningFunction", "EmptyCommand",
+            "FontFunction", "Formula", "FormulaNumber", "FormulaSymbol", "OneParamFunction",
+            "OversetFunction", "RawText", "SpacedCommand", "SymbolFunction", "TextFunction",
             "UndersetFunction",
         ],
     }
 
 
 class EscapeConfig:
-    """Configuration class from elyxer.config file"""
+    """Character replacements for text and HTML-special characters."""
 
-    chars = {
-        "\n": "",
-        "'": "’",
-        "`": "‘",
-    }
-
-    entities = {
-        "&": "&amp;",
-        "<": "&lt;",
-        ">": "&gt;",
-    }
+    chars = {"\n": "", "'": "’", "`": "‘"}
+    entities = {"&": "&amp;", "<": "&lt;", ">": "&gt;"}
 
 
 class FormulaConfig:
-    """Configuration class from elyxer.config file"""
+    """The command and symbol tables driving the TeX to HTML translation."""
 
     alphacommands = {
         "\\AmS": '<span class="textsc">AmS</span>',
-        "\\AA": "Å",
-        "\\AE": "Æ",
-        "\\DH": "Ð",
-        "\\L": "Ł",
-        "\\O": "Ø",
-        "\\OE": "Œ",
-        "\\TH": "Þ",
-        "\\aa": "å",
-        "\\ae": "æ",
-        "\\dh": "ð",
-        "\\i": "ı",
-        "\\j": "ȷ",
-        "\\l": "ł",
-        "\\o": "ø",
-        "\\oe": "œ",
-        "\\ss": "ß",
-        "\\th": "þ",
+        "\\AA": "Å", "\\AE": "Æ", "\\DH": "Ð", "\\L": "Ł", "\\O": "Ø", "\\OE": "Œ",
+        "\\TH": "Þ", "\\aa": "å", "\\ae": "æ", "\\dh": "ð", "\\i": "ı", "\\j": "ȷ",
+        "\\l": "ł", "\\o": "ø", "\\oe": "œ", "\\ss": "ß", "\\th": "þ",
         "\\hbar": "ħ",  # cf. \hslash: ℏ in tex2unichar
-    }
-    for key, value in tex2unichar.mathalpha.items():
-        alphacommands["\\" + key] = value
+    } | _commands(tex2unichar.mathalpha)
 
-    array = {
-        "begin": r"\begin",
-        "cellseparator": "&",
-        "end": r"\end",
-        "rowseparator": r"\\",
-    }
+    array = {"begin": r"\begin", "cellseparator": "&", "end": r"\end", "rowseparator": r"\\"}
 
+    # pieces of brackets spanning several rows: top, (extension, middle,) bottom
     bigbrackets = {
-        "(": ["⎛", "⎜", "⎝"],
-        ")": ["⎞", "⎟", "⎠"],
-        "[": ["⎡", "⎢", "⎣"],
-        "]": ["⎤", "⎥", "⎦"],
-        "{": ["⎧", "⎪", "⎨", "⎩"],
-        "}": ["⎫", "⎪", "⎬", "⎭"],
-        # TODO: 2-row brackets with ⎰⎱ (\lmoustache \rmoustache)
+        "(": ["⎛", "⎜", "⎝"], ")": ["⎞", "⎟", "⎠"],
+        "[": ["⎡", "⎢", "⎣"], "]": ["⎤", "⎥", "⎦"],
+        "{": ["⎧", "⎪", "⎨", "⎩"], "}": ["⎫", "⎪", "⎬", "⎭"],
         "|": ["|"],  # 007C VERTICAL LINE
-        # '|': ['⎮'],  # 23AE INTEGRAL EXTENSION
-        # '|': ['⎪'],  # 23AA CURLY BRACKET EXTENSION
         "‖": ["‖"],  # 2016 DOUBLE VERTICAL LINE
-        # '∥': ['∥'],  # 2225 PARALLEL TO
     }
 
     bracketcommands = {
@@ -107,422 +83,189 @@ class FormulaConfig:
     }
 
     combiningfunctions = {
-        "\\'": "\u0301",  # x́
-        '\\"': "\u0308",  # ẍ
-        "\\^": "\u0302",  # x̂
-        "\\`": "\u0300",  # x̀
-        "\\~": "\u0303",  # x̃
-        "\\c": "\u0327",  # x̧
-        "\\r": "\u030a",  # x̊
-        "\\s": "\u0329",  # x̩
-        "\\textcircled": "\u20dd",  # x⃝
-        "\\textsubring": "\u0325",  # x̥
-        "\\v": "\u030c",  # x̌
-    }
-    for key, value in tex2unichar.mathaccent.items():
-        combiningfunctions["\\" + key] = value
+        "\\'": "́", '\\"': "̈", "\\^": "̂", "\\`": "̀", "\\~": "̃",
+        "\\c": "̧", "\\r": "̊", "\\s": "̩", "\\v": "̌",
+        "\\textcircled": "⃝", "\\textsubring": "̥",
+    } | _commands(tex2unichar.mathaccent)
+
+    cmddict = (tex2unichar.mathbin | tex2unichar.mathopen | tex2unichar.mathclose
+               | tex2unichar.mathfence | tex2unichar.mathord | tex2unichar.mathpunct
+               | tex2unichar.space)
 
     commands = {
         "\\\\": "<br/>",
-        "\\\n": " ",  # escaped whitespace
-        "\\\t": " ",  # escaped whitespace
-        "\\centerdot": "\u2b1d",  # BLACK VERY SMALL SQUARE, mathbin
-        "\\colon": ": ",
-        "\\copyright": "©",
-        "\\dotminus": "∸",
-        "\\dots": "…",
-        "\\dotsb": "⋯",
-        "\\dotsc": "…",
-        "\\dotsi": "⋯",
-        "\\dotsm": "⋯",
-        "\\dotso": "…",
-        "\\euro": "€",
-        "\\guillemotleft": "«",
-        "\\guillemotright": "»",
-        "\\lVert": "‖",
-        "\\Arrowvert": "‖",
-        "\\lvert": "|",
-        "\\newline": "<br/>",
-        "\\nobreakspace": " ",
-        "\\nolimits": "",
-        "\\nonumber": "",
-        "\\qquad": "  ",
-        "\\rVert": "‖",
-        "\\rvert": "|",
-        "\\textasciicircum": "^",
-        "\\textasciitilde": "~",
-        "\\textbackslash": "\\",
-        "\\textcopyright": "©",
-        "\\textdegree": "°",
-        "\\textellipsis": "…",
-        "\\textemdash": "—",
-        "\\textendash": "—",
-        "\\texteuro": "€",
-        "\\textgreater": ">",
-        "\\textless": "<",
-        "\\textordfeminine": "ª",
-        "\\textordmasculine": "º",
-        "\\textquotedblleft": "“",
-        "\\textquotedblright": "”",
-        "\\textquoteright": "’",
-        "\\textregistered": "®",
-        "\\textrightarrow": "→",
-        "\\textsection": "§",
-        "\\texttrademark": "™",
-        "\\texttwosuperior": "²",
-        "\\textvisiblespace": " ",
+        "\\\n": " ", "\\\t": " ",  # escaped whitespace
+        "\\centerdot": "⬝",  # BLACK VERY SMALL SQUARE, mathbin
+        "\\colon": ": ", "\\copyright": "©", "\\dotminus": "∸",
+        "\\dots": "…", "\\dotsb": "⋯", "\\dotsc": "…", "\\dotsi": "⋯", "\\dotsm": "⋯",
+        "\\dotso": "…", "\\euro": "€", "\\guillemotleft": "«", "\\guillemotright": "»",
+        "\\lVert": "‖", "\\Arrowvert": "‖", "\\lvert": "|", "\\newline": "<br/>",
+        "\\nobreakspace": "\u00a0", "\\nolimits": "", "\\nonumber": "", "\\qquad": "\u2001\u2001",
+        "\\rVert": "‖", "\\rvert": "|",
+        "\\textasciicircum": "^", "\\textasciitilde": "~", "\\textbackslash": "\\",
+        "\\textcopyright": "©", "\\textdegree": "°", "\\textellipsis": "…",
+        "\\textemdash": "—", "\\textendash": "—", "\\texteuro": "€", "\\textgreater": ">",
+        "\\textless": "<", "\\textordfeminine": "ª", "\\textordmasculine": "º",
+        "\\textquotedblleft": "“", "\\textquotedblright": "”", "\\textquoteright": "’",
+        "\\textregistered": "®", "\\textrightarrow": "→", "\\textsection": "§",
+        "\\texttrademark": "™", "\\texttwosuperior": "²", "\\textvisiblespace": " ",
         "\\thickspace": '<span class="thickspace"> </span>',  # 5/13 em
         "\\;": '<span class="thickspace"> </span>',  # 5/13 em
-        "\\triangle": "\u25b3",  # WHITE UP-POINTING TRIANGLE, mathord
-        "\\triangledown": "\u25bd",  # WHITE DOWN-POINTING TRIANGLE, mathord
-        "\\varnothing": "\u2300",  # ⌀ DIAMETER SIGN
+        "\\triangle": "△",  # WHITE UP-POINTING TRIANGLE, mathord
+        "\\triangledown": "▽",  # WHITE DOWN-POINTING TRIANGLE, mathord
+        "\\varnothing": "⌀",  # ⌀ DIAMETER SIGN
         # functions
-        "\\Pr": "Pr",
-        "\\arccos": "arccos",
-        "\\arcsin": "arcsin",
-        "\\arctan": "arctan",
-        "\\arg": "arg",
-        "\\cos": "cos",
-        "\\cosh": "cosh",
-        "\\cot": "cot",
-        "\\coth": "coth",
-        "\\csc": "csc",
-        "\\deg": "deg",
-        "\\det": "det",
-        "\\dim": "dim",
-        "\\exp": "exp",
-        "\\gcd": "gcd",
-        "\\hom": "hom",
-        "\\injlim": "inj lim",
-        "\\ker": "ker",
-        "\\lg": "lg",
-        "\\liminf": "lim inf",
-        "\\limsup": "lim sup",
-        "\\ln": "ln",
-        "\\log": "log",
-        "\\projlim": "proj lim",
-        "\\sec": "sec",
-        "\\sin": "sin",
-        "\\sinh": "sinh",
-        "\\tan": "tan",
-        "\\tanh": "tanh",
-    }
-    cmddict = {}
-    cmddict.update(tex2unichar.mathbin)  # TODO: spacing around binary operators
-    cmddict.update(tex2unichar.mathopen)
-    cmddict.update(tex2unichar.mathclose)
-    cmddict.update(tex2unichar.mathfence)
-    cmddict.update(tex2unichar.mathord)
-    cmddict.update(tex2unichar.mathpunct)
-    cmddict.update(tex2unichar.space)
-    commands.update(("\\" + key, value) for key, value in cmddict.items())
+        "\\Pr": "Pr", "\\arccos": "arccos", "\\arcsin": "arcsin", "\\arctan": "arctan",
+        "\\arg": "arg", "\\cos": "cos", "\\cosh": "cosh", "\\cot": "cot", "\\coth": "coth",
+        "\\csc": "csc", "\\deg": "deg", "\\det": "det", "\\dim": "dim", "\\exp": "exp",
+        "\\gcd": "gcd", "\\hom": "hom", "\\injlim": "inj\u202flim", "\\ker": "ker", "\\lg": "lg",
+        "\\liminf": "lim\u202finf", "\\limsup": "lim\u202fsup", "\\ln": "ln", "\\log": "log",
+        "\\projlim": "proj\u202flim", "\\sec": "sec", "\\sin": "sin", "\\sinh": "sinh",
+        "\\tan": "tan", "\\tanh": "tanh",
+    } | _commands(cmddict)
 
     oversetfunctions = {
         # math accents (cf. combiningfunctions)
-        # '\\acute':    '´',
         "\\bar": "‒",  # FIGURE DASH
-        # '\\breve':    '˘',
-        # '\\check':    'ˇ',
         "\\dddot": '<span class="smallsymbol">⋯</span>',
-        # '\\ddot':     '··', # ¨ too high
-        # '\\dot':      '·',
-        # '\\grave':    '`',
-        # '\\hat':      '^',
-        # '\\mathring': '˚',
-        # '\\tilde':    '~',
         "\\vec": '<span class="smallsymbol">→</span>',
         # embellishments
-        "\\overleftarrow": "⟵",
-        "\\overleftrightarrow": "⟷",
-        "\\overrightarrow": "⟶",
-        "\\widehat": "^",
-        "\\widetilde": "～",
+        "\\overleftarrow": "⟵", "\\overleftrightarrow": "⟷", "\\overrightarrow": "⟶",
+        "\\widehat": "^", "\\widetilde": "～",
     }
 
     undersetfunctions = {
-        "\\underleftarrow": "⟵",
-        "\\underleftrightarrow": "⟷",
-        "\\underrightarrow": "⟶",
+        "\\underleftarrow": "⟵", "\\underleftrightarrow": "⟷", "\\underrightarrow": "⟶",
     }
 
     endings = {
-        "bracket": "}",
-        "complex": "\\]",
-        "endafter": "}",
-        "endbefore": "\\end{",
+        "bracket": "}", "complex": "\\]", "endafter": "}", "endbefore": "\\end{",
         "squarebracket": "]",
     }
 
+    # column alignments of the multi-row environments without an argument
     environments = {
-        "align": ["r", "l"],
-        "eqnarray": ["r", "c", "l"],
-        "gathered": ["l", "l"],
+        "align": ["r", "l"], "eqnarray": ["r", "c", "l"], "gathered": ["l", "l"],
         "smallmatrix": ["c", "c"],
     }
 
     fontfunctions = {
-        "\\boldsymbol": "b",
+        "\\boldsymbol": "b", "\\mathbf": "b", "\\mathit": "i",
         "\\mathbb": 'span class="blackboard"',
-        "\\mathbb{A}": "𝔸",
-        "\\mathbb{B}": "𝔹",
-        "\\mathbb{C}": "ℂ",
-        "\\mathbb{D}": "𝔻",
-        "\\mathbb{E}": "𝔼",
-        "\\mathbb{F}": "𝔽",
-        "\\mathbb{G}": "𝔾",
-        "\\mathbb{H}": "ℍ",
-        "\\mathbb{J}": "𝕁",
-        "\\mathbb{K}": "𝕂",
-        "\\mathbb{L}": "𝕃",
-        "\\mathbb{N}": "ℕ",
-        "\\mathbb{O}": "𝕆",
-        "\\mathbb{P}": "ℙ",
-        "\\mathbb{Q}": "ℚ",
-        "\\mathbb{R}": "ℝ",
-        "\\mathbb{S}": "𝕊",
-        "\\mathbb{T}": "𝕋",
-        "\\mathbb{W}": "𝕎",
-        "\\mathbb{Z}": "ℤ",
-        "\\mathbf": "b",
         "\\mathcal": 'span class="scriptfont"',
-        "\\mathcal{B}": "ℬ",
-        "\\mathcal{E}": "ℰ",
-        "\\mathcal{F}": "ℱ",
-        "\\mathcal{H}": "ℋ",
-        "\\mathcal{I}": "ℐ",
-        "\\mathcal{L}": "ℒ",
-        "\\mathcal{M}": "ℳ",
-        "\\mathcal{R}": "ℛ",
         "\\mathfrak": 'span class="fraktur"',
-        "\\mathfrak{C}": "ℭ",
-        "\\mathfrak{F}": "𝔉",
-        "\\mathfrak{H}": "ℌ",
-        "\\mathfrak{I}": "ℑ",
-        "\\mathfrak{R}": "ℜ",
-        "\\mathfrak{Z}": "ℨ",
-        "\\mathit": "i",
-        "\\mathring{A}": "Å",
-        "\\mathring{U}": "Ů",
-        "\\mathring{a}": "å",
-        "\\mathring{u}": "ů",
-        "\\mathring{w}": "ẘ",
-        "\\mathring{y}": "ẙ",
         "\\mathrm": 'span class="mathrm"',
         "\\mathscr": 'span class="mathscr"',
-        "\\mathscr{B}": "ℬ",
-        "\\mathscr{E}": "ℰ",
-        "\\mathscr{F}": "ℱ",
-        "\\mathscr{H}": "ℋ",
-        "\\mathscr{I}": "ℐ",
-        "\\mathscr{L}": "ℒ",
-        "\\mathscr{M}": "ℳ",
-        "\\mathscr{R}": "ℛ",
         "\\mathsf": 'span class="mathsf"',
         "\\mathtt": 'span class="mathtt"',
         "\\operatorname": 'span class="mathrm"',
+        # letters with a pre-composed Unicode character
+        "\\mathbb{A}": "𝔸", "\\mathbb{B}": "𝔹", "\\mathbb{C}": "ℂ", "\\mathbb{D}": "𝔻",
+        "\\mathbb{E}": "𝔼", "\\mathbb{F}": "𝔽", "\\mathbb{G}": "𝔾", "\\mathbb{H}": "ℍ",
+        "\\mathbb{J}": "𝕁", "\\mathbb{K}": "𝕂", "\\mathbb{L}": "𝕃", "\\mathbb{N}": "ℕ",
+        "\\mathbb{O}": "𝕆", "\\mathbb{P}": "ℙ", "\\mathbb{Q}": "ℚ", "\\mathbb{R}": "ℝ",
+        "\\mathbb{S}": "𝕊", "\\mathbb{T}": "𝕋", "\\mathbb{W}": "𝕎", "\\mathbb{Z}": "ℤ",
+        "\\mathcal{B}": "ℬ", "\\mathcal{E}": "ℰ", "\\mathcal{F}": "ℱ", "\\mathcal{H}": "ℋ",
+        "\\mathcal{I}": "ℐ", "\\mathcal{L}": "ℒ", "\\mathcal{M}": "ℳ", "\\mathcal{R}": "ℛ",
+        "\\mathfrak{C}": "ℭ", "\\mathfrak{F}": "𝔉", "\\mathfrak{H}": "ℌ", "\\mathfrak{I}": "ℑ",
+        "\\mathfrak{R}": "ℜ", "\\mathfrak{Z}": "ℨ",
+        "\\mathring{A}": "Å", "\\mathring{U}": "Ů", "\\mathring{a}": "å", "\\mathring{u}": "ů",
+        "\\mathring{w}": "ẘ", "\\mathring{y}": "ẙ",
+        "\\mathscr{B}": "ℬ", "\\mathscr{E}": "ℰ", "\\mathscr{F}": "ℱ", "\\mathscr{H}": "ℋ",
+        "\\mathscr{I}": "ℐ", "\\mathscr{L}": "ℒ", "\\mathscr{M}": "ℳ", "\\mathscr{R}": "ℛ",
     }
 
+    # [read template, write template, tag of f0, tag of f1, ...]; see `HybridFunction`
+    _fraction = ["{$1}{$2}", "f0{f3{(}f1{$1}f3{)/(}f2{$2}f3{)}}"]
+    _fraction_parts = ['span class="numerator"', 'span class="denominator"',
+                       'span class="ignored"']
+    _smallbinom = ["{$1}{$2}", "(f0{f1{f2{$1}}f1{f2{\u2005}}f1{f2{$2}}})", 'span class="binomial"',
+                   'span class="binomrow"', 'span class="binomcell"']
     hybridfunctions = {
         "\\addcontentsline": ["{$p!}{$q!}{$r!}", "f0{}", "ignored"],
         "\\addtocontents": ["{$p!}{$q!}", "f0{}", "ignored"],
         "\\backmatter": ["", "f0{}", "ignored"],
-        "\\binom": [
-            "{$1}{$2}",
-            "f2{(}f0{f1{$1}f1{$2}}f2{)}",
-            'span class="binom"',
-            'span class="binomstack"',
-            'span class="bigdelimiter size2"',
-        ],
+        "\\binom": ["{$1}{$2}", "f2{(}f0{f1{$1}f1{$2}}f2{)}", 'span class="binom"',
+                    'span class="binomstack"', 'span class="bigdelimiter size2"'],
         "\\boxed": ["{$1}", "f0{$1}", 'span class="boxed"'],
-        "\\cfrac": [
-            "[$p!]{$1}{$2}",
-            "f0{f3{(}f1{$1}f3{)/(}f2{$2}f3{)}}",
-            'span class="fullfraction"',
-            'span class="numerator align-$p"',
-            'span class="denominator"',
-            'span class="ignored"',
-        ],
+        "\\cfrac": ["[$p!]{$1}{$2}", _fraction[1], 'span class="fullfraction"',
+                    'span class="numerator align-$p"', *_fraction_parts[1:]],
         "\\color": ["{$p!}{$1}", "f0{$1}", 'span style="color: $p;"'],
         "\\colorbox": ["{$p!}{$1}", "f0{$1}", 'span class="colorbox" style="background: $p;"'],
-        "\\dbinom": [
-            "{$1}{$2}",
-            "(f0{f1{f2{$1}}f1{f2{ }}f1{f2{$2}}})",
-            'span class="binomial"',
-            'span class="binomrow"',
-            'span class="binomcell"',
-        ],
-        "\\dfrac": [
-            "{$1}{$2}",
-            "f0{f3{(}f1{$1}f3{)/(}f2{$2}f3{)}}",
-            'span class="fullfraction"',
-            'span class="numerator"',
-            'span class="denominator"',
-            'span class="ignored"',
-        ],
+        "\\dbinom": list(_smallbinom),
+        "\\dfrac": [*_fraction, 'span class="fullfraction"', *_fraction_parts],
         "\\displaystyle": ["{$1}", "f0{$1}", 'span class="displaystyle"'],
         "\\fancyfoot": ["[$p!]{$q!}", "f0{}", "ignored"],
         "\\fancyhead": ["[$p!]{$q!}", "f0{}", "ignored"],
         "\\fbox": ["{$1}", "f0{$1}", 'span class="fbox"'],
         "\\fboxrule": ["{$p!}", "f0{}", "ignored"],
         "\\fboxsep": ["{$p!}", "f0{}", "ignored"],
-        "\\fcolorbox": [
-            "{$p!}{$q!}{$1}",
-            "f0{$1}",
-            'span class="boxed" style="border-color: $p; background: $q;"',
-        ],
-        "\\frac": [
-            "{$1}{$2}",
-            "f0{f3{(}f1{$1}f3{)/(}f2{$2}f3{)}}",
-            'span class="fraction"',
-            'span class="numerator"',
-            'span class="denominator"',
-            'span class="ignored"',
-        ],
+        "\\fcolorbox": ["{$p!}{$q!}{$1}", "f0{$1}",
+                        'span class="boxed" style="border-color: $p; background: $q;"'],
+        "\\frac": [*_fraction, 'span class="fraction"', *_fraction_parts],
         "\\framebox": ["[$p!][$q!]{$1}", "f0{$1}",
-                        'span class="framebox align-$q" style="width: $p;"'],
+                       'span class="framebox align-$q" style="width: $p;"'],
         "\\frontmatter": ["", "f0{}", "ignored"],
         "\\href": ["[$o]{$u!}{$t!}", "f0{$t}", 'a href="$u"'],
         "\\hspace": ["{$p!}", "f0{ }", 'span class="hspace" style="width: $p;"'],
         "\\leftroot": ["{$p!}", "f0{ }", 'span class="leftroot" style="width: $p;px"'],
-        # TODO: convert 1 mu to 1/18 em
-        # '\\mspace': ['{$p!}', 'f0{ }', 'span class="hspace" style="width: $p;"'],
-        "\\nicefrac": [
-            "{$1}{$2}",
-            "f0{f1{$1}⁄f2{$2}}",
-            'span class="fraction"',
-            'sup class="numerator"',
-            'sub class="denominator"',
-            'span class="ignored"',
-        ],
+        "\\nicefrac": ["{$1}{$2}", "f0{f1{$1}⁄f2{$2}}", 'span class="fraction"',
+                       'sup class="numerator"', 'sub class="denominator"', 'span class="ignored"'],
         "\\parbox": ["[$p!]{$w!}{$1}", "f0{1}", 'div class="Boxed" style="width: $w;"'],
         "\\raisebox": ["{$p!}{$1}", "f0{$1.font}",
-                        'span class="raisebox" style="vertical-align: $p;"'],
+                       'span class="raisebox" style="vertical-align: $p;"'],
         "\\renewenvironment": ["{$1!}{$2!}{$3!}", ""],
         "\\rule": ["[$v!]{$w!}{$h!}", "f0/", 'hr class="line" style="width: $w; height: $h;"'],
         "\\scriptscriptstyle": ["{$1}", "f0{$1}", 'span class="scriptscriptstyle"'],
         "\\scriptstyle": ["{$1}", "f0{$1}", 'span class="scriptstyle"'],
-        # TODO: increase √-size with argument (\frac in display mode, ...)
-        "\\sqrt": [
-            "[$0]{$1}",
-            "f0{f1{$0}f2{√}f4{(}f3{$1}f4{)}}",
-            'span class="sqrt"',
-            'sup class="root"',
-            'span class="radical"',
-            'span class="root"',
-            'span class="ignored"',
-        ],
-        "\\stackrel": [
-            "{$1}{$2}",
-            "f0{f1{$1}f2{$2}}",
-            'span class="stackrel"',
-            'span class="upstackrel"',
-            'span class="downstackrel"',
-        ],
-        "\\tbinom": [
-            "{$1}{$2}",
-            "(f0{f1{f2{$1}}f1{f2{ }}f1{f2{$2}}})",
-            'span class="binomial"',
-            'span class="binomrow"',
-            'span class="binomcell"',
-        ],
-        "\\tfrac": [
-            "{$1}{$2}",
-            "f0{f3{(}f1{$1}f3{)/(}f2{$2}f3{)}}",
-            'span class="textfraction"',
-            'span class="numerator"',
-            'span class="denominator"',
-            'span class="ignored"',
-        ],
+        "\\sqrt": ["[$0]{$1}", "f0{f1{$0}f2{√}f4{(}f3{$1}f4{)}}", 'span class="sqrt"',
+                   'sup class="root"', 'span class="radical"', 'span class="root"',
+                   'span class="ignored"'],
+        "\\stackrel": ["{$1}{$2}", "f0{f1{$1}f2{$2}}", 'span class="stackrel"',
+                       'span class="upstackrel"', 'span class="downstackrel"'],
+        "\\tbinom": list(_smallbinom),
+        "\\tfrac": [*_fraction, 'span class="textfraction"', *_fraction_parts],
         "\\textcolor": ["{$p!}{$1}", "f0{$1}", 'span style="color: $p;"'],
         "\\textstyle": ["{$1}", "f0{$1}", 'span class="textstyle"'],
         "\\thispagestyle": ["{$p!}", "f0{}", "ignored"],
         "\\unit": ["[$0]{$1}", "$0f0{$1.font}", 'span class="unit"'],
-        "\\unitfrac": [
-            "[$0]{$1}{$2}",
-            "$0f0{f1{$1.font}⁄f2{$2.font}}",
-            'span class="fraction"',
-            'sup class="unit"',
-            'sub class="unit"',
-        ],
+        "\\unitfrac": ["[$0]{$1}{$2}", "$0f0{f1{$1.font}⁄f2{$2.font}}",
+                       'span class="fraction"', 'sup class="unit"', 'sub class="unit"'],
         "\\uproot": ["{$p!}", "f0{ }", 'span class="uproot" style="width: $p;px"'],
         "\\url": ["{$u!}", "f0{$u}", 'a href="$u"'],
         "\\vspace": ["{$p!}", "f0{ }", 'span class="vspace" style="height: $p;"'],
     }
+    del _fraction, _fraction_parts, _smallbinom
 
+    # sizes (in rows) of hybrid functions stacking their arguments
     hybridsizes = {
-        "\\binom": "$1+$2",
-        "\\cfrac": "$1+$2",
-        "\\dbinom": "$1+$2+1",
-        "\\dfrac": "$1+$2",
-        "\\frac": "$1+$2",
-        "\\tbinom": "$1+$2+1",
+        "\\binom": "$1+$2", "\\cfrac": "$1+$2", "\\dbinom": "$1+$2+1", "\\dfrac": "$1+$2",
+        "\\frac": "$1+$2", "\\tbinom": "$1+$2+1",
     }
 
-    labelfunctions = {
-        "\\label": 'a name="#"',
-    }
+    labelfunctions = {"\\label": 'a name="#"'}
 
     limitcommands = {
-        "\\biginterleave": "⫼",
-        "\\inf": "inf",
-        "\\lim": "lim",
-        "\\max": "max",
-        "\\min": "min",
-        "\\sup": "sup",
-        "\\ointop": '<span class="bigoperator integral">∮</span>',
-        "\\bigcap": '<span class="bigoperator">⋂</span>',
-        "\\bigcup": '<span class="bigoperator">⋃</span>',
-        "\\bigodot": '<span class="bigoperator">⨀</span>',
-        "\\bigoplus": '<span class="bigoperator">⨁</span>',
-        "\\bigotimes": '<span class="bigoperator">⨂</span>',
-        "\\bigsqcap": '<span class="bigoperator">⨅</span>',
-        "\\bigsqcup": '<span class="bigoperator">⨆</span>',
-        "\\biguplus": '<span class="bigoperator">⨄</span>',
-        "\\bigvee": '<span class="bigoperator">⋁</span>',
-        "\\bigwedge": '<span class="bigoperator">⋀</span>',
-        "\\coprod": '<span class="bigoperator">∐</span>',
-        "\\intop": '<span class="bigoperator integral">∫</span>',
-        "\\prod": '<span class="bigoperator">∏</span>',
-        "\\sum": '<span class="bigoperator">∑</span>',
-        "\\varprod": '<span class="bigoperator">⨉</span>',
-        "\\zcmp": "⨟",
-        "\\zhide": "⧹",
-        "\\zpipe": "⨠",
-        "\\zproject": "⨡",
+        "\\biginterleave": "⫼", "\\inf": "inf", "\\lim": "lim", "\\max": "max",
+        "\\min": "min", "\\sup": "sup",
+        "\\zcmp": "⨟", "\\zhide": "⧹", "\\zpipe": "⨠", "\\zproject": "⨡",
+    } | _bigoperators(
+        "bigoperator", bigcap="⋂", bigcup="⋃", bigodot="⨀", bigoplus="⨁", bigotimes="⨂",
+        bigsqcap="⨅", bigsqcup="⨆", biguplus="⨄", bigvee="⋁", bigwedge="⋀", coprod="∐",
+        prod="∏", sum="∑", varprod="⨉",
+    ) | _bigoperators(
         # integrals have limits in index position with LaTeX default settings
-        # TODO: move to commands?
-        "\\int": '<span class="bigoperator integral">∫</span>',
-        "\\iint": '<span class="bigoperator integral">∬</span>',
-        "\\iiint": '<span class="bigoperator integral">∭</span>',
-        "\\iiiint": '<span class="bigoperator integral">⨌</span>',
-        "\\fint": '<span class="bigoperator integral">⨏</span>',
-        "\\idotsint": '<span class="bigoperator integral">∫⋯∫</span>',
-        "\\oint": '<span class="bigoperator integral">∮</span>',
-        "\\oiint": '<span class="bigoperator integral">∯</span>',
-        "\\oiiint": '<span class="bigoperator integral">∰</span>',
-        "\\ointclockwise": '<span class="bigoperator integral">∲</span>',
-        "\\ointctrclockwise": '<span class="bigoperator integral">∳</span>',
-        "\\smallint": '<span class="smallsymbol integral">∫</span>',
-        "\\sqint": '<span class="bigoperator integral">⨖</span>',
-        "\\varointclockwise": '<span class="bigoperator integral">∲</span>',
-    }
+        "bigoperator integral", int="∫", intop="∫", iint="∬", iiint="∭", iiiint="⨌",
+        fint="⨏", idotsint="∫⋯∫", oint="∮", ointop="∮", oiint="∯", oiiint="∰",
+        ointclockwise="∲", ointctrclockwise="∳", sqint="⨖", varointclockwise="∲",
+    ) | _bigoperators("smallsymbol integral", smallint="∫")
 
+    # symbols translated with spacing (binary operators, relations)
     modified = {
-        "\n": "",
-        " ": "",
-        "$": "",
-        "&": "\t",
-        "'": "’",
-        "+": "\u2009+\u2009",
-        ",": ",\u2009",
-        "-": "\u2009−\u2009",
-        "/": "\u2009⁄\u2009",
-        ":": " : ",
-        "<": "\u2009&lt;\u2009",
-        "=": "\u2009=\u2009",
-        ">": "\u2009&gt;\u2009",
-        "@": "",
-        "~": "\u00a0",
+        "\n": "", " ": "", "$": "", "&": "\t", "'": "’", "+": " + ",
+        ",": ", ", "-": " − ", "/": " ⁄ ", ":": " : ",
+        "<": " &lt; ", "=": " = ", ">": " &gt; ", "@": "",
+        "~": " ",
     }
 
     onefunctions = {
@@ -538,7 +281,6 @@ class FormulaConfig:
         "\\Bigg": 'span class="bigdelimiter size4"',
         "\\Biggl": 'span class="bigdelimiter size4"',
         "\\Biggr": 'span class="bigdelimiter size4"',
-        # '\\bar': 'span class="bar"',
         "\\begin{array}": 'span class="arraydef"',
         "\\centering": 'span class="align-center"',
         "\\ensuremath": 'span class="ensuremath"',
@@ -555,13 +297,13 @@ class FormulaConfig:
     # relations (put additional space before and after the symbol)
     spacedcommands = {
         # negated symbols without pre-composed Unicode character
-        "\\nleqq": "\u2266\u0338",  # ≦̸
-        "\\ngeqq": "\u2267\u0338",  # ≧̸
-        "\\nleqslant": "\u2a7d\u0338",  # ⩽̸
-        "\\ngeqslant": "\u2a7e\u0338",  # ⩾̸
-        "\\nsubseteqq": "\u2ac5\u0338",  # ⫅̸
-        "\\nsupseteqq": "\u2ac6\u0338",  # ⫆̸
-        "\\nsqsubset": "\u2276\u228f",  # ⊏̸
+        "\\nleqq": "≦̸",  # ≦̸
+        "\\ngeqq": "≧̸",  # ≧̸
+        "\\nleqslant": "⩽̸",  # ⩽̸
+        "\\ngeqslant": "⩾̸",  # ⩾̸
+        "\\nsubseteqq": "⫅̸",  # ⫅̸
+        "\\nsupseteqq": "⫆̸",  # ⫆̸
+        "\\nsqsubset": "≶⊏",  # ⊏̸
         # modified glyphs
         "\\shortmid": '<span class="smallsymbol">∣</span>',
         "\\shortparallel": '<span class="smallsymbol">∥</span>',
@@ -571,26 +313,16 @@ class FormulaConfig:
         "\\smallsmile": '<span class="smallsymbol">⌣</span>',
         "\\thickapprox": '<span class="boldsymbol">≈</span>',
         "\\thicksim": '<span class="boldsymbol">∼</span>',
-        "\\varpropto": '<span class="mathsf">\u221d</span>',  # ∝ PROPORTIONAL TO
-    }
-    for key, value in tex2unichar.mathrel.items():
-        spacedcommands["\\" + key] = value
+        "\\varpropto": '<span class="mathsf">∝</span>',  # ∝ PROPORTIONAL TO
+    } | _commands(tex2unichar.mathrel)
+
     starts = {
-        "beginafter": "}",
-        "beginbefore": "\\begin{",
-        "bracket": "{",
-        "command": "\\",
-        "comment": "%",
-        "complex": "\\[",
-        "simple": "$",
-        "squarebracket": "[",
+        "beginafter": "}", "beginbefore": "\\begin{", "bracket": "{", "command": "\\",
+        "comment": "%", "complex": "\\[", "simple": "$", "squarebracket": "[",
         "unnumbered": "*",
     }
 
-    symbolfunctions = {
-        "^": "sup",
-        "_": "sub",
-    }
+    symbolfunctions = {"^": "sup", "_": "sub"}
 
     textfunctions = {
         "\\mbox": 'span class="mbox"',
@@ -606,6 +338,7 @@ class FormulaConfig:
         "\\textup": 'span class="normal"',
     }
 
+    # symbols passed through unchanged
     unmodified = {
         "characters": [".", "*", "€", "(", ")", "[", "]", "·", "!", ";", "|", "§", '"', "?"],
     }
