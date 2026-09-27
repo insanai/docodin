@@ -214,6 +214,7 @@ class DocumentContext:
         # of lines removed so far, and nodes whose ``line`` is an absolute line
         # number (id -> (node, lines removed at creation)).
         self.insertions: list[tuple[int, StringList]] = []
+        self.last_removal_top = False  # the last insertion was made by the top machine
         self.removed_lines = 0
         self.absolute_lines: dict[int, tuple[nodes.Node, int]] = {}
         self.builder = TreeBuilder(self)
@@ -286,6 +287,11 @@ class DocumentContext:
             if final_offset >= 0:
                 final_offset += self.removed_lines
                 count += self.removed_lines
+                if (final_offset > count and self.last_removal_top
+                        and _ends_with_insertion(sm.input_lines)):
+                    # the input ended inside a top-level ``include`` directive:
+                    # docutils went on through the inserted lines, which end cleanly
+                    final_offset = count
         sm.line_offset = final_offset
         document = self.document
         document.current_line = None
@@ -327,6 +333,12 @@ class DocumentContext:
         msgs: list = []
         out = self.builder.inline(items, lineno, container, msgs)
         return out, msgs
+
+
+def _ends_with_insertion(lines: StringList) -> bool:
+    """The last input line is the padding ``insert_input()`` puts after an insertion."""
+    source = lines.info(len(lines) - 1)[0] if len(lines) else None
+    return bool(source) and source.startswith("internal padding after ")
 
 
 class TreeBuilder:
@@ -1064,14 +1076,16 @@ class TreeBuilder:
         # text) propagate to the parent lists, as in docutils, so reporter
         # line lookups keep working; they are removed again the same way.
         inserted = input_lines[start:start + count]
-        self.ctx.insertions.append(
-            (sm.input_offset + start, StringList(list(inserted.data), items=list(inserted.items))))
         child = OdinStateMachine(self.ctx, inserted, sm.input_offset + start, sm.node,
                                  sm.match_titles, parent_sm=sm.parent_state_machine)
         child.section_level_offset = sm.section_level_offset
         self.ctx.parse_lines(child, inserted, sm.match_titles)
         if sm.match_titles:
             sm.node = child.node
+        # recorded in removal order, without the (already removed) nested insertions
+        self.ctx.insertions.append(
+            (sm.input_offset + start, StringList(list(inserted.data), items=list(inserted.items))))
+        self.ctx.last_removal_top = sm is self.ctx.top_sm
         # Remove item by item: ``ViewList.__delitem__`` with a slice deletes
         # twice when the list has a parent (docutils bug), integer deletion
         # propagates correctly.

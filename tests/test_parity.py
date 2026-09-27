@@ -2,6 +2,9 @@
 
 from __future__ import annotations
 
+import docutils.frontend
+import docutils.parsers.rst
+import docutils.utils
 import pytest
 
 CASES = {
@@ -72,3 +75,42 @@ def test_deep_nesting_is_bounded():
     text = "".join(" " * i + "para\n\n" for i in range(400))
     out = parse_pformat(docodin.Parser(), text)
     assert "Nesting too deep" in out
+
+
+INCLUDE_FILES = {
+    "inc.rst": "Included para.\n\nMore.\n",
+    "nest.rst": "Inner para.\n\n.. include:: inc.rst\n",
+    "tail.rst": "Tail\n\n.. note:: x",
+}
+INCLUDE_CASES = {
+    "end": "Para.\n\n.. include:: inc.rst\n",
+    "end_blanks": "Para.\n\n.. include:: inc.rst\n\n\n",
+    "middle": "Para.\n\n.. include:: inc.rst\n\nAfter.\n",
+    "nested": "Para.\n\n.. include:: nest.rst\n",
+    "nested_mid": ".. include:: nest.rst\n\nZ\n",
+    "tail_construct": "Para.\n\n.. include:: tail.rst\n",
+    "twice": ".. include:: inc.rst\n.. include:: tail.rst\n",
+    "in_note": ".. note::\n\n   .. include:: inc.rst\n",
+    "section": "Title\n=====\n\n.. include:: inc.rst\n\nSub\n---\n\n.. include:: tail.rst\n",
+}
+
+
+@pytest.mark.parametrize("name", INCLUDE_CASES)
+def test_include_leaves_the_reporter_where_docutils_does(name, tmp_path, monkeypatch):
+    """Transforms and writers report through the state machine's final position."""
+    import docodin
+
+    for file, text in INCLUDE_FILES.items():
+        (tmp_path / file).write_text(text, encoding="utf-8")
+    monkeypatch.chdir(tmp_path)
+
+    def state(parser):
+        settings = docutils.frontend.get_default_settings(docutils.parsers.rst.Parser)
+        settings.report_level = settings.halt_level = 5
+        settings.warning_stream = ""
+        document = docutils.utils.new_document("main.rst", settings)
+        parser.parse(INCLUDE_CASES[name], document)
+        return (document.pformat(), document.reporter.get_source_and_line(),
+                document.current_source, document.current_line)
+
+    assert state(docodin.Parser()) == state(docutils.parsers.rst.Parser())
