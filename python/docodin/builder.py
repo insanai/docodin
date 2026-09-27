@@ -349,6 +349,7 @@ class TreeBuilder:
 
     def __init__(self, ctx: DocumentContext) -> None:
         self.ctx = ctx
+        self.start_message: nodes.system_message | None = None  # see _early_message
         self.document = ctx.document
         self.reporter = ctx.reporter
         self.inliner = ctx.inliner
@@ -408,7 +409,10 @@ class TreeBuilder:
         elif not following[3].startswith("Enumerated list start value not ordinal-1"):
             return None  # ``Body.enumerator`` reports the start before the items
         self.set_current_line(sm, following[5])
-        return self.message(following)
+        message = self.message(following)
+        if construct[0] == K_ENUMERATED_LIST:
+            self.start_message = message  # attached by b_enumerated_list
+        return message
 
     def _paragraph(self, item, parent, sm, linear, delta):
         """Hot path of ``b_paragraph`` (most frequent block element)."""
@@ -450,8 +454,9 @@ class TreeBuilder:
                 skip_unindent = False
                 if kind == K_SYSTEM_MESSAGE and item[3] == _EXPLICIT_UNINDENT:
                     continue
-            if early is not None:  # created before the paragraph, attached after it
-                _append(sm.node, early)
+            if early is not None:  # created before the construct (and its content)
+                if early.parent is None:
+                    _append(sm.node, early)
                 early = None
                 continue
             if linear:
@@ -486,8 +491,9 @@ class TreeBuilder:
                 skip_unindent = False
                 if kind == K_SYSTEM_MESSAGE and item[3] == _EXPLICIT_UNINDENT:
                     continue
-            if early is not None:  # created before the paragraph, attached after it
-                _append(parent, early)
+            if early is not None:  # created before the construct (and its content)
+                if early.parent is None:
+                    _append(parent, early)
                 early = None
                 continue
             if linear:
@@ -643,6 +649,10 @@ class TreeBuilder:
         el["suffix"] = item[4]
         if item[5] is not None:
             el["start"] = item[5]
+        if self.start_message is not None:
+            # ``Body.enumerator`` attaches its message before parsing the items
+            _append(parent, self.start_message)
+            self.start_message = None
         for li in item[6]:
             _append(el, self._list_item(li, sm))
 
