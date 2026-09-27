@@ -26,3 +26,21 @@ docodin = ["*.dylib", "*.so", "*.dll"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+
+# Project rules: files <= 1408 lines, lines 99 chars (soft) / 108 chars (hard),
+# short functions with low cyclomatic complexity.
+[tool.ruff]
+line-length = 108
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "B", "I", "UP", "C90", "PLR0912", "PLR0915", "PLR0911"]
+ignore = ["UP031"]  # message texts mirror docutils' %-formatting
+
+[tool.ruff.lint.mccabe]
+max-complexity = 12
+
+[tool.ruff.lint.pylint]
+max-branches = 14
+max-statements = 50
+max-returns = 8
