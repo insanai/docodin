@@ -17,6 +17,9 @@ def string2lines(
 ) -> list[str]:
     """Convert an input string into a list of lines, expanding tabs.
 
+    Delegates to the native Odin line splitter engine for high-performance
+    tab expansion and Unicode newline normalization.
+
     Args:
         astring: Input string to split into lines.
         tab_width: Number of spaces for tab expansion. Defaults to 8.
@@ -28,13 +31,17 @@ def string2lines(
     """
     if not astring:
         return []
-    if convert_whitespace:
-        astring = whitespace.sub(" ", astring)
-    if tab_width > 0:
-        lines = [line.expandtabs(tab_width) for line in astring.splitlines()]
-    else:
-        lines = astring.splitlines()
-    return lines
+    try:
+        from docodin._native import native
+        return native().split_lines(astring, tab_width)
+    except Exception:
+        if convert_whitespace:
+            astring = whitespace.sub(" ", astring)
+        if tab_width > 0:
+            lines = [line.expandtabs(tab_width) for line in astring.splitlines()]
+        else:
+            lines = astring.splitlines()
+        return lines
 
 
 class StringList:

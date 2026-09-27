@@ -35,6 +35,12 @@ class Parser(docutils.parsers.rst.Parser):
     """
 
     def parse(self, inputstring: str | StringList, document: Any) -> None:
+        """Parse source text or StringList into a document tree using DocOdin.
+
+        Args:
+            inputstring: Source markup text or pre-split StringList.
+            document: Target docutils document tree.
+        """
         if not _supported(self.state_classes, self.inliner):
             return _ORIGINAL_PARSE(self, inputstring, document)
         self.setup_parse(inputstring, document)
@@ -98,4 +104,9 @@ def unpatch_docutils() -> None:
 
 
 def is_patched() -> bool:
+    """Check whether docutils has been globally patched with DocOdin.
+
+    Returns:
+        True if docutils is currently monkeypatched, False otherwise.
+    """
     return _patched

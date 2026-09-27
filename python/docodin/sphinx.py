@@ -16,15 +16,26 @@ from docodin.parser import _supported
 
 
 class OdinSphinxRSTParser(RSTParser):
-    """Sphinx's ``RSTParser`` with the native parsing engine."""
+    """Sphinx's ``RSTParser`` accelerated with the native DocOdin engine."""
 
     def _has_decoration(self) -> bool:
+        """Check whether the Sphinx configuration defines rst_prolog or rst_epilog.
+
+        Returns:
+            True if rst_prolog or rst_epilog is configured, False otherwise.
+        """
         config = getattr(self, "_config", None) or getattr(self, "config", None)
         if config is None:
             return False
         return bool(getattr(config, "rst_prolog", None) or getattr(config, "rst_epilog", None))
 
     def parse(self, inputstring: str | StringList, document: Any) -> None:
+        """Parse source reStructuredText string or StringList into a Sphinx document tree.
+
+        Args:
+            inputstring: Source markup text or pre-split StringList.
+            document: Target docutils document tree.
+        """
         if not _supported(self.state_classes, self.inliner):
             return super().parse(inputstring, document)
         self.setup_parse(inputstring, document)  # type: ignore[arg-type]
@@ -45,7 +56,14 @@ class OdinSphinxRSTParser(RSTParser):
 
 
 def setup(app: Any) -> dict[str, Any]:
-    """Register docodin as the reStructuredText parser."""
+    """Register docodin as the accelerated reStructuredText parser in Sphinx.
+
+    Args:
+        app: The Sphinx application instance.
+
+    Returns:
+        Extension metadata dictionary including version and parallel safety flags.
+    """
     app.add_source_parser(OdinSphinxRSTParser, override=True)
     from docodin import __version__
 
