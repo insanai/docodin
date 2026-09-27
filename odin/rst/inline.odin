@@ -676,9 +676,15 @@ phrase_ref :: proc(il: ^Inliner, rawsource: string, escaped: string) -> Node {
 // ``Inliner.adjust_uri``: e-mail addresses get a "mailto:" scheme.
 @(private = "file")
 adjust_uri :: proc(il: ^Inliner, uri: string) -> string {
+	return adjust_uri_text(uri, il.charlevel, il.allocator)
+}
+
+// ``Inliner.adjust_uri`` for hosts: an e-mail address gets a "mailto:"
+// scheme (``charlevel``: the ``character_level_inline_markup`` setting).
+adjust_uri_text :: proc(uri: string, charlevel: bool, allocator: runtime.Allocator) -> string {
 	// email pattern + '$' matched at the start
-	if end, ok := email_at(uri, 0, il.charlevel, nil); ok && end == len(uri) {
-		return concat("mailto:", uri, allocator = il.allocator)
+	if end, ok := email_at(uri, 0, charlevel, nil); ok && end == len(uri) {
+		return concat("mailto:", uri, allocator = allocator)
 	}
 	return uri
 }

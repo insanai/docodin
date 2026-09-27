@@ -563,6 +563,9 @@ directive :: proc(
 	last := min(sm.line_offset + 1, len(sm.lines))
 	d := make_node(sm, .Directive, lineno)
 	t.nodes[d].name = name
+	// the reporter's line while the directive runs (the root machine
+	// stays where an explicit list or enclosing construct left it)
+	t.nodes[d].num[1] = i32(reporter_line(sm))
 	first := max(initial, 0)
 	t.nodes[d].raw = join_lines(sm.lines[first:max(last, first)], sm.p.allocator)
 	set_directive_info(t, d, Directive_Info {
