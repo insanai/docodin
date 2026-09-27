@@ -39,6 +39,11 @@ other docutils user, with a native reStructuredText engine written in Odin.
   instead), and `docodin` runs `python -m docodin` with the same arguments,
   streams and exit status, or explains what needs Python when no Python with
   docodin is found. `--config` and the `--dump-*` options work the same way.
+- `docodin-sphinx-build` and the `docodin.sphinx` extension tune Python's
+  garbage collector: moderately raised thresholds, and the long-lived objects
+  are frozen after the extensions are loaded and after reading. This saves
+  about 18 % on the CPython documentation, for about 4 % more peak memory.
+  Set `DOCODIN_GC=default` or `docodin_gc_tuning = False` to turn it off.
 
 ### Performance
 
