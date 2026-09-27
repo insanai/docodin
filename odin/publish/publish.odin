@@ -138,7 +138,7 @@ unknown_writer :: proc(name: string, allocator: runtime.Allocator) -> string {
 
 // --- the pipeline --------------------------------------------------------------------
 
-@(private = "file")
+@(private)
 Pipeline :: struct {
 	source_path:  string,
 	options:      Options,
@@ -154,9 +154,12 @@ Pipeline :: struct {
 	err:          Error,
 	written:      Maybe(int), // messages written before an exception
 	needs:        [dynamic]Python_Need, // of the settings (the document has its own)
+	// ``read_document`` keeping the parse tree: its allocator, and the tree
+	tree_allocator: runtime.Allocator,
+	tree:           rd.Parse_Tree,
 }
 
-@(private = "file")
+@(private)
 prepare :: proc(p: ^Pipeline, writer: string, overrides: []Override) -> bool {
 	w, ok := writer_of(writer)
 	if !ok {
@@ -197,7 +200,7 @@ run :: proc(p: ^Pipeline, text: string) {
 }
 
 // ``reader.read(source, parser, settings)``.
-@(private = "file")
+@(private)
 read :: proc(p: ^Pipeline, text: string) -> bool {
 	settings := to_doctree(p.settings)
 	settings.docutils_dir = p.options.docutils_dir
@@ -209,7 +212,10 @@ read :: proc(p: ^Pipeline, text: string) -> bool {
 	}
 	document_source := p.source_path if p.source_path != "" else "<string>"
 	info: rd.Parse_Info
-	p.doc, info = rd.parse_document(text, parse_settings, document_source, context.allocator)
+	p.doc, info = rd.parse_document(
+		text, parse_settings, document_source, context.allocator, p.tree_allocator,
+	)
+	p.tree = info.tree
 	p.doc.settings = settings
 	r := &p.doc.reporter
 	if info.exception != "" && !(r.halted && r.halt_written <= info.exception_at) {
@@ -228,7 +234,7 @@ read :: proc(p: ^Pipeline, text: string) -> bool {
 }
 
 // ``Transformer.populate_from_components`` and ``apply_transforms``.
-@(private = "file")
+@(private)
 transform :: proc(p: ^Pipeline) -> (Maybe(tf.Sectnum_Settings), bool) {
 	doc := p.doc
 	kind := doctree_writer(p.writer)
@@ -339,7 +345,7 @@ collect_messages :: proc(p: ^Pipeline) -> []Message {
 }
 
 // The needs of the settings and the document.
-@(private = "file")
+@(private)
 collect_needs :: proc(p: ^Pipeline) -> []Python_Need {
 	all := make([dynamic]Python_Need, 0, len(p.needs), p.allocator)
 	append(&all, ..p.needs[:])
@@ -361,7 +367,7 @@ exit_status_of :: proc(p: ^Pipeline) -> int {
 	return 1 if p.err != nil else 0
 }
 
-@(private = "file")
+@(private)
 clone_error :: proc(err: Error, allocator: runtime.Allocator) -> Error {
 	clone :: proc(s: string, a: runtime.Allocator) -> string {
 		return strings.clone(s, a)
