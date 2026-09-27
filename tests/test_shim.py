@@ -181,3 +181,37 @@ def test_sphinx_conf_discovery_and_metadata(tmp_path: Any) -> None:
         html_content = out_html.read_text(encoding="utf-8")
         assert "Sphinx Test Doc Documentation" in html_content
         assert '<h1 id="welcome">Welcome</h1>' in html_content
+
+
+def _python(code: str, **env: str) -> subprocess.CompletedProcess:
+    return subprocess.run([sys.executable, "-c", code], capture_output=True, text=True,
+                          check=False, env={"PYTHONPATH": str(ROOT / "python"), **env})
+
+
+def test_startup_hook_is_lazy_and_opt_in() -> None:
+    """``docodin.pth`` imports ``docodin_autoload`` in every interpreter."""
+    lazy = _python("import sys, docodin_autoload\n"
+                   "print('docodin' in sys.modules, 'docutils' in sys.modules)")
+    assert lazy.stdout.split() == ["False", "False"], lazy.stderr
+    forced = _python("import docodin_autoload, docutils\nprint(docutils.__docodin_shim__)",
+                     DOCODIN_DOCUTILS="1")
+    assert forced.stdout.strip() == "True", forced.stderr
+
+
+@pytest.mark.skipif(not _real_docutils_available(), reason="real docutils not installed")
+def test_startup_hook_keeps_installed_docutils() -> None:
+    kept = _python("import docodin_autoload, docutils\n"
+                   "print(getattr(docutils, '__docodin_shim__', False))")
+    assert kept.stdout.strip() == "False", kept.stderr
+
+
+def test_sphinx_build_wrapper_uses_the_shim(tmp_path: Path) -> None:
+    pytest.importorskip("sphinx")
+    (tmp_path / "conf.py").write_text("project = 'P'\n", encoding="utf-8")
+    (tmp_path / "index.rst").write_text("Title\n=====\n\nHello *world*.\n", encoding="utf-8")
+    code = ("import sys, docodin.sphinx_build as b\n"
+            f"rc = b.main(['-q', '-b', 'html', {str(tmp_path)!r}, {str(tmp_path / 'out')!r}])\n"
+            "import docutils\nprint(rc, docutils.__docodin_shim__)")
+    proc = _python(code)
+    assert proc.stdout.split() == ["0", "True"], proc.stderr
+    assert "<em>world</em>" in (tmp_path / "out" / "index.html").read_text(encoding="utf-8")
