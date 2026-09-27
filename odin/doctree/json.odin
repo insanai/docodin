@@ -12,7 +12,7 @@ import "core:strings"
 // dumped to JSON by scripts/doctree_json.py, so that transforms and writers
 // can be developed and tested against docutils without the native parser.
 // ``load_json`` loads a dump into a ``Doc``; ``dump_json`` (json_dump.odin)
-// writes one.  The format is described in docs/NATIVE_PIPELINE.md.
+// writes one.  The format is described in docs/book/internals/interchange.rst.
 //
 // Node records are numbered in preorder of the document tree, then of the
 // detached subtrees (nodes that are referenced but not in the tree), and a
