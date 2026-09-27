@@ -113,22 +113,32 @@ def version() -> str:
     return native().version
 
 
-def render_html(source: str, *, title: str = "", author: str = "", standalone: bool = True,
-                embed_css: bool = True) -> str:
-    """Render reStructuredText to HTML5 with the native writer (no docutils involved)."""
-    from docodin._native import native
+def publish_native(source: str | bytes, source_path: str | None = None, writer: str = "html5",
+                   settings_overrides: dict[str, Any] | None = None, *, parts: bool = False,
+                   docutils_dir: str | None = None) -> Any:
+    """``docutils.core.publish_string`` (``publish_parts`` with ``parts``) without Python:
+    the native reader, transforms and writers (pseudoxml, xml, html5, latex, xetex), with
+    docutils' output, messages and exceptions.  See :mod:`docodin._publish`."""
+    from docodin._publish import publish_native as _publish_native
 
-    return native().render_html(source, title=title, author=author, standalone=standalone,
-                                embed_css=embed_css)
+    return _publish_native(source, source_path, writer, settings_overrides, parts=parts,
+                           docutils_dir=docutils_dir)
 
 
-def render_latex(source: str, *, title: str = "", author: str = "", date: str = "",
-                 standalone: bool = True) -> str:
-    """Render reStructuredText to LaTeX with the native writer (no docutils involved)."""
-    from docodin._native import native
+def render_html(source: str, *, standalone: bool = True, **settings_overrides: Any) -> str:
+    """HTML5 of reStructuredText, natively: the whole document, or the body of
+    ``publish_parts`` (``standalone=False``)."""
+    result = publish_native(source, writer="html5", settings_overrides=settings_overrides,
+                            parts=True)
+    return result["whole"] if standalone else result["body"]
 
-    return native().render_latex(source, title=title, author=author, date=date,
-                                 standalone=standalone)
+
+def render_latex(source: str, *, standalone: bool = True, **settings_overrides: Any) -> str:
+    """LaTeX of reStructuredText, natively: the whole document, or the body of
+    ``publish_parts`` (``standalone=False``)."""
+    result = publish_native(source, writer="latex", settings_overrides=settings_overrides,
+                            parts=True)
+    return result["whole"] if standalone else result["body"]
 
 
 __all__ = [
@@ -141,6 +151,7 @@ __all__ = [
     "patch_docutils",
     "publish_doctree",
     "publish_file",
+    "publish_native",
     "publish_parts",
     "publish_string",
     "render_html",

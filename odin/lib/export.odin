@@ -4,6 +4,7 @@ import "base:runtime"
 
 import "core:strings"
 
+import publish "../publish"
 import rst "../rst"
 import text "../text"
 
@@ -16,7 +17,7 @@ import text "../text"
 // * Results are heap buffers owned by the caller; release with
 //   ``docodin_free``.
 
-ABI_VERSION :: 3
+ABI_VERSION :: 4
 VERSION :: "0.2.0"
 
 @(thread_local, private = "file")
@@ -53,12 +54,18 @@ finish :: proc "contextless" (w: Writer, out_len: ^int) -> [^]u8 {
 // Library initializer (registered with the linker's ``-init``): runs the
 // Odin runtime start-up (global initializers, ``@(init)`` procedures).  Needed
 // because the object is linked by the system toolchain, see
-// scripts/build_odin.sh.
+// scripts/build_odin.sh.  Hosts call it too, as not every linker honours
+// ``-init`` (macOS's ld-prime ignores it): only the first call runs.
 @(export)
 docodin_init :: proc "c" () {
+	if initialized do return
+	initialized = true
 	context = runtime.default_context()
 	runtime._startup_runtime()
 }
+
+@(private = "file")
+initialized: bool
 
 @(export)
 docodin_abi_version :: proc "c" () -> i32 {
@@ -191,75 +198,125 @@ docodin_split_lines :: proc "c" (
 	return finish(w, out_len)
 }
 
-// Render reST directly to semantic HTML5 using the native Odin emitter.
+// ``publish_string`` / ``publish_parts`` natively (``odin/publish``): the
+// standalone reader, the rST parser and a writer (pseudoxml, xml, html5,
+// latex, xetex).  The request is length-prefixed (N: a native-endian
+// ``int``; a field: N length, UTF-8 bytes):
+//   field text, N has_source_path, field source_path, field writer,
+//   field docutils_dir ("": the default), N count, count x override:
+//     field name, N kind (0 None, 1 False, 2 True, 3 int, 4 str, 5 list),
+//     then N value (int), a field (str) or N items and the fields (list).
+// Result: (WIRE_VERSION, output, [(name, value)] parts, [(level, text)]
+// messages, exit_status, error), error: None or (kind, text, report, level,
+// encoding, start, end, characters) with kind "settings", "system_message",
+// "exception" or "unicode_encode"; nil for a malformed request.
 @(export)
-docodin_render_html :: proc "c" (
-	input: [^]u8,
-	input_len: int,
-	title: [^]u8,
-	title_len: int,
-	author: [^]u8,
-	author_len: int,
-	standalone: bool,
-	embed_css: bool,
-	out_len: ^int,
-) -> [^]u8 {
+docodin_publish :: proc "c" (request: [^]u8, request_len: int, out_len: ^int) -> [^]u8 {
 	context = call_context()
 	defer leave_call()
-	p := rst.Parser {
-		allocator = context.allocator,
-		settings  = rst.DEFAULT_SETTINGS,
+	r := Request {
+		buf = string(request[:max(request_len, 0)]),
+		ok  = true,
 	}
-	text := string(input[:max(input_len, 0)])
-	doc, _, _ := rst.parse_text(&p, text, 0, true, -1)
-	cfg := rst.Html_Config {
-		title      = string(title[:max(title_len, 0)]) if title != nil else "",
-		author     = string(author[:max(author_len, 0)]) if author != nil else "",
-		standalone = standalone,
-		embed_css  = embed_css,
+	text := read_bytes(&r)
+	has_source := read_int(&r) != 0
+	source_path := read_bytes(&r)
+	writer := read_bytes(&r)
+	docutils_dir := read_bytes(&r)
+	overrides := read_overrides(&r)
+	if !r.ok do return nil
+	if !has_source do source_path = ""
+	output, parts, messages, status, err := publish.publish(text, source_path, writer,
+		overrides, {docutils_dir = docutils_dir})
+	w := writer_make(len(output) * 2 + 256)
+	w_tuple(&w, 6)
+	w_int(&w, WIRE_VERSION)
+	w_str(&w, output)
+	w_list(&w, len(parts.items))
+	for p in parts.items {
+		w_tuple(&w, 2)
+		w_str(&w, p.name)
+		w_str(&w, p.value)
 	}
-	html_str := rst.write_html(doc, &p, cfg)
-
-	buf := make([]u8, len(html_str), runtime.heap_allocator())
-	copy(buf, html_str)
-	if out_len != nil do out_len^ = len(buf)
-	return raw_data(buf)
+	w_list(&w, len(messages))
+	for m in messages {
+		w_tuple(&w, 2)
+		w_int(&w, m.level)
+		w_str(&w, m.text)
+	}
+	w_int(&w, status)
+	write_publish_error(&w, err)
+	return finish(w, out_len)
 }
 
-// Render reST directly to LaTeX 2e using the native Odin emitter.
-@(export)
-docodin_render_latex :: proc "c" (
-	input: [^]u8,
-	input_len: int,
-	title: [^]u8,
-	title_len: int,
-	author: [^]u8,
-	author_len: int,
-	date: [^]u8,
-	date_len: int,
-	standalone: bool,
-	out_len: ^int,
-) -> [^]u8 {
-	context = call_context()
-	defer leave_call()
-	p := rst.Parser {
-		allocator = context.allocator,
-		settings  = rst.DEFAULT_SETTINGS,
+@(private = "file")
+read_overrides :: proc(r: ^Request) -> []publish.Override {
+	count := read_int(r)
+	if !r.ok || count < 0 || count > len(r.buf) {
+		r.ok = false
+		return nil
 	}
-	text := string(input[:max(input_len, 0)])
-	doc, _, _ := rst.parse_text(&p, text, 0, true, -1)
-	cfg := rst.Latex_Config {
-		title      = string(title[:max(title_len, 0)]) if title != nil else "",
-		author     = string(author[:max(author_len, 0)]) if author != nil else "",
-		date       = string(date[:max(date_len, 0)]) if date != nil else "",
-		standalone = standalone,
+	out := make([]publish.Override, count)
+	for &o in out {
+		o.name = read_bytes(r)
+		switch kind := read_int(r); kind {
+		case 0:
+			o.value = publish.None{}
+		case 1, 2:
+			o.value = kind == 2
+		case 3:
+			o.value = read_int(r)
+		case 4:
+			o.value = read_bytes(r)
+		case 5:
+			o.value = read_list(r)
+		case:
+			r.ok = false
+		}
 	}
-	latex_str := rst.write_latex(doc, &p, cfg)
+	return out
+}
 
-	buf := make([]u8, len(latex_str), runtime.heap_allocator())
-	copy(buf, latex_str)
-	if out_len != nil do out_len^ = len(buf)
-	return raw_data(buf)
+@(private = "file")
+read_list :: proc(r: ^Request) -> []string {
+	n := read_int(r)
+	if !r.ok || n < 0 || n > len(r.buf) {
+		r.ok = false
+		return nil
+	}
+	items := make([]string, n)
+	for &item in items do item = read_bytes(r)
+	return items
+}
+
+@(private = "file")
+write_publish_error :: proc(w: ^Writer, err: publish.Error) {
+	if err == nil {
+		w_none(w)
+		return
+	}
+	kind, text, level := "", "", 0
+	encoding, start, end, chars := "", 0, 0, ""
+	switch e in err {
+	case publish.Settings_Error:
+		kind, text = "settings", e.message
+	case publish.System_Message:
+		kind, text, level = "system_message", e.text, e.level
+	case publish.Exception:
+		kind, text = "exception", e.text
+	case publish.Unicode_Error:
+		kind, text = "unicode_encode", publish.encode_error_text(e.encode)
+		encoding, start, end, chars = publish.CODEC_NAMES[e.codec], e.start, e.end, e.chars
+	}
+	w_tuple(w, 8)
+	w_str(w, kind)
+	w_str(w, text)
+	w_str(w, publish.error_report(err))
+	w_int(w, level)
+	w_str(w, encoding)
+	w_int(w, start)
+	w_int(w, end)
+	w_str(w, chars)
 }
 
 // Release a result buffer.  Results are allocated with

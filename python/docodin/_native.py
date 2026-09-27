@@ -11,9 +11,9 @@ import struct
 import sys
 import threading
 from collections.abc import Callable, Sequence
-from typing import Any
+from typing import Any, NamedTuple
 
-ABI_VERSION = 3
+ABI_VERSION = 4
 WIRE_VERSION = 3
 
 # Parse_Flag bit positions (odin/rst/document.odin)
@@ -98,6 +98,8 @@ class NativeLibrary:
     def __init__(self, path: str | None = None) -> None:
         self.path = path or _find_library()
         lib = ctypes.CDLL(self.path)
+        lib.docodin_init.restype = None
+        lib.docodin_init()  # the runtime start-up (a no-op if the loader ran it)
         lib.docodin_abi_version.restype = ctypes.c_int32
         lib.docodin_version.restype = ctypes.c_char_p
         abi = lib.docodin_abi_version()
@@ -119,23 +121,8 @@ class NativeLibrary:
         ]
         lib.docodin_split_lines.restype = ctypes.c_void_p
         lib.docodin_split_lines.argtypes = [ctypes.c_char_p, ssize, ctypes.c_int32, ctypes.POINTER(ssize)]
-        lib.docodin_render_html.restype = ctypes.c_void_p
-        lib.docodin_render_html.argtypes = [
-            ctypes.c_char_p, ssize,
-            ctypes.c_char_p, ssize,
-            ctypes.c_char_p, ssize,
-            ctypes.c_bool, ctypes.c_bool,
-            ctypes.POINTER(ssize),
-        ]
-        lib.docodin_render_latex.restype = ctypes.c_void_p
-        lib.docodin_render_latex.argtypes = [
-            ctypes.c_char_p, ssize,
-            ctypes.c_char_p, ssize,
-            ctypes.c_char_p, ssize,
-            ctypes.c_char_p, ssize,
-            ctypes.c_bool,
-            ctypes.POINTER(ssize),
-        ]
+        lib.docodin_publish.restype = ctypes.c_void_p
+        lib.docodin_publish.argtypes = [ctypes.c_char_p, ssize, ctypes.POINTER(ssize)]
         self._educate = getattr(lib, "docodin_educate", None)
         if self._educate is not None:
             self._educate.restype = ctypes.c_void_p
@@ -147,8 +134,7 @@ class NativeLibrary:
         self._parse = lib.docodin_parse
         self._parse_inline = lib.docodin_parse_inline
         self._split_lines = lib.docodin_split_lines
-        self._render_html = lib.docodin_render_html
-        self._render_latex = lib.docodin_render_latex
+        self._publish = lib.docodin_publish
         self._free = lib.docodin_free
         self.version = lib.docodin_version().decode()
 
@@ -163,15 +149,6 @@ class NativeLibrary:
         if result[0] != WIRE_VERSION:
             raise RuntimeError(f"docodin: unexpected wire format version {result[0]}")
         return result
-
-    def _take_str(self, ptr: int | None, size: int) -> str:
-        if not ptr:
-            raise MemoryError("docodin: native renderer returned no result")
-        try:
-            data = ctypes.string_at(ptr, size)
-        finally:
-            self._free(ptr)
-        return data.decode("utf-8")
 
     def parse(
         self,
@@ -257,81 +234,44 @@ class NativeLibrary:
         ptr = self._parse_inline(data, len(data), lineno, flags, ctypes.byref(size))
         return self._take(ptr, size.value)[1]
 
-    def render_html(
+    def publish(
         self,
         text: str,
-        *,
-        title: str = "",
-        author: str = "",
-        standalone: bool = True,
-        embed_css: bool = True,
-    ) -> str:
-        """Render reStructuredText directly to HTML5 using the native Odin engine.
+        source_path: str | None,
+        writer: str,
+        overrides: Sequence[tuple[str, Any]],
+        docutils_dir: str = "",
+    ) -> PublishResult:
+        """``publish_string`` / ``publish_parts`` natively (``docodin_publish``).
 
         Args:
-            text: The reStructuredText markup string to render.
-            title: Document title to embed in the HTML head and header.
-            author: Document author metadata.
-            standalone: Whether to emit a complete HTML5 document or just body fragment.
-            embed_css: Whether to embed default responsive styling.
+            text: The reStructuredText source.
+            source_path: The source's path (None: "<string>").
+            writer: pseudoxml, xml, html5 (html, xhtml), latex or xetex.
+            overrides: Settings as (docutils name, value): None, bool, int, str, or a list of
+                str and (language, quotes) pairs.  A string of a setting with a validator is
+                converted as on the command line.
+            docutils_dir: The docutils package directory named in messages and stylesheet
+                paths ("": ``<docutils>``).
 
         Returns:
-            The rendered HTML5 string.
+            The output (text), parts, messages, exit status and error (None, or
+            (kind, text, report, level, encoding, start, end, characters)).
 
         Raises:
-            MemoryError: If the native renderer fails to allocate or return a buffer.
+            TypeError: If a setting value has another type.
+            MemoryError: If the native call fails.
         """
-        data = text.encode("utf-8", "surrogatepass")
-        title_bytes = title.encode("utf-8", "surrogatepass") if title else b""
-        author_bytes = author.encode("utf-8", "surrogatepass") if author else b""
+        fields = [_field(text), _pack_int(source_path is not None), _field(source_path or ""),
+                  _field(writer), _field(docutils_dir), _pack_int(len(overrides))]
+        for name, value in overrides:
+            fields.append(_field(name))
+            fields.append(_setting_value(name, value))
+        request = b"".join(fields)
         size = ctypes.c_ssize_t()
-        ptr = self._render_html(
-            data, len(data),
-            title_bytes, len(title_bytes),
-            author_bytes, len(author_bytes),
-            standalone, embed_css,
-            ctypes.byref(size),
-        )
-        return self._take_str(ptr, size.value)
-
-    def render_latex(
-        self,
-        text: str,
-        *,
-        title: str = "",
-        author: str = "",
-        date: str = "",
-        standalone: bool = True,
-    ) -> str:
-        """Render reStructuredText directly to LaTeX 2e using the native Odin engine.
-
-        Args:
-            text: The reStructuredText markup string to render.
-            title: Document title for the LaTeX preamble and \\maketitle.
-            author: Document author metadata.
-            date: Document date metadata.
-            standalone: Whether to emit a complete LaTeX document or fragment.
-
-        Returns:
-            The rendered LaTeX string.
-
-        Raises:
-            MemoryError: If the native renderer fails to allocate or return a buffer.
-        """
-        data = text.encode("utf-8", "surrogatepass")
-        title_bytes = title.encode("utf-8", "surrogatepass") if title else b""
-        author_bytes = author.encode("utf-8", "surrogatepass") if author else b""
-        date_bytes = date.encode("utf-8", "surrogatepass") if date else b""
-        size = ctypes.c_ssize_t()
-        ptr = self._render_latex(
-            data, len(data),
-            title_bytes, len(title_bytes),
-            author_bytes, len(author_bytes),
-            date_bytes, len(date_bytes),
-            standalone,
-            ctypes.byref(size),
-        )
-        return self._take_str(ptr, size.value)
+        ptr = self._publish(request, len(request), ctypes.byref(size))
+        _, output, parts, messages, status, error = self._take(ptr, size.value)
+        return PublishResult(output, dict(parts), messages, status, error)
 
     @property
     def has_educate(self) -> bool:
@@ -396,8 +336,37 @@ _pack_int = struct.Struct("=" + _SSIZE_CODE).pack
 
 def _field(text: str) -> bytes:
     """A length-prefixed UTF-8 field of a request."""
-    data = text.encode("utf-8")
+    data = text.encode("utf-8", "surrogatepass")
     return _pack_int(len(data)) + data
+
+
+def _setting_value(name: str, value: Any) -> bytes:
+    """A setting value of a publish request (see ``docodin_publish``)."""
+    if value is None:
+        return _pack_int(0)
+    if isinstance(value, bool):
+        return _pack_int(2 if value else 1)
+    if isinstance(value, int):
+        return _pack_int(3) + _pack_int(value)
+    if isinstance(value, (str, os.PathLike)):
+        return _pack_int(4) + _field(os.fspath(value))
+    if isinstance(value, tuple) and name == "math_output":  # validated: (format, options)
+        return _pack_int(4) + _field(" ".join(value))
+    if isinstance(value, (list, tuple)):
+        items = [":".join(map(str, item)) if isinstance(item, (list, tuple)) else str(item)
+                 for item in value]
+        return _pack_int(5) + _pack_int(len(items)) + b"".join(map(_field, items))
+    raise TypeError(f"docodin: setting {name!r}: unsupported value {value!r}")
+
+
+class PublishResult(NamedTuple):
+    """What ``docodin_publish`` returns."""
+
+    output: str
+    parts: dict[str, str]
+    messages: list[tuple[int, str]]
+    exit_status: int
+    error: tuple | None
 
 _lock = threading.Lock()
 _instance: NativeLibrary | None = None
