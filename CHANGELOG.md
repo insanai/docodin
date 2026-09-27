@@ -31,6 +31,14 @@ other docutils user, with a native reStructuredText engine written in Odin.
   and the pseudo-XML, XML, HTML5, LaTeX and XeLaTeX writers. `docodin pdf`
   runs the LaTeX writer and TeX.
 - `docodin.publish_native` gives Python access to the native pipeline.
+- Native publishing is complete: where docutils would use a Python library
+  (Pygments, PIL, `urllib`, codecs, parser and writer modules, external
+  MathML converters), the native pipeline reports it with the feature and
+  its line. `publish_native`, `render_html` and `render_latex` then publish
+  the document with docutils (`native_only=True` raises `NeedsPythonError`
+  instead), and `docodin` runs `python -m docodin` with the same arguments,
+  streams and exit status, or explains what needs Python when no Python with
+  docodin is found. `--config` and the `--dump-*` options work the same way.
 
 ### Performance
 

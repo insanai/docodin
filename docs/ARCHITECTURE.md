@@ -9,7 +9,10 @@ docodin replaces docutils 0.22 in two ways:
   parser is docodin's native engine.
 - **Without Python.** A native Odin pipeline (reader, transforms, writers)
   publishes documents byte for byte like docutils. It powers the `docodin`
-  command, `docodin-check` and `docodin.publish_native`.
+  command, `docodin-check` and `docodin.publish_native`. Where docutils
+  would use a Python library, the pipeline reports that the document needs
+  Python, and these tools publish it with docutils instead (see
+  [Python libraries](#python-libraries)).
 
 ```
                            reST text
@@ -91,9 +94,9 @@ docodin replaces docutils 0.22 in two ways:
 | `odin/writers` | The pseudoxml, xml, html5, latex and xetex writers with their parts. They use output buffers, dispatch tables indexed by `doctree.Tag`, and templates and stylesheets embedded with `#load`. |
 | `odin/math` (`texmath`) | `math2html` and `latex2mathml`, with docutils' exact output, trace messages and errors. |
 | `odin/text` | Smart quotes (`educate_tokens`), all languages and attribute modes. |
-| `odin/publish` | `publish()`: settings with docutils' validators, reader, transforms, writer, reporter and halting, and the exit status of `publish_cmdline`. |
+| `odin/publish` | `publish()`: settings with docutils' validators, reader, transforms, writer, reporter and halting, the exit status of `publish_cmdline`, and the Python needs of the document. |
 | `odin/lib` | The C ABI for Python: `docodin_parse` (with an include callback), `docodin_parse_inline`, `docodin_split_lines`, `docodin_educate`, `docodin_publish`, `docodin_free`, and the version and init functions. Results use CPython's `marshal` format, so `marshal.loads` builds them in C. |
-| `cmd/docodin` | The native `docodin` command (docutils front-end options, `check`, `pdf`). |
+| `cmd/docodin` | The native `docodin` command (docutils front-end options, `check`, `pdf`), which runs documents that need Python through `python -m docodin`. |
 | `cmd/docodin-check` | The parallel checker. |
 
 ## Memory and safety
@@ -159,16 +162,56 @@ The differential scripts that produce docutils dumps run under CPython 3.14
 (`uv run --no-project --python 3.14 --with docutils==0.22.4 python`), the
 version the native tables target.
 
+## Python libraries
+
+docutils uses Python libraries for a few features. Pygments, PIL and the
+other libraries stay Python, so the native pipeline does not reimplement
+them. Instead, each stage records a *Python need*
+(`doctree.Python_Need`: feature, detail, source and line) where docutils
+would use a library:
+
+| Feature | Where docutils uses Python |
+|---------|----------------------------|
+| Pygments | `code` directive and role (and `include` with `:code:`) with a language other than `text`, when `syntax_highlight` is not `none` (`utils.code_analyzer.Lexer`) |
+| PIL | HTML5 writer: an image with `:scale:` but without both `:width:` and `:height:` (`read_size_with_PIL`); a figure with `:figwidth: image`, when file insertion is on and the image file exists |
+| `urllib` | `raw` and `csv-table` with a `:url:` other than a local `file:` URL |
+| codecs | an encoding other than UTF-8, UTF-8-sig, Latin-1 and ASCII for the source, included, raw and CSV files (UTF-16 and UTF-32 also for the output), and error handlers other than the native ones |
+| parser modules | the `include` directive's `:parser:` option |
+| external programs | `math_output` MathML with latexml, ttm, blahtexml or pandoc |
+| writer modules | writers other than pseudoxml, xml, html5, latex and xetex |
+| front end | the options `--config`, `--record-dependencies` and `--dump-*` of the `docodin` command |
+
+Until the first need, the native run is exactly docutils' run. After it, the
+pipeline goes on as docutils does without the library (so the differential
+tests still compare its output with docutils in an environment without
+Pygments and PIL), but its result is not used:
+
+- `publish.publish` returns the needs with the results;
+  `docodin_publish` adds them to its result (C ABI 5).
+- `docodin.publish_native`, `render_html` and `render_latex` publish such a
+  document with the importable docutils (`publish_string` or
+  `publish_parts` with the same arguments). With `native_only=True` they
+  raise `NeedsPythonError`, which lists the needs.
+- The `docodin` command runs `python -m docodin` with the same arguments,
+  standard streams and exit status (standard input it already read is
+  passed on). The Python is `$DOCODIN_PYTHON`, else `python3` on the PATH,
+  if it imports docodin. Without one, it prints an Elm-style report for each
+  need, with its source line and how to do without the library, and exits
+  with status 1.
+
+So native publishing is complete: every document gets docutils' result with
+the Python libraries that are installed.
+
 ## Known limits
 
 - **Two nested-include cases** (in about 20,000 generated documents) differ
   in line numbers. They occur when an `include` sits two directive levels
   deep and more content follows in the outer directive.
-- **Native pipeline only:**
-  - Pygments highlighting behaves as `syntax_highlight: none`.
-  - PIL image sizes are not read.
-  - URLs other than `file:` are not fetched.
-  - Only the codecs utf-8, latin-1 and ascii are supported.
-  - `html` means html5 (in docutils it is html4css1).
-
-  The Python shim has none of these limits.
+- **The `html` writer name** means html5 in the native pipeline and in
+  `python -m docodin` (in docutils it is html4css1).
+- **Configuration files** are not read by the native `docodin`; with
+  `--config`, the command runs through Python, which reads them (and the
+  standard configuration files).
+- **Python extensions** (directives, roles, transforms registered in Python)
+  are not seen by the native pipeline. Publish such documents with docutils
+  (the shim), for example `docodin.publish_string`.

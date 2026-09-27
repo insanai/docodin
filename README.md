@@ -22,6 +22,8 @@ It has three parts:
   without Python, with docutils' output, messages and exit status: the native
   document pipeline (reader, transforms, and the pseudo-XML, XML, HTML5, LaTeX
   and XeLaTeX writers); see [docs/NATIVE_PIPELINE.md](docs/NATIVE_PIPELINE.md).
+  Documents that need a Python library (Pygments, PIL, ...) go through
+  docutils automatically.
 
 ## Installation
 
@@ -110,13 +112,49 @@ levels, title and docinfo switches, section numbering, backlinks, footnote
 references, smart quotes, stripping, language, encodings, stylesheets, math
 output, table styles, LaTeX document class and options, ...) and writes the
 same output, messages and exit status as `python -m docutils`. It reads no
-configuration files; `html` is the html5 writer. Bad options get Elm-style
-reports with a hint.
+configuration files (`--config` runs it through Python, see below); `html` is
+the html5 writer. Bad options get Elm-style reports with a hint.
 
 From Python, `docodin.publish_native(source, writer="html5",
 settings_overrides=...)` returns what `publish_string` returns (and
-`publish_parts` with `parts=True`), raising docutils' exceptions, for
-documents that need no Python extensions.
+`publish_parts` with `parts=True`), raising docutils' exceptions.
+`docodin.render_html` and `docodin.render_latex` return the whole document
+or its body.
+
+Some docutils features use Python libraries, which docodin does not
+reimplement: Pygments (code with a language), PIL (image sizes for scaled
+images and `:figwidth: image`), `urllib` (`:url:` options other than local
+`file:` URLs), Python's codecs (encodings other than UTF-8, Latin-1 and
+ASCII), parser and writer modules (`include` with `:parser:`, writers other
+than the native ones) and external MathML converters. The native pipeline
+detects where docutils would use one, and such documents are published by
+docutils instead, so the result is always docutils' (with the libraries
+that are installed):
+
+- `publish_native`, `render_html` and `render_latex` use the importable
+  docutils. Pass `native_only=True` to get a `docodin.NeedsPythonError`,
+  listing each feature and its line, instead.
+- `docodin` runs `python -m docodin` with the same arguments, standard
+  streams and exit status. It uses `$DOCODIN_PYTHON`, else `python3`, if it
+  imports docodin; `--config` and the `--dump-*` options go the same way.
+  Without such a Python, it reports what needs Python and how to avoid it
+  (for example `--syntax-highlight=none`) and exits with status 1:
+
+```
+-- NEEDS PYTHON ---------------------------------------------------- guide.rst:4
+
+Highlighting "python" code needs Pygments.
+
+docodin runs these with docutils' Python front end (`python -m docodin`), but
+found no Python that imports docodin: it tries `$DOCODIN_PYTHON`, then
+`python3`.
+
+4| .. code:: python
+   ^^^^^^^^^^^^^^^^
+Hint: Install docodin's Python package (`pip install docodin`) or set
+`DOCODIN_PYTHON` to a Python that has it, or write `--syntax-highlight=none` to
+publish the code without highlighting.
+```
 
 ## Native checker
 
@@ -162,6 +200,19 @@ tests/              unit, parity, differential, conformance and benchmark tools
 ```
 
 See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for the design.
+
+## Known limits
+
+- Two nested-include cases (in about 20,000 generated documents) differ in
+  line numbers: an `include` two directive levels deep with more content
+  after it in the outer directive.
+- The native pipeline does not see directives, roles or transforms
+  registered in Python; publish such documents with docutils (the shim).
+- In `docodin` and `python -m docodin`, `html` is the html5 writer (in
+  docutils it is html4css1).
+
+Native publishing has no other limits: documents that need a Python
+library are published by docutils (see [Native publishing](#native-publishing)).
 
 ## Tests
 
