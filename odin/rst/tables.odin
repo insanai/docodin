@@ -11,6 +11,9 @@ import "core:strings"
 
 PAD :: rune(0)
 
+@(private = "file")
+PARSE_INCOMPLETE :: "Malformed table; parse incomplete."
+
 Table_Kind :: enum u8 {Grid, Simple}
 
 Table_Error :: struct {
@@ -87,24 +90,16 @@ rune_at_or :: #force_inline proc "contextless" (rs: []rune, i: int) -> rune {
 // ``StringList.get_2D_block(top, left, bottom, right)`` followed by
 // ``replace(pad, '')``.
 @(private = "file")
-get_2d_block :: proc(block: [][]rune, top, left, bottom, right: int, allocator: runtime.Allocator) -> []string {
+get_2d_block :: proc(
+	block: [][]rune,
+	top, left, bottom, right: int,
+	allocator: runtime.Allocator,
+) -> []string {
 	rows := block[top:bottom]
 	trimmed := make([][]rune, len(rows), allocator)
 	indent := right
 	for line, i in rows {
-		// column_indices: indices of non-combining characters
-		left_i, right_i := -1, -1
-		col := 0
-		for r, idx in line {
-			if is_combining(r) do continue
-			if col == left do left_i = idx
-			if col == right do right_i = idx
-			col += 1
-		}
-		if left_i < 0 do left_i = left
-		if right_i < 0 do right_i = len(line)
-		left_i = clamp(left_i, 0, len(line))
-		right_i = clamp(right_i, left_i, len(line))
+		left_i, right_i := column_indices(line, left, right)
 		t := rune_rstrip(line[left_i:right_i])
 		trimmed[i] = t
 		if len(t) > 0 do indent = min(indent, len(t) - len(rune_lstrip(t)))
@@ -118,11 +113,36 @@ get_2d_block :: proc(block: [][]rune, top, left, bottom, right: int, allocator: 
 	return out
 }
 
+// ``line[left:right]`` in columns (combining characters take no column) as
+// clamped rune indices.
+@(private = "file")
+column_indices :: proc "contextless" (line: []rune, left, right: int) -> (left_i, right_i: int) {
+	left_i, right_i = -1, -1
+	col := 0
+	for r, idx in line {
+		if is_combining(r) do continue
+		if col == left do left_i = idx
+		if col == right do right_i = idx
+		col += 1
+	}
+	if left_i < 0 do left_i = left
+	if right_i < 0 do right_i = len(line)
+	left_i = clamp(left_i, 0, len(line))
+	right_i = clamp(right_i, left_i, len(line))
+	return
+}
+
 // ``Body.malformed_table``
 @(private = "file")
-malformed_table :: proc(sm: ^State_Machine, block: []string, detail: string, offset: int) -> ^Node {
+malformed_table :: proc(
+	sm: ^State_Machine,
+	block: []string,
+	detail: string,
+	offset: int,
+) -> ^Node {
 	a := sm.p.allocator
-	message := "Malformed table." if detail == "" else concat("Malformed table.\n", detail, allocator = a)
+	message := "Malformed table."
+	if detail != "" do message = concat("Malformed table.\n", detail, allocator = a)
 	startline := abs_line_number(sm) - len(block) + 1
 	return make_message_block(sm.p, ERROR, message, join_lines(block, a), startline + offset)
 }
@@ -164,7 +184,8 @@ body_table :: proc(sm: ^State_Machine, kind: Table_Kind) {
 			cell_delta := -1 + (top_line - tableline)
 			list_append(&nodes, build_table(sm, data, tableline, cell_delta))
 		} else {
-			list_append(&nodes, malformed_table(sm, rows_to_strings(block, a), err.message, err.offset))
+			msg := malformed_table(sm, rows_to_strings(block, a), err.message, err.offset)
+			list_append(&nodes, msg)
 		}
 	}
 	// isolation messages are attached with the table, after its cells were parsed
@@ -172,12 +193,19 @@ body_table :: proc(sm: ^State_Machine, kind: Table_Kind) {
 	list_extend(&nodes, messages)
 	append_chain(sm.parent, nodes.first)
 	if !blank_finish {
-		append_child(sm.parent, make_message(sm.p, WARNING, "Blank line required after table.", abs_line_number(sm) + 1))
+		append_child(sm.parent, make_message(sm.p, WARNING,
+			"Blank line required after table.", abs_line_number(sm) + 1))
 	}
 }
 
 @(private = "file")
-isolate_grid_table :: proc(sm: ^State_Machine) -> (rows: [][]rune, messages: Node_List, blank_finish: bool) {
+isolate_grid_table :: proc(
+	sm: ^State_Machine,
+) -> (
+	rows: [][]rune,
+	messages: Node_List,
+	blank_finish: bool,
+) {
 	a := sm.p.allocator
 	blank_finish = true
 	lines, err_line := get_text_block(sm, flush_left = true)
@@ -203,35 +231,62 @@ isolate_grid_table :: proc(sm: ^State_Machine) -> (rows: [][]rune, messages: Nod
 	}
 	if len(block) == 0 do return nil, messages, blank_finish
 	if !match_grid_table_top(runes_to_string(block[len(block) - 1], false, a)) {
-		found := false
-		for i := len(block) - 2; i > 1; i -= 1 {
-			i_var = i
-			if match_grid_table_top(runes_to_string(block[i], false, a)) {
-				previous_line(sm, len(block) - i + 1)
-				block = block[:i + 1]
-				blank_finish = false
-				found = true
-				break
-			}
-		}
+		n: int
+		found: bool
+		n, i_var, found = find_grid_bottom(sm, block, i_var, a)
 		if !found {
-			list_append(&messages, malformed_table(sm, rows_to_strings(block, a), "Bottom border missing or corrupt.", i_var))
+			msg := malformed_table(sm, rows_to_strings(block, a),
+				"Bottom border missing or corrupt.", i_var)
+			list_append(&messages, msg)
 			return nil, messages, blank_finish
 		}
+		block = block[:n]
+		blank_finish = false
 	}
 	for i in 0 ..< len(block) {
 		stripped := strip_combining(block[i], a)
 		last := rune_at_or(block[i], len(block[i]) - 1)
 		if len(stripped) != width || (last != '+' && last != '|') {
-			list_append(&messages, malformed_table(sm, rows_to_strings(block, a), "Right border not aligned or missing.", i))
+			msg := malformed_table(sm, rows_to_strings(block, a),
+				"Right border not aligned or missing.", i)
+			list_append(&messages, msg)
 			return nil, messages, blank_finish
 		}
 	}
 	return block, messages, blank_finish
 }
 
+// The bottom border above an incomplete last line: the new block length.
+// ``i_var`` is Python's leaking loop variable (``i_var_in`` if not looping).
 @(private = "file")
-isolate_simple_table :: proc(sm: ^State_Machine) -> (rows: [][]rune, messages: Node_List, blank_finish: bool) {
+find_grid_bottom :: proc(
+	sm: ^State_Machine,
+	block: [][]rune,
+	i_var_in: int,
+	a: runtime.Allocator,
+) -> (
+	n, i_var: int,
+	found: bool,
+) {
+	i_var = i_var_in
+	for i := len(block) - 2; i > 1; i -= 1 {
+		i_var = i
+		if match_grid_table_top(runes_to_string(block[i], false, a)) {
+			previous_line(sm, len(block) - i + 1)
+			return i + 1, i_var, true
+		}
+	}
+	return len(block), i_var, false
+}
+
+@(private = "file")
+isolate_simple_table :: proc(
+	sm: ^State_Machine,
+) -> (
+	rows: [][]rune,
+	messages: Node_List,
+	blank_finish: bool,
+) {
 	a := sm.p.allocator
 	start := sm.line_offset
 	lines := sm.lines
@@ -280,7 +335,12 @@ isolate_simple_table :: proc(sm: ^State_Machine) -> (rows: [][]rune, messages: N
 }
 
 // ``Body.build_table`` / ``build_table_row``
-build_table :: proc(sm: ^State_Machine, data: Table_Data, tableline: int, cell_delta: int) -> ^Node {
+build_table :: proc(
+	sm: ^State_Machine,
+	data: Table_Data,
+	tableline: int,
+	cell_delta: int,
+) -> ^Node {
 	table := make_node(sm, .Table, tableline)
 	table.num[0] = i32(cell_delta)
 	tgroup := make_node(sm, .TGroup, tableline)
@@ -294,17 +354,26 @@ build_table :: proc(sm: ^State_Machine, data: Table_Data, tableline: int, cell_d
 	if len(data.head_rows) > 0 {
 		thead := make_node(sm, .THead, tableline)
 		append_child(tgroup, thead)
-		for row in data.head_rows do append_child(thead, build_table_row(sm, row, tableline, cell_delta))
+		for row in data.head_rows {
+			append_child(thead, build_table_row(sm, row, tableline, cell_delta))
+		}
 	}
 	tbody := make_node(sm, .TBody, tableline)
 	append_child(tgroup, tbody)
-	for row in data.body_rows do append_child(tbody, build_table_row(sm, row, tableline, cell_delta))
+	for row in data.body_rows {
+		append_child(tbody, build_table_row(sm, row, tableline, cell_delta))
+	}
 	table.cur_line = i32(sm.p.cur_line) // after the cells' nested parses
 	return table
 }
 
 @(private = "file")
-build_table_row :: proc(sm: ^State_Machine, row: []Cell, tableline: int, cell_delta: int) -> ^Node {
+build_table_row :: proc(
+	sm: ^State_Machine,
+	row: []Cell,
+	tableline: int,
+	cell_delta: int,
+) -> ^Node {
 	r := make_node(sm, .Row, tableline)
 	for cell in row {
 		if !cell.used do continue
@@ -313,7 +382,9 @@ build_table_row :: proc(sm: ^State_Machine, row: []Cell, tableline: int, cell_de
 		append_child(r, entry)
 		has_text := false
 		for l in cell.lines do if len(l) > 0 { has_text = true; break }
-		if has_text do nested_parse(sm, cell.lines, tableline + cell.offset, entry, line_delta = cell_delta)
+		if has_text {
+			nested_parse(sm, cell.lines, tableline + cell.offset, entry, line_delta = cell_delta)
+		}
 	}
 	return r
 }
@@ -344,7 +415,15 @@ Corner :: [2]int
 
 // ``TableParser.find_head_body_sep`` (shared by both parsers).
 @(private = "file")
-find_head_body_sep :: proc(block: [][]rune, kind: Table_Kind, allocator: runtime.Allocator) -> (sep: int, err: Table_Error, ok: bool) {
+find_head_body_sep :: proc(
+	block: [][]rune,
+	kind: Table_Kind,
+	allocator: runtime.Allocator,
+) -> (
+	sep: int,
+	err: Table_Error,
+	ok: bool,
+) {
 	sep = -1
 	i := 0
 	for i = 0; i < len(block); i += 1 {
@@ -364,12 +443,21 @@ find_head_body_sep :: proc(block: [][]rune, kind: Table_Kind, allocator: runtime
 		for &r in block[i] do if r == '=' do r = '-'
 	}
 	if sep == 0 || (sep >= 0 && sep == len(block) - 1) {
-		return sep, Table_Error{"The head/body row separator may not be the first or last line of the table.", len(block) - 1}, false
+		message :=
+			"The head/body row separator may not be the first or last line of the table."
+		return sep, Table_Error{message, len(block) - 1}, false
 	}
 	return sep, {}, true
 }
 
-parse_grid_table :: proc(rows: [][]rune, allocator: runtime.Allocator) -> (data: Table_Data, err: Table_Error, ok: bool) {
+parse_grid_table :: proc(
+	rows: [][]rune,
+	allocator: runtime.Allocator,
+) -> (
+	data: Table_Data,
+	err: Table_Error,
+	ok: bool,
+) {
 	g := Grid{allocator = allocator}
 	g.block = make([][]rune, len(rows), allocator)
 	for r, i in rows {
@@ -393,29 +481,35 @@ parse_grid_table :: proc(rows: [][]rune, allocator: runtime.Allocator) -> (data:
 	g.stripped = make([][]rune, len(g.block), allocator)
 	for line, i in g.block do g.stripped[i] = strip_combining(line, allocator)
 
-	corners := make([dynamic]Corner, 0, 16, allocator)
+	if !scan_cells(&g) do return {}, {PARSE_INCOMPLETE, 0}, false
+	for col in 0 ..< g.right {
+		if g.done[col] != g.bottom - 1 do return {}, {PARSE_INCOMPLETE, 0}, false
+	}
+	return grid_structure(&g)
+}
+
+// ``GridTableParser.parse_table``: find all cells from the top-left corner;
+// false when a cell overlaps another (parse incomplete).
+@(private = "file")
+scan_cells :: proc(g: ^Grid) -> bool {
+	corners := make([dynamic]Corner, 0, 16, g.allocator)
 	append(&corners, Corner{0, 0})
 	for len(corners) > 0 {
 		c := corners[0]
 		ordered_remove(&corners, 0)
 		top, left := c[0], c[1]
 		if top == g.bottom || left == g.right || top <= g.done[left] do continue
-		bottom, right, found := scan_cell(&g, top, left)
+		bottom, right, found := scan_cell(g, top, left)
 		if !found do continue
-		if !mark_done(&g, top, left, bottom, right) {
-			return {}, {"Malformed table; parse incomplete.", 0}, false
-		}
-		lines := get_2d_block(g.block, top + 1, left + 1, bottom, right, allocator)
+		if !mark_done(g, top, left, bottom, right) do return false
+		lines := get_2d_block(g.block, top + 1, left + 1, bottom, right, g.allocator)
 		append(&g.cells, Grid_Cell{top, left, bottom, right, lines})
 		append(&corners, Corner{top, right}, Corner{bottom, left})
 		slice.sort_by(corners[:], proc(a, b: Corner) -> bool {
 			return a[0] < b[0] || (a[0] == b[0] && a[1] < b[1])
 		})
 	}
-	for col in 0 ..< g.right {
-		if g.done[col] != g.bottom - 1 do return {}, {"Malformed table; parse incomplete.", 0}, false
-	}
-	return grid_structure(&g)
+	return true
 }
 
 @(private = "file")
@@ -442,7 +536,15 @@ scan_cell :: proc(g: ^Grid, top, left: int) -> (bottom, right: int, ok: bool) {
 }
 
 @(private = "file")
-scan_down :: proc(g: ^Grid, top, left, right: int) -> (bottom: int, rows: [dynamic]int, cols: [dynamic]int, ok: bool) {
+scan_down :: proc(
+	g: ^Grid,
+	top, left, right: int,
+) -> (
+	bottom: int,
+	rows: [dynamic]int,
+	cols: [dynamic]int,
+	ok: bool,
+) {
 	rows = make([dynamic]int, 0, 4, g.allocator)
 	for i in top + 1 ..= g.bottom {
 		c := rune_at_or(g.stripped[i], right)
@@ -460,7 +562,14 @@ scan_down :: proc(g: ^Grid, top, left, right: int) -> (bottom: int, rows: [dynam
 }
 
 @(private = "file")
-scan_left :: proc(g: ^Grid, top, left, bottom, right: int) -> (rows: [dynamic]int, cols: [dynamic]int, ok: bool) {
+scan_left :: proc(
+	g: ^Grid,
+	top, left, bottom, right: int,
+) -> (
+	rows: [dynamic]int,
+	cols: [dynamic]int,
+	ok: bool,
+) {
 	cols = make([dynamic]int, 0, 4, g.allocator)
 	line := g.stripped[bottom]
 	for i := right - 1; i > left; i -= 1 {
@@ -498,27 +607,8 @@ mark_done :: proc(g: ^Grid, top, left, bottom, right: int) -> bool {
 @(private = "file")
 grid_structure :: proc(g: ^Grid) -> (data: Table_Data, err: Table_Error, ok: bool) {
 	a := g.allocator
-	rowindex := make([]int, g.bottom + 1, a)
-	colindex := make([]int, g.right + 1, a)
-	nrows, ncols := -1, -1
-	rowseps := make([dynamic]int, 0, 8, a)
-	colseps := make([dynamic]int, 0, 8, a)
-	for present, i in g.rowseps {
-		rowindex[i] = -1
-		if present {
-			nrows += 1
-			rowindex[i] = nrows
-			append(&rowseps, i)
-		}
-	}
-	for present, i in g.colseps {
-		colindex[i] = -1
-		if present {
-			ncols += 1
-			colindex[i] = ncols
-			append(&colseps, i)
-		}
-	}
+	rowindex, _, nrows := separator_index(g.rowseps, a)
+	colindex, colseps, ncols := separator_index(g.colseps, a)
 	// A one-line table (e.g. cut short by unexpected indentation) has no
 	// rows or columns; docutils builds an empty table for it.
 	nrows, ncols = max(nrows, 0), max(ncols, 0)
@@ -526,31 +616,77 @@ grid_structure :: proc(g: ^Grid) -> (data: Table_Data, err: Table_Error, ok: boo
 	for i in 1 ..< len(colseps) do data.colwidths[i - 1] = colseps[i] - colseps[i - 1] - 1
 	rows := make([][]Cell, nrows, a)
 	for &r in rows do r = make([]Cell, ncols, a)
-	remaining := nrows * ncols
-	for c in g.cells {
-		rownum, colnum := rowindex[c.top], colindex[c.left]
-		brow, rcol := rowindex[c.bottom], colindex[c.right]
-		if rownum < 0 || colnum < 0 || brow < 0 || rcol < 0 || rownum >= nrows || colnum >= ncols {
-			return {}, {"Malformed table; parse incomplete.", 0}, false
-		}
-		if rows[rownum][colnum].used {
-			return {}, {strings.concatenate({"Cell (row ", int_str(rownum + 1, a), ", column ", int_str(colnum + 1, a), ") already used."}, a), 0}, false
-		}
-		morerows := brow - rownum - 1
-		morecols := rcol - colnum - 1
-		remaining -= (morerows + 1) * (morecols + 1)
-		rows[rownum][colnum] = Cell{morerows, morecols, c.top + 1, c.lines, true}
-	}
-	if remaining != 0 do return {}, {"Unused cells remaining.", 0}, false
+	if err, ok = place_cells(g, rows, rowindex, colindex); !ok do return {}, err, false
 	if g.head_body_sep > 0 {
 		numhead := rowindex[g.head_body_sep]
-		if numhead < 0 do return {}, {"Malformed table; parse incomplete.", 0}, false
+		if numhead < 0 do return {}, {PARSE_INCOMPLETE, 0}, false
 		data.head_rows = rows[:numhead]
 		data.body_rows = rows[numhead:]
 	} else {
 		data.body_rows = rows
 	}
 	return data, {}, true
+}
+
+// Row/column numbers of the separator positions (-1 elsewhere), the
+// positions themselves and the number of rows/columns (-1 when none).
+@(private = "file")
+separator_index :: proc(
+	seps: []bool,
+	a: runtime.Allocator,
+) -> (
+	index: []int,
+	positions: [dynamic]int,
+	count: int,
+) {
+	index = make([]int, len(seps), a)
+	positions = make([dynamic]int, 0, 8, a)
+	count = -1
+	for present, i in seps {
+		index[i] = -1
+		if present {
+			count += 1
+			index[i] = count
+			append(&positions, i)
+		}
+	}
+	return
+}
+
+// ``GridTableParser.structure_from_cells``: put the cells into ``rows``.
+@(private = "file")
+place_cells :: proc(
+	g: ^Grid,
+	rows: [][]Cell,
+	rowindex, colindex: []int,
+) -> (
+	err: Table_Error,
+	ok: bool,
+) {
+	a := g.allocator
+	nrows := len(rows)
+	ncols := len(rows[0]) if nrows > 0 else 0
+	remaining := nrows * ncols
+	for c in g.cells {
+		rownum, colnum := rowindex[c.top], colindex[c.left]
+		brow, rcol := rowindex[c.bottom], colindex[c.right]
+		if rownum < 0 || colnum < 0 || brow < 0 || rcol < 0 || rownum >= nrows || colnum >= ncols {
+			return {PARSE_INCOMPLETE, 0}, false
+		}
+		if rows[rownum][colnum].used {
+			message := strings.concatenate({
+				"Cell (row ", int_str(rownum + 1, a),
+				", column ", int_str(colnum + 1, a), ") already used.",
+			}, a)
+			return {message, 0}, false
+		}
+		morerows := brow - rownum - 1
+		morecols := rcol - colnum - 1
+		remaining -= (morerows + 1) * (morecols + 1)
+		rows[rownum][colnum] = Cell{morerows, morecols, c.top + 1, c.lines, true}
+	}
+	if remaining != 0 do return {"Unused cells remaining.", 0}, false
+	return {}, true
 }
 
 // --- SimpleTableParser ------------------------------------------------------------
@@ -565,7 +701,14 @@ Simple :: struct {
 	allocator:     runtime.Allocator,
 }
 
-parse_simple_table :: proc(rows: [][]rune, allocator: runtime.Allocator) -> (data: Table_Data, err: Table_Error, ok: bool) {
+parse_simple_table :: proc(
+	rows: [][]rune,
+	allocator: runtime.Allocator,
+) -> (
+	data: Table_Data,
+	err: Table_Error,
+	ok: bool,
+) {
 	t := Simple{allocator = allocator}
 	t.block = make([][]rune, len(rows), allocator)
 	for r, i in rows {
@@ -587,27 +730,7 @@ parse_simple_table :: proc(rows: [][]rune, allocator: runtime.Allocator) -> (dat
 	append(&t.columns, ..cols[:])
 	if len(t.columns) == 0 do return {}, {"Malformed table.", 0}, false
 	t.border_end = t.columns[len(t.columns) - 1][1]
-	firststart, firstend := t.columns[0][0], t.columns[0][1]
-	offset, start := 1, 1
-	text_found := false
-	for offset < len(t.block) {
-		line := t.block[offset]
-		line_text := runes_to_string(line, false, allocator)
-		if match_simple_span(line_text) {
-			if rerr, rok := parse_row(&t, t.block[start:offset], start, rune_rstrip(line), offset, true); !rok do return {}, rerr, false
-			start = offset + 1
-			text_found = false
-		} else if len(rune_strip(line[min(firststart, len(line)):min(firstend, len(line))])) > 0 {
-			if text_found && offset != start {
-				if rerr, rok := parse_row(&t, t.block[start:offset], start, nil, 0, false); !rok do return {}, rerr, false
-			}
-			start = offset
-			text_found = true
-		} else if !text_found {
-			start = offset + 1
-		}
-		offset += 1
-	}
+	if err, ok = parse_simple_rows(&t); !ok do return {}, err, false
 	// structure_from_cells
 	data.colwidths = make([]int, len(t.columns), allocator)
 	for c, i in t.columns do data.colwidths[i] = c[1] - c[0]
@@ -625,8 +748,45 @@ parse_simple_table :: proc(rows: [][]rune, allocator: runtime.Allocator) -> (dat
 	return data, {}, true
 }
 
+// The row loop of ``SimpleTableParser.parse_table``.
 @(private = "file")
-parse_columns :: proc(t: ^Simple, line: []rune, offset: int) -> (cols: [dynamic][2]int, err: Table_Error, ok: bool) {
+parse_simple_rows :: proc(t: ^Simple) -> (err: Table_Error, ok: bool) {
+	firststart, firstend := t.columns[0][0], t.columns[0][1]
+	offset, start := 1, 1
+	text_found := false
+	for offset < len(t.block) {
+		line := t.block[offset]
+		line_text := runes_to_string(line, false, t.allocator)
+		if match_simple_span(line_text) {
+			rows := t.block[start:offset]
+			if err, ok = parse_row(t, rows, start, rune_rstrip(line), offset, true); !ok do return
+			start = offset + 1
+			text_found = false
+		} else if len(rune_strip(line[min(firststart, len(line)):min(firstend, len(line))])) > 0 {
+			if text_found && offset != start {
+				rows := t.block[start:offset]
+				if err, ok = parse_row(t, rows, start, nil, 0, false); !ok do return
+			}
+			start = offset
+			text_found = true
+		} else if !text_found {
+			start = offset + 1
+		}
+		offset += 1
+	}
+	return {}, true
+}
+
+@(private = "file")
+parse_columns :: proc(
+	t: ^Simple,
+	line: []rune,
+	offset: int,
+) -> (
+	cols: [dynamic][2]int,
+	err: Table_Error,
+	ok: bool,
+) {
 	cols = make([dynamic][2]int, 0, 8, t.allocator)
 	end := 0
 	for {
@@ -650,7 +810,11 @@ parse_columns :: proc(t: ^Simple, line: []rune, offset: int) -> (cols: [dynamic]
 	}
 	if len(t.columns) > 0 {
 		if len(cols) == 0 || cols[len(cols) - 1][1] != t.border_end {
-			return cols, {concat("Column span incomplete in table line ", int_str(offset + 1, t.allocator), ".", allocator = t.allocator), offset}, false
+			message := concat(
+				"Column span incomplete in table line ", int_str(offset + 1, t.allocator), ".",
+				allocator = t.allocator,
+			)
+			return cols, {message, offset}, false
 		}
 		cols[len(cols) - 1][1] = t.columns[len(t.columns) - 1][1]
 	}
@@ -658,7 +822,17 @@ parse_columns :: proc(t: ^Simple, line: []rune, offset: int) -> (cols: [dynamic]
 }
 
 @(private = "file")
-parse_row :: proc(t: ^Simple, lines: [][]rune, start: int, spanline: []rune, span_offset: int, has_span: bool) -> (err: Table_Error, ok: bool) {
+parse_row :: proc(
+	t: ^Simple,
+	lines: [][]rune,
+	start: int,
+	spanline: []rune,
+	span_offset: int,
+	has_span: bool,
+) -> (
+	err: Table_Error,
+	ok: bool,
+) {
 	if len(lines) == 0 && !has_span do return {}, true
 	columns: [dynamic][2]int
 	if has_span {
@@ -681,7 +855,15 @@ parse_row :: proc(t: ^Simple, lines: [][]rune, start: int, spanline: []rune, spa
 }
 
 @(private = "file")
-check_columns :: proc(t: ^Simple, lines: [][]rune, first_line: int, columns: ^[dynamic][2]int) -> (err: Table_Error, ok: bool) {
+check_columns :: proc(
+	t: ^Simple,
+	lines: [][]rune,
+	first_line: int,
+	columns: ^[dynamic][2]int,
+) -> (
+	err: Table_Error,
+	ok: bool,
+) {
 	MAXSIZE :: max(int)
 	append(columns, [2]int{MAXSIZE, -1})
 	lastcol := len(columns) - 2
@@ -695,13 +877,19 @@ check_columns :: proc(t: ^Simple, lines: [][]rune, first_line: int, columns: ^[d
 			if i == lastcol && len(rune_strip(tail)) > 0 {
 				text := rune_rstrip(line[min(start, len(line)):])
 				new_end := start + len(text)
-				main_start, main_end := t.columns[len(t.columns) - 1][0], t.columns[len(t.columns) - 1][1]
+				main_col := t.columns[len(t.columns) - 1]
+				main_start, main_end := main_col[0], main_col[1]
 				columns[i] = {start, max(main_end, new_end)}
 				if new_end > main_end do t.columns[len(t.columns) - 1] = {main_start, new_end}
 			} else {
 				margin := line[min(end, len(line)):min(max(nextstart, end), len(line))]
 				if len(rune_strip(margin)) > 0 {
-					return {concat("Text in column margin in table line ", int_str(first_line + offset + 1, t.allocator), ".", allocator = t.allocator), first_line + offset}, false
+					lineno := int_str(first_line + offset + 1, t.allocator)
+					message := concat(
+						"Text in column margin in table line ", lineno, ".",
+						allocator = t.allocator,
+					)
+					return {message, first_line + offset}, false
 				}
 			}
 		}
@@ -711,7 +899,15 @@ check_columns :: proc(t: ^Simple, lines: [][]rune, first_line: int, columns: ^[d
 }
 
 @(private = "file")
-init_row :: proc(t: ^Simple, colspec: [][2]int, offset: int) -> (cells: []Cell, err: Table_Error, ok: bool) {
+init_row :: proc(
+	t: ^Simple,
+	colspec: [][2]int,
+	offset: int,
+) -> (
+	cells: []Cell,
+	err: Table_Error,
+	ok: bool,
+) {
 	cells = make([]Cell, len(colspec), t.allocator)
 	i := 0
 	for c, k in colspec {
@@ -723,7 +919,12 @@ init_row :: proc(t: ^Simple, colspec: [][2]int, offset: int) -> (cells: []Cell, 
 			if i >= len(t.columns) do bad = true
 		}
 		if bad {
-			return nil, {concat("Column span alignment problem in table line ", int_str(offset + 2, t.allocator), ".", allocator = t.allocator), offset + 1}, false
+			lineno := int_str(offset + 2, t.allocator)
+			message := concat(
+				"Column span alignment problem in table line ", lineno, ".",
+				allocator = t.allocator,
+			)
+			return nil, {message, offset + 1}, false
 		}
 		cells[k] = Cell{0, morecols, offset, nil, true}
 		i += 1

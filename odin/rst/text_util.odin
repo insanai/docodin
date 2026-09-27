@@ -30,7 +30,11 @@ escape2null :: proc(text: string, allocator: runtime.Allocator) -> string {
 
 // ``docutils.nodes.unescape``: remove NUL escape markers (and escaped
 // whitespace), or restore them to backslashes.
-unescape :: proc(text: string, allocator: runtime.Allocator, restore_backslashes := false) -> string {
+unescape :: proc(
+	text: string,
+	allocator: runtime.Allocator,
+	restore_backslashes := false,
+) -> string {
 	if strings.index_byte(text, 0) < 0 do return text
 	if restore_backslashes {
 		buf := make([]byte, len(text), allocator)

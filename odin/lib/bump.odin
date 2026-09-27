@@ -43,7 +43,14 @@ new_block :: proc "contextless" (a: ^Bump_Arena, min_size: int) -> bool {
 	return true
 }
 
-bump_alloc :: proc "contextless" (a: ^Bump_Arena, size, alignment: int, zero: bool) -> ([]byte, mem.Allocator_Error) {
+bump_alloc :: proc "contextless" (
+	a: ^Bump_Arena,
+	size, alignment: int,
+	zero: bool,
+) -> (
+	[]byte,
+	mem.Allocator_Error,
+) {
 	if size == 0 do return nil, nil
 	align := max(alignment, 1)
 	for {
@@ -64,7 +71,15 @@ bump_alloc :: proc "contextless" (a: ^Bump_Arena, size, alignment: int, zero: bo
 	}
 }
 
-bump_resize :: proc "contextless" (a: ^Bump_Arena, old: rawptr, old_size, size, alignment: int, zero: bool) -> ([]byte, mem.Allocator_Error) {
+bump_resize :: proc "contextless" (
+	a: ^Bump_Arena,
+	old: rawptr,
+	old_size, size, alignment: int,
+	zero: bool,
+) -> (
+	[]byte,
+	mem.Allocator_Error,
+) {
 	if old == nil do return bump_alloc(a, size, alignment, zero)
 	if size <= old_size do return ([^]byte)(old)[:size], nil
 	// grow the most recent allocation in place
@@ -73,14 +88,18 @@ bump_resize :: proc "contextless" (a: ^Bump_Arena, old: rawptr, old_size, size, 
 		offset := int(uintptr(old) - base)
 		if offset + size <= b.size {
 			b.used = offset + size
-			if zero do runtime.mem_zero(rawptr(uintptr(old) + uintptr(old_size)), size - old_size)
+			if zero {
+				runtime.mem_zero(rawptr(uintptr(old) + uintptr(old_size)), size - old_size)
+			}
 			return ([^]byte)(old)[:size], nil
 		}
 	}
 	data, err := bump_alloc(a, size, alignment, false)
 	if err != nil do return nil, err
 	runtime.mem_copy_non_overlapping(raw_data(data), old, old_size)
-	if zero do runtime.mem_zero(rawptr(uintptr(raw_data(data)) + uintptr(old_size)), size - old_size)
+	if zero {
+		runtime.mem_zero(rawptr(uintptr(raw_data(data)) + uintptr(old_size)), size - old_size)
+	}
 	return data, nil
 }
 
@@ -132,7 +151,12 @@ bump_allocator_proc :: proc(
 	case .Free_All:           bump_reset(a); return nil, nil
 	case .Query_Features:
 		set := (^runtime.Allocator_Mode_Set)(old_memory)
-		if set != nil do set^ = {.Alloc, .Alloc_Non_Zeroed, .Resize, .Resize_Non_Zeroed, .Free, .Free_All, .Query_Features}
+		if set != nil {
+			set^ = {
+				.Alloc, .Alloc_Non_Zeroed, .Resize, .Resize_Non_Zeroed,
+				.Free, .Free_All, .Query_Features,
+			}
+		}
 		return nil, nil
 	case .Query_Info:
 		return nil, .Mode_Not_Implemented

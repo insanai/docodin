@@ -39,7 +39,9 @@ split_lines :: proc(input: string, tab_width: int, allocator: runtime.Allocator)
 		case 0xC2: // U+0085 NEXT LINE
 			if i + 1 < n && input[i + 1] == 0x85 do sep = 2
 		case 0xE2: // U+2028 LINE SEPARATOR, U+2029 PARAGRAPH SEPARATOR
-			if i + 2 < n && input[i + 1] == 0x80 && (input[i + 2] == 0xA8 || input[i + 2] == 0xA9) do sep = 3
+			if i + 2 < n && input[i + 1] == 0x80 {
+				if input[i + 2] == 0xA8 || input[i + 2] == 0xA9 do sep = 3
+			}
 		}
 		if sep == 0 {
 			i += 1

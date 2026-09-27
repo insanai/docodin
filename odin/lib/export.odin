@@ -79,13 +79,23 @@ docodin_parse :: proc "c" (
 		root_line = int(root_line),
 	}
 	text := string(input[:max(input_len, 0)])
-	doc, line_count, final_offset := rst.parse_text(&p, text, input_offset, .Match_Titles in flags, raw_line_count)
-	return finish(serialize_document(doc, line_count, final_offset, p.cur_line, input_len + input_len / 2), out_len)
+	match_titles := .Match_Titles in flags
+	doc, line_count, final_offset := rst.parse_text(
+		&p, text, input_offset, match_titles, raw_line_count,
+	)
+	capacity := input_len + input_len / 2
+	return finish(serialize_document(doc, line_count, final_offset, p.cur_line, capacity), out_len)
 }
 
 // Parse inline markup only (``Inliner.parse`` / ``RSTState.inline_text``).
 @(export)
-docodin_parse_inline :: proc "c" (input: [^]u8, input_len: int, lineno: int, flags: rst.Parse_Flags, out_len: ^int) -> [^]u8 {
+docodin_parse_inline :: proc "c" (
+	input: [^]u8,
+	input_len: int,
+	lineno: int,
+	flags: rst.Parse_Flags,
+	out_len: ^int,
+) -> [^]u8 {
 	context = call_context()
 	defer bump_reset(&tl_arena)
 	p := rst.Parser {
@@ -98,7 +108,12 @@ docodin_parse_inline :: proc "c" (input: [^]u8, input_len: int, lineno: int, fla
 
 // ``docutils.statemachine.string2lines``: (WIRE_VERSION, [lines]).
 @(export)
-docodin_split_lines :: proc "c" (input: [^]u8, input_len: int, tab_width: i32, out_len: ^int) -> [^]u8 {
+docodin_split_lines :: proc "c" (
+	input: [^]u8,
+	input_len: int,
+	tab_width: i32,
+	out_len: ^int,
+) -> [^]u8 {
 	context = call_context()
 	defer bump_reset(&tl_arena)
 	lines := rst.split_lines(string(input[:max(input_len, 0)]), int(tab_width), context.allocator)

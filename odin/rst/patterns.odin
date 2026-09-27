@@ -155,29 +155,7 @@ match_enumerator :: proc "contextless" (line: string) -> (m: Enum_Match, ok: boo
 		}
 		suffix := ENUM_SUFFIX[format][0]
 		// try the enum alternatives in regex order
-		candidates: [6]int
-		nc := 0
-		{ // [0-9]+
-			j := start
-			for j < len(line) && line[j] >= '0' && line[j] <= '9' do j += 1
-			if j > start do candidates[nc] = j; nc += int(j > start)
-		}
-		if start < len(line) {
-			b := line[start]
-			if b >= 'a' && b <= 'z' { candidates[nc] = start + 1; nc += 1 }
-			if b >= 'A' && b <= 'Z' { candidates[nc] = start + 1; nc += 1 }
-			{
-				j := start
-				for j < len(line) && is_lower_roman(line[j]) do j += 1
-				if j > start { candidates[nc] = j; nc += 1 }
-			}
-			{
-				j := start
-				for j < len(line) && is_upper_roman(line[j]) do j += 1
-				if j > start { candidates[nc] = j; nc += 1 }
-			}
-			if b == '#' { candidates[nc] = start + 1; nc += 1 }
-		}
+		candidates, nc := enum_candidates(line, start)
 		for k in 0 ..< nc {
 			j := candidates[k]
 			if j < len(line) && line[j] == suffix {
@@ -191,35 +169,72 @@ match_enumerator :: proc "contextless" (line: string) -> (m: Enum_Match, ok: boo
 	return {}, false
 }
 
+// Candidate ends of ``enum`` starting at ``start``, in regex alternative order.
+@(private = "file")
+enum_candidates :: proc "contextless" (line: string, start: int) -> (candidates: [6]int, nc: int) {
+	{ // [0-9]+
+		j := start
+		for j < len(line) && line[j] >= '0' && line[j] <= '9' do j += 1
+		if j > start do candidates[nc] = j; nc += int(j > start)
+	}
+	if start >= len(line) do return
+	b := line[start]
+	if b >= 'a' && b <= 'z' { candidates[nc] = start + 1; nc += 1 }
+	if b >= 'A' && b <= 'Z' { candidates[nc] = start + 1; nc += 1 }
+	{
+		j := start
+		for j < len(line) && is_lower_roman(line[j]) do j += 1
+		if j > start { candidates[nc] = j; nc += 1 }
+	}
+	{
+		j := start
+		for j < len(line) && is_upper_roman(line[j]) do j += 1
+		if j > start { candidates[nc] = j; nc += 1 }
+	}
+	if b == '#' { candidates[nc] = start + 1; nc += 1 }
+	return
+}
+
 // ``RomanNumeral.from_string``: 0 for an invalid numeral.
 roman_to_int :: proc "contextless" (s: string) -> int {
-	if len(s) == 0 do return 0
-	upper, lower := true, true
-	for i in 0 ..< len(s) {
-		b := s[i]
-		if b >= 0x80 do return 0
-		if b >= 'a' && b <= 'z' do upper = false
-		if b >= 'A' && b <= 'Z' do lower = false
-	}
-	// str.isupper()/islower() need at least one cased character
-	has_cased := false
-	for i in 0 ..< len(s) {
-		b := s[i]
-		if (b >= 'a' && b <= 'z') || (b >= 'A' && b <= 'Z') do has_cased = true
-	}
-	if !has_cased || (!upper && !lower) do return 0
 	buf: [64]byte
-	if len(s) > len(buf) do return 0
+	chars, ok := roman_upper(s, buf[:])
+	if !ok do return 0
+	return roman_value(chars)
+}
+
+// Upper-case copy of ``s`` in ``buf``; fails unless ``s`` is entirely upper or
+// lower case ASCII made of Roman numeral letters.
+@(private = "file")
+roman_upper :: proc "contextless" (s: string, buf: []byte) -> (chars: string, ok: bool) {
+	if len(s) == 0 do return
+	// str.isupper()/islower() need at least one cased character
+	upper, lower, has_cased := true, true, false
+	for i in 0 ..< len(s) {
+		b := s[i]
+		if b >= 0x80 do return
+		is_lower, is_upper := b >= 'a' && b <= 'z', b >= 'A' && b <= 'Z'
+		if is_lower do upper = false
+		if is_upper do lower = false
+		if is_lower || is_upper do has_cased = true
+	}
+	if !has_cased || (!upper && !lower) do return
+	if len(s) > len(buf) do return
 	for i in 0 ..< len(s) {
 		b := s[i]
 		if b >= 'a' && b <= 'z' do b -= 32
 		switch b {
 		case 'I', 'V', 'X', 'L', 'C', 'D', 'M':
-		case: return 0
+		case: return
 		}
 		buf[i] = b
 	}
-	chars := string(buf[:len(s)])
+	return string(buf[:len(s)]), true
+}
+
+// Value of an upper-case numeral made of valid letters; 0 when malformed.
+@(private = "file")
+roman_value :: proc "contextless" (chars: string) -> int {
 	at :: #force_inline proc "contextless" (s: string, i: int, b: byte) -> bool {
 		return i < len(s) && s[i] == b
 	}
@@ -267,7 +282,9 @@ roman_to_int :: proc "contextless" (s: string) -> int {
 int_to_roman :: proc(n: int, buf: []byte) -> string {
 	if n < 1 || n > 4999 do return ""
 	@(static, rodata) values := [13]int{1000, 900, 500, 400, 100, 90, 50, 40, 10, 9, 5, 4, 1}
-	@(static, rodata) names := [13]string{"M", "CM", "D", "CD", "C", "XC", "L", "XL", "X", "IX", "V", "IV", "I"}
+	@(static, rodata) names := [13]string {
+		"M", "CM", "D", "CD", "C", "XC", "L", "XL", "X", "IX", "V", "IV", "I",
+	}
 	v := n
 	k := 0
 	for value, i in values {
@@ -356,21 +373,29 @@ optarg_end :: proc "contextless" (s: string, i: int) -> int {
 @(private = "file")
 option_ends :: proc "contextless" (s: string, i: int) -> (ends: [4]int, n: int) {
 	if i >= len(s) do return
-	add :: #force_inline proc "contextless" (ends: ^[4]int, n: ^int, e: int) {
-		if e >= 0 && n^ < 4 {
-			ends[n^] = e
-			n^ += 1
-		}
-	}
 	// shortopt
 	if (s[i] == '-' || s[i] == '+') && i + 1 < len(s) && is_ascii_alnum(s[i + 1]) {
 		base := i + 2
-		if base < len(s) && s[base] == ' ' do add(&ends, &n, optarg_end(s, base + 1))
-		add(&ends, &n, optarg_end(s, base))
-		add(&ends, &n, base)
+		if base < len(s) && s[base] == ' ' do add_option_end(&ends, &n, optarg_end(s, base + 1))
+		add_option_end(&ends, &n, optarg_end(s, base))
+		add_option_end(&ends, &n, base)
 		return
 	}
 	// longopt
+	return longopt_ends(s, i)
+}
+
+@(private = "file")
+add_option_end :: #force_inline proc "contextless" (ends: ^[4]int, n: ^int, e: int) {
+	if e >= 0 && n^ < 4 {
+		ends[n^] = e
+		n^ += 1
+	}
+}
+
+// Ends of a ``--long`` or ``/dos`` option (with and without its argument).
+@(private = "file")
+longopt_ends :: proc "contextless" (s: string, i: int) -> (ends: [4]int, n: int) {
 	prefix := 0
 	if i + 1 < len(s) && s[i] == '-' && s[i + 1] == '-' {
 		prefix = 2
@@ -382,8 +407,10 @@ option_ends :: proc "contextless" (s: string, i: int) -> (ends: [4]int, n: int) 
 	if j >= len(s) || !is_ascii_alnum(s[j]) do return
 	j += 1
 	for j < len(s) && is_optname_char(s[j]) do j += 1
-	if j < len(s) && (s[j] == ' ' || s[j] == '=') do add(&ends, &n, optarg_end(s, j + 1))
-	add(&ends, &n, j)
+	if j < len(s) && (s[j] == ' ' || s[j] == '=') {
+		add_option_end(&ends, &n, optarg_end(s, j + 1))
+	}
+	add_option_end(&ends, &n, j)
 	return
 }
 

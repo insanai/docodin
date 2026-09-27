@@ -45,7 +45,13 @@ State_Machine :: struct {
 	frozen_line:  int,
 }
 
-make_state_machine :: proc(p: ^Parser, lines: []string, input_offset: int, parent: ^Node, match_titles := false) -> State_Machine {
+make_state_machine :: proc(
+	p: ^Parser,
+	lines: []string,
+	input_offset: int,
+	parent: ^Node,
+	match_titles := false,
+) -> State_Machine {
 	return State_Machine {
 		p = p,
 		lines = lines,
@@ -60,7 +66,13 @@ make_state_machine :: proc(p: ^Parser, lines: []string, input_offset: int, paren
 
 // ``StateMachine.next_line``: advance ``n`` lines; ``ok`` is false past the end
 // (``line_offset`` keeps the advanced value, like docutils).
-next_line :: #force_inline proc "contextless" (sm: ^State_Machine, n := 1) -> (line: string, ok: bool) {
+next_line :: #force_inline proc "contextless" (
+	sm: ^State_Machine,
+	n := 1,
+) -> (
+	line: string,
+	ok: bool,
+) {
 	sm.line_offset += n
 	observe(sm)
 	if sm.line_offset < 0 || sm.line_offset >= len(sm.lines) do return "", false
@@ -162,10 +174,39 @@ string_list_get_indented :: proc(
 	end := start
 	if first >= 0 do end += 1
 	last := len(lines)
+	end, indent, blank_finish = scan_indented(lines, start, end, until_blank, block_indent, indent)
+	if end <= start || start >= last {
+		return nil, max(indent, 0), blank_finish
+	}
+	block = make([]string, end - start, sm.p.allocator)
+	copy(block, lines[start:end])
+	if first >= 0 do block[0] = cp_slice(block[0], first)
+	if indent > 0 && strip_indent {
+		for i in (1 if first >= 0 else 0) ..< len(block) {
+			block[i] = cp_slice(block[i], indent)
+		}
+	}
+	return block, max(indent, 0), blank_finish
+}
+
+// The scanning loop of ``StringList.get_indented``: the end of the indented
+// block starting at ``end`` and the minimal indent found (unless given).
+@(private = "file")
+scan_indented :: proc(
+	lines: []string,
+	start, first_end: int,
+	until_blank: bool,
+	block_indent, indent_in: int,
+) -> (
+	end, indent: int,
+	blank_finish: bool,
+) {
+	end, indent = first_end, indent_in
 	blank_finish = true
-	for end < last {
+	for end < len(lines) {
 		line := lines[end]
-		if len(line) > 0 && (line[0] != ' ' || (block_indent >= 0 && leading_ws(line) < block_indent)) {
+		if len(line) > 0 &&
+		   (line[0] != ' ' || (block_indent >= 0 && leading_ws(line) < block_indent)) {
 			// Line not indented or insufficiently indented.
 			blank_finish = end > start && len(lines[end - 1]) == 0
 			break
@@ -181,24 +222,21 @@ string_list_get_indented :: proc(
 		}
 		end += 1
 	}
-	if end <= start || start >= last {
-		return nil, max(indent, 0), blank_finish
-	}
-	block = make([]string, end - start, sm.p.allocator)
-	copy(block, lines[start:end])
-	if first >= 0 do block[0] = cp_slice(block[0], first)
-	if indent > 0 && strip_indent {
-		for i in (1 if first >= 0 else 0) ..< len(block) {
-			block[i] = cp_slice(block[i], indent)
-		}
-	}
-	return block, max(indent, 0), blank_finish
+	return
 }
 
 // ``StateMachineWS.get_indented``
-get_indented :: proc(sm: ^State_Machine, until_blank := false, strip_indent := true) -> (r: Indented) {
+get_indented :: proc(
+	sm: ^State_Machine,
+	until_blank := false,
+	strip_indent := true,
+) -> (
+	r: Indented,
+) {
 	r.offset = abs_line_offset(sm)
-	r.lines, r.indent, r.blank_finish = string_list_get_indented(sm, sm.line_offset, until_blank, strip_indent)
+	r.lines, r.indent, r.blank_finish = string_list_get_indented(
+		sm, sm.line_offset, until_blank, strip_indent,
+	)
 	if len(r.lines) > 0 do next_line(sm, len(r.lines) - 1)
 	for len(r.lines) > 0 && len(r.lines[0]) == 0 {
 		r.lines = r.lines[1:]
@@ -208,9 +246,18 @@ get_indented :: proc(sm: ^State_Machine, until_blank := false, strip_indent := t
 }
 
 // ``StateMachineWS.get_known_indented``
-get_known_indented :: proc(sm: ^State_Machine, indent: int, until_blank := false, strip_indent := true) -> (r: Indented) {
+get_known_indented :: proc(
+	sm: ^State_Machine,
+	indent: int,
+	until_blank := false,
+	strip_indent := true,
+) -> (
+	r: Indented,
+) {
 	r.offset = abs_line_offset(sm)
-	r.lines, r.indent, r.blank_finish = string_list_get_indented(sm, sm.line_offset, until_blank, strip_indent, block_indent = indent)
+	r.lines, r.indent, r.blank_finish = string_list_get_indented(
+		sm, sm.line_offset, until_blank, strip_indent, block_indent = indent,
+	)
 	next_line(sm, len(r.lines) - 1)
 	for len(r.lines) > 0 && len(r.lines[0]) == 0 {
 		r.lines = r.lines[1:]
@@ -228,7 +275,9 @@ get_first_known_indented :: proc(
 	strip_top := true,
 ) -> (r: Indented) {
 	r.offset = abs_line_offset(sm)
-	r.lines, r.indent, r.blank_finish = string_list_get_indented(sm, sm.line_offset, until_blank, strip_indent, first_indent = indent)
+	r.lines, r.indent, r.blank_finish = string_list_get_indented(
+		sm, sm.line_offset, until_blank, strip_indent, first_indent = indent,
+	)
 	next_line(sm, len(r.lines) - 1)
 	if strip_top {
 		for len(r.lines) > 0 && len(strip(r.lines[0])) == 0 {
@@ -241,7 +290,13 @@ get_first_known_indented :: proc(
 
 // ``StateMachine.get_text_block``.  ``indent_error_line`` is the absolute
 // line number of an unexpectedly indented line (``flush_left``), else 0.
-get_text_block :: proc(sm: ^State_Machine, flush_left := false) -> (block: []string, indent_error_line: int) {
+get_text_block :: proc(
+	sm: ^State_Machine,
+	flush_left := false,
+) -> (
+	block: []string,
+	indent_error_line: int,
+) {
 	start := sm.line_offset
 	end := start
 	for end < len(sm.lines) {
@@ -275,7 +330,13 @@ make_message :: proc(p: ^Parser, level: int, message: string, line: int) -> ^Nod
 }
 
 // A system message carrying a literal block (docutils idiom).
-make_message_block :: proc(p: ^Parser, level: int, message: string, block: string, line: int) -> ^Node {
+make_message_block :: proc(
+	p: ^Parser,
+	level: int,
+	message: string,
+	block: string,
+	line: int,
+) -> ^Node {
 	n := make_message(p, level, message, line)
 	lit := new_node(.Literal_Block, 0, p.allocator)
 	lit.text = block
@@ -328,16 +389,28 @@ concat :: proc(parts: ..string, allocator := context.allocator) -> string {
 
 // docutils ``unindent_warning``: "<X> ends without a blank line; unexpected unindent."
 unindent_warning :: proc(sm: ^State_Machine, node_name: string) -> ^Node {
-	msg := concat(node_name, " ends without a blank line; unexpected unindent.", allocator = sm.p.allocator)
+	msg := concat(
+		node_name, " ends without a blank line; unexpected unindent.",
+		allocator = sm.p.allocator,
+	)
 	return make_message(sm.p, WARNING, msg, abs_line_number(sm) + 1)
 }
 
 // Nested parse of ``lines`` into ``node`` (``RSTState.nested_parse`` with the
 // default ``match_titles=False``).
-nested_parse :: proc(sm: ^State_Machine, lines: []string, input_offset: int, node: ^Node, line_delta := 0) {
+nested_parse :: proc(
+	sm: ^State_Machine,
+	lines: []string,
+	input_offset: int,
+	node: ^Node,
+	line_delta := 0,
+) {
 	p := sm.p
 	if p.depth >= MAX_NESTING {
-		msg := make_message_block(p, ERROR, "Nesting too deep; content ignored.", join_lines(lines, p.allocator), input_offset + 1)
+		block := join_lines(lines, p.allocator)
+		msg := make_message_block(
+			p, ERROR, "Nesting too deep; content ignored.", block, input_offset + 1,
+		)
 		append_child(node, msg)
 		return
 	}

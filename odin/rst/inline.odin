@@ -166,11 +166,33 @@ search_initial :: proc(il: ^Inliner, rem: int) -> (m: Initial_Match, found: bool
 
 @(private = "file")
 match_at :: proc(il: ^Inliner, i: int) -> (m: Initial_Match, found: bool) {
+	c := il.s[i]
+	if m, found = match_start_string(il, i); found do return
+	// 'whole' alternatives
+	if c == '[' {
+		if fm, ok := match_footnote_ref(il, i); ok do return fm, true
+	} else if c != '*' && c != '`' && c != '_' && c != '|' && c != ':' && i >= il.name_fail {
+		if m, found = match_reference(il, i); found do return
+	}
+	// 'backquote' alternative with optional :role: prefix
+	if c == ':' && i >= il.role_fail {
+		if m, found = match_role_backquote(il, i); found do return
+	}
+	if c == '`' && byte_at(il.s, i + 1) != '`' && non_ws_at(il.s, i + 1) {
+		m.start = i
+		m.kind, m.end = .Backquote, i + 1
+		m.bq_start, m.bq_end = i, i + 1
+		return m, true
+	}
+	return
+}
+
+// The 'start' alternatives of the initial pattern (start-strings).
+@(private = "file")
+match_start_string :: proc(il: ^Inliner, i: int) -> (m: Initial_Match, found: bool) {
 	s := il.s
-	c := s[i]
 	m.start = i
-	// 'start' alternatives
-	switch c {
+	switch s[i] {
 	case '*':
 		if byte_at(s, i + 1) == '*' {
 			if non_ws_at(s, i + 2) {
@@ -197,44 +219,50 @@ match_at :: proc(il: ^Inliner, i: int) -> (m: Initial_Match, found: bool) {
 			return m, true
 		}
 	}
-	// 'whole' alternatives
-	if c == '[' {
-		if fm, ok := match_footnote_ref(il, i); ok do return fm, true
-	} else if c != '*' && c != '`' && c != '_' && c != '|' && c != ':' && i >= il.name_fail {
-		ends := simplename_ends(s, i)
-		for k in 0 ..< ends.count {
-			e := ends.ends[k]
-			if byte_at(s, e) != '_' do continue
-			if byte_at(s, e + 1) == '_' && suffix_ok(il, e + 2) {
-				m.kind, m.end, m.refname, m.anonymous = .Reference, e + 2, s[i:e], true
-				return m, true
-			}
-			if suffix_ok(il, e + 1) {
-				m.kind, m.end, m.refname = .Reference, e + 1, s[i:e]
-				return m, true
-			}
+	return
+}
+
+// Named references: (simplename)(__?) + end-string suffix.
+@(private = "file")
+match_reference :: proc(il: ^Inliner, i: int) -> (m: Initial_Match, found: bool) {
+	s := il.s
+	m.start = i
+	ends := simplename_ends(s, i)
+	for k in 0 ..< ends.count {
+		e := ends.ends[k]
+		if byte_at(s, e) != '_' do continue
+		if byte_at(s, e + 1) == '_' && suffix_ok(il, e + 2) {
+			m.kind, m.end, m.refname, m.anonymous = .Reference, e + 2, s[i:e], true
+			return m, true
 		}
-		if ends.count > 0 do il.name_fail = ends.ends[0]
-	}
-	// 'backquote' alternative with optional :role: prefix
-	if c == ':' && i >= il.role_fail {
-		ends := simplename_ends(s, i + 1)
-		for k in 0 ..< ends.count {
-			e := ends.ends[k]
-			if byte_at(s, e) == ':' && byte_at(s, e + 1) == '`' && byte_at(s, e + 2) != '`' && non_ws_at(s, e + 2) {
-				m.kind, m.end = .Backquote, e + 2
-				m.role, m.has_role = s[i + 1:e], true
-				m.bq_start, m.bq_end = e + 1, e + 2
-				return m, true
-			}
+		if suffix_ok(il, e + 1) {
+			m.kind, m.end, m.refname = .Reference, e + 1, s[i:e]
+			return m, true
 		}
-		if ends.count > 0 do il.role_fail = ends.ends[0]
 	}
-	if c == '`' && byte_at(s, i + 1) != '`' && non_ws_at(s, i + 1) {
-		m.kind, m.end = .Backquote, i + 1
-		m.bq_start, m.bq_end = i, i + 1
-		return m, true
+	if ends.count > 0 do il.name_fail = ends.ends[0]
+	return
+}
+
+// Interpreted text with a role prefix: :(simplename):`(?!`)(?!\s)
+@(private = "file")
+match_role_backquote :: proc(il: ^Inliner, i: int) -> (m: Initial_Match, found: bool) {
+	s := il.s
+	m.start = i
+	ends := simplename_ends(s, i + 1)
+	for k in 0 ..< ends.count {
+		e := ends.ends[k]
+		if byte_at(s, e) == ':' &&
+		   byte_at(s, e + 1) == '`' &&
+		   byte_at(s, e + 2) != '`' &&
+		   non_ws_at(s, e + 2) {
+			m.kind, m.end = .Backquote, e + 2
+			m.role, m.has_role = s[i + 1:e], true
+			m.bq_start, m.bq_end = e + 1, e + 2
+			return m, true
+		}
 	}
+	if ends.count > 0 do il.role_fail = ends.ends[0]
 	return
 }
 
@@ -242,32 +270,37 @@ match_at :: proc(il: ^Inliner, i: int) -> (m: Initial_Match, found: bool) {
 @(private = "file")
 match_footnote_ref :: proc(il: ^Inliner, i: int) -> (m: Initial_Match, ok: bool) {
 	s := il.s
-	close :: proc(il: ^Inliner, i, e: int, kind: Start_Kind) -> (Initial_Match, bool) {
-		if byte_at(il.s, e) == ']' && byte_at(il.s, e + 1) == '_' && suffix_ok(il, e + 2) {
-			return Initial_Match{kind = kind, start = i, end = e + 2, label = il.s[i + 1:e]}, true
-		}
-		return {}, false
-	}
+	close := footnote_ref_close
+	FN :: Start_Kind.Footnote_Reference
 	j := i + 1
 	for j < len(s) && s[j] >= '0' && s[j] <= '9' do j += 1
 	if j > i + 1 {
-		if fm, found := close(il, i, j, .Footnote_Reference); found do return fm, true
+		if fm, found := close(il, i, j, FN); found do return fm, true
 	}
 	if byte_at(s, i + 1) == '#' {
 		ends := simplename_ends(s, i + 2)
 		for k in 0 ..< ends.count {
-			if fm, found := close(il, i, ends.ends[k], .Footnote_Reference); found do return fm, true
+			if fm, found := close(il, i, ends.ends[k], FN); found do return fm, true
 		}
-		if fm, found := close(il, i, i + 2, .Footnote_Reference); found do return fm, true
+		if fm, found := close(il, i, i + 2, FN); found do return fm, true
 	}
 	if byte_at(s, i + 1) == '*' {
-		if fm, found := close(il, i, i + 2, .Footnote_Reference); found do return fm, true
+		if fm, found := close(il, i, i + 2, FN); found do return fm, true
 	}
 	ends := simplename_ends(s, i + 1)
 	for k in 0 ..< ends.count {
 		if fm, found := close(il, i, ends.ends[k], .Citation_Reference); found do return fm, true
 	}
 	return
+}
+
+// ``\]_`` + end-string suffix at ``e``: the reference labelled ``s[i + 1:e]``.
+@(private = "file")
+footnote_ref_close :: proc(il: ^Inliner, i, e: int, kind: Start_Kind) -> (Initial_Match, bool) {
+	if byte_at(il.s, e) == ']' && byte_at(il.s, e + 1) == '_' && suffix_ok(il, e + 2) {
+		return Initial_Match{kind = kind, start = i, end = e + 2, label = il.s[i + 1:e]}, true
+	}
+	return {}, false
 }
 
 // ``Inliner.quoted_start``
@@ -283,13 +316,25 @@ quoted_start :: proc "contextless" (il: ^Inliner, start, end, rem: int) -> bool 
 // --- dispatch ----------------------------------------------------------------
 
 @(private = "file")
-dispatch :: proc(il: ^Inliner, m: Initial_Match, rem: int) -> (before_end: int, inlines: Node_List, new_rem: int, trim: bool) {
+dispatch :: proc(
+	il: ^Inliner,
+	m: Initial_Match,
+	rem: int,
+) -> (
+	before_end: int,
+	inlines: Node_List,
+	new_rem: int,
+	trim: bool,
+) {
 	switch m.kind {
 	case .Strong:       return inline_obj(il, m, rem, .Strong, .Strong, "strong")
 	case .Emphasis:     return inline_obj(il, m, rem, .Emphasis, .Emphasis, "emphasis")
 	case .Literal:      return inline_obj(il, m, rem, .Literal, .Literal, "literal")
 	case .Target:       return inline_obj(il, m, rem, .Target, .Inline_Target, "target")
-	case .Substitution: return inline_obj(il, m, rem, .Substitution, .Substitution_Reference, "substitution_reference")
+	case .Substitution:
+		return inline_obj(
+			il, m, rem, .Substitution, .Substitution_Reference, "substitution_reference",
+		)
 	case .Backquote:    return interpreted_or_phrase_ref(il, m, rem)
 	case .Reference:
 		n := make_inline(il, .Reference)
@@ -300,11 +345,13 @@ dispatch :: proc(il: ^Inliner, m: Initial_Match, rem: int) -> (before_end: int, 
 		list_append(&inlines, n)
 		return m.start, inlines, m.end, false
 	case .Footnote_Reference, .Citation_Reference:
-		n := make_inline(il, .Footnote_Reference if m.kind == .Footnote_Reference else .Citation_Reference)
+		is_footnote := m.kind == .Footnote_Reference
+		n := make_inline(il, .Footnote_Reference if is_footnote else .Citation_Reference)
 		n.text = m.label
 		list_append(&inlines, n)
 		// docutils trims the preceding space for footnote references only
-		return m.start, inlines, m.end, m.kind == .Footnote_Reference && il.p.settings.trim_footnote_reference_space
+		trim = is_footnote && il.p.settings.trim_footnote_reference_space
+		return m.start, inlines, m.end, trim
 	case .None:
 	}
 	return m.end, {}, m.end, false
@@ -327,13 +374,27 @@ problematic :: proc(il: ^Inliner, text: string, message: string) -> ^Node {
 
 // ``Inliner.inline_obj``
 @(private = "file")
-inline_obj :: proc(il: ^Inliner, m: Initial_Match, rem: int, kind: End_Kind, node_kind: Node_Kind, class_name: string) -> (before_end: int, inlines: Node_List, new_rem: int, trim: bool) {
+inline_obj :: proc(
+	il: ^Inliner,
+	m: Initial_Match,
+	rem: int,
+	kind: End_Kind,
+	node_kind: Node_Kind,
+	class_name: string,
+) -> (
+	before_end: int,
+	inlines: Node_List,
+	new_rem: int,
+	trim: bool,
+) {
 	matchstart, matchend := m.start, m.end
 	if quoted_start(il, matchstart, matchend, rem) do return matchend, {}, matchend, false
 	es, ee, found := search_end(il, kind, matchend)
 	if found && es > matchend {
 		text := il.s[matchend:es]
-		if kind == .Literal do text = unescape(text, il.allocator, restore_backslashes = true)
+		if kind == .Literal {
+			text = unescape(text, il.allocator, restore_backslashes = true)
+		}
 		n := make_inline(il, node_kind)
 		n.raw = unescape(il.s[matchstart:ee], il.allocator, restore_backslashes = true)
 		n.text = text
@@ -341,7 +402,8 @@ inline_obj :: proc(il: ^Inliner, m: Initial_Match, rem: int, kind: End_Kind, nod
 		list_append(&inlines, n)
 		return matchstart, inlines, ee, false
 	}
-	msg := strings.concatenate({"Inline ", class_name, " start-string without end-string."}, il.allocator)
+	parts := []string{"Inline ", class_name, " start-string without end-string."}
+	msg := strings.concatenate(parts, il.allocator)
 	text := unescape(il.s[matchstart:matchend], il.allocator, restore_backslashes = true)
 	list_append(&inlines, problematic(il, text, msg))
 	return matchstart, inlines, matchend, false
@@ -354,83 +416,110 @@ search_end :: proc(il: ^Inliner, kind: End_Kind, from: int) -> (start, end: int,
 	if from >= il.no_end[kind] do return
 	s := il.s
 	for p := from; p < len(s); p += 1 {
-		c := s[p]
-		switch kind {
-		case .Emphasis, .Strong:
-			if c != '*' do continue
-		case .Literal:
-			if c != '`' || byte_at(s, p + 1) != '`' do continue
-		case .Target:
-			if c != '`' do continue
-		case .Substitution:
-			if c != '|' do continue
-		case .Interpreted:
-			continue
-		}
+		if !end_string_start(kind, s, p) do continue
 		if p > from {
 			prev := rune_before(s, p)
 			if is_space(prev) do continue
 			if kind != .Literal && s[p - 1] == 0 do continue
 		}
-		switch kind {
-		case .Emphasis:
-			if suffix_ok(il, p + 1) do return p, p + 1, true
-		case .Strong:
-			if byte_at(s, p + 1) == '*' && suffix_ok(il, p + 2) do return p, p + 2, true
-		case .Literal:
-			if suffix_ok(il, p + 2) do return p, p + 2, true
-		case .Target:
-			if suffix_ok(il, p + 1) do return p, p + 1, true
-		case .Substitution:
-			// \|_{0,2} (greedy)
-			u := 0
-			for u < 2 && byte_at(s, p + 1 + u) == '_' do u += 1
-			for k := u; k >= 0; k -= 1 {
-				if suffix_ok(il, p + 1 + k) do return p, p + 1 + k, true
-			}
-		case .Interpreted:
-		}
+		if e := end_string_end(il, kind, p); e >= 0 do return p, e, true
 	}
 	il.no_end[kind] = from
 	return
 }
 
-// End pattern of interpreted text / phrase references:
-//   (?<!(?<!\x00)[\s\x00]) (` (?P<suffix>(?P<role>:simplename:)?(?P<refend>__?)?)) end_string_suffix
+// Whether an end-string of ``kind`` can start at ``p``.
 @(private = "file")
-search_interpreted_end :: proc(il: ^Inliner, from: int) -> (start, end: int, role: string, found: bool) {
+end_string_start :: #force_inline proc "contextless" (kind: End_Kind, s: string, p: int) -> bool {
+	c := s[p]
+	switch kind {
+	case .Emphasis, .Strong: return c == '*'
+	case .Literal:           return c == '`' && byte_at(s, p + 1) == '`'
+	case .Target:            return c == '`'
+	case .Substitution:      return c == '|'
+	case .Interpreted:
+	}
+	return false
+}
+
+// End of the end-string of ``kind`` starting at ``p`` (with its suffix), or -1.
+@(private = "file")
+end_string_end :: proc(il: ^Inliner, kind: End_Kind, p: int) -> int {
+	s := il.s
+	switch kind {
+	case .Emphasis:
+		if suffix_ok(il, p + 1) do return p + 1
+	case .Strong:
+		if byte_at(s, p + 1) == '*' && suffix_ok(il, p + 2) do return p + 2
+	case .Literal:
+		if suffix_ok(il, p + 2) do return p + 2
+	case .Target:
+		if suffix_ok(il, p + 1) do return p + 1
+	case .Substitution:
+		// \|_{0,2} (greedy)
+		u := 0
+		for u < 2 && byte_at(s, p + 1 + u) == '_' do u += 1
+		for k := u; k >= 0; k -= 1 {
+			if suffix_ok(il, p + 1 + k) do return p + 1 + k
+		}
+	case .Interpreted:
+	}
+	return -1
+}
+
+// End pattern of interpreted text / phrase references:
+//   (?<!(?<!\x00)[\s\x00])
+//   (` (?P<suffix>(?P<role>:simplename:)?(?P<refend>__?)?)) end_string_suffix
+@(private = "file")
+search_interpreted_end :: proc(
+	il: ^Inliner,
+	from: int,
+) -> (
+	start, end: int,
+	role: string,
+	found: bool,
+) {
 	if from >= il.no_end[.Interpreted] do return
 	s := il.s
 	for p := from; p < len(s); p += 1 {
 		if s[p] != '`' do continue
-		if p > from {
-			prev := rune_before(s, p)
-			if prev == 0 || is_space(prev) {
-				// escaped whitespace/NUL (preceded by NUL) is allowed
-				pw := p - 1
-				if prev >= 0x80 do pw = p - rune_width(prev)
-				if !(pw > from && s[pw - 1] == 0) do continue
-			}
-		}
+		if p > from && !interpreted_end_prefix_ok(s, p, from) do continue
 		// role candidates first (greedy optional group)
 		if byte_at(s, p + 1) == ':' {
 			ends := simplename_ends(s, p + 2)
 			for k in 0 ..< ends.count {
 				e := ends.ends[k]
 				if byte_at(s, e) != ':' do continue
-				after := e + 1
-				if byte_at(s, after) == '_' && byte_at(s, after + 1) == '_' && suffix_ok(il, after + 2) do return p, after + 2, s[p + 2:e], true
-				if byte_at(s, after) == '_' && suffix_ok(il, after + 1) do return p, after + 1, s[p + 2:e], true
-				if suffix_ok(il, after) do return p, after, s[p + 2:e], true
+				if after := refend_end(il, e + 1); after >= 0 do return p, after, s[p + 2:e], true
 			}
 		}
-		after := p + 1
-		if byte_at(s, after) == '_' && byte_at(s, after + 1) == '_' && suffix_ok(il, after + 2) do return p, after + 2, "", true
-		if byte_at(s, after) == '_' && suffix_ok(il, after + 1) do return p, after + 1, "", true
-		if suffix_ok(il, after) do return p, after, "", true
+		if after := refend_end(il, p + 1); after >= 0 do return p, after, "", true
 	}
 	il.no_end[.Interpreted] = from
 	return
+}
+
+// The lookbehind of the interpreted end-string at ``p > from``: no
+// whitespace/NUL before, unless escaped (itself preceded by NUL).
+@(private = "file")
+interpreted_end_prefix_ok :: proc "contextless" (s: string, p, from: int) -> bool {
+	prev := rune_before(s, p)
+	if prev != 0 && !is_space(prev) do return true
+	pw := p - 1
+	if prev >= 0x80 do pw = p - rune_width(prev)
+	return pw > from && s[pw - 1] == 0
+}
+
+// (?P<refend>__?)? + end-string suffix at ``after``: match.end() or -1.
+@(private = "file")
+refend_end :: proc(il: ^Inliner, after: int) -> int {
+	s := il.s
+	if byte_at(s, after) == '_' && byte_at(s, after + 1) == '_' && suffix_ok(il, after + 2) {
+		return after + 2
+	}
+	if byte_at(s, after) == '_' && suffix_ok(il, after + 1) do return after + 1
+	if suffix_ok(il, after) do return after
+	return -1
 }
 
 @(private = "file")
@@ -445,7 +534,16 @@ rune_width :: #force_inline proc "contextless" (r: rune) -> int {
 
 // ``Inliner.interpreted_or_phrase_ref``
 @(private = "file")
-interpreted_or_phrase_ref :: proc(il: ^Inliner, m: Initial_Match, rem: int) -> (before_end: int, inlines: Node_List, new_rem: int, trim: bool) {
+interpreted_or_phrase_ref :: proc(
+	il: ^Inliner,
+	m: Initial_Match,
+	rem: int,
+) -> (
+	before_end: int,
+	inlines: Node_List,
+	new_rem: int,
+	trim: bool,
+) {
 	a := il.allocator
 	s := il.s
 	matchstart, matchend := m.bq_start, m.bq_end
@@ -464,7 +562,8 @@ interpreted_or_phrase_ref :: proc(il: ^Inliner, m: Initial_Match, rem: int) -> (
 			if m.has_role {
 				text := unescape(s[rolestart:textend], a, restore_backslashes = true)
 				list_append(&inlines, problematic(il, text,
-					"Multiple roles in interpreted text (both prefix and suffix present; only one allowed)."))
+					"Multiple roles in interpreted text " +
+					"(both prefix and suffix present; only one allowed)."))
 				return rolestart, inlines, textend, false
 			}
 			role = erole
@@ -475,7 +574,10 @@ interpreted_or_phrase_ref :: proc(il: ^Inliner, m: Initial_Match, rem: int) -> (
 		if len(rawsource) > 0 && rawsource[len(rawsource) - 1] == '_' {
 			if role != "" {
 				text := unescape(s[rolestart:textend], a, restore_backslashes = true)
-				msg := strings.concatenate({"Mismatch: both interpreted text role ", position, " and reference suffix."}, a)
+				parts := []string{
+					"Mismatch: both interpreted text role ", position, " and reference suffix.",
+				}
+				msg := strings.concatenate(parts, a)
 				list_append(&inlines, problematic(il, text, msg))
 				return rolestart, inlines, textend, false
 			}
@@ -524,7 +626,9 @@ phrase_ref :: proc(il: ^Inliner, rawsource: string, escaped: string) -> ^Node {
 		for &part in parts do part = remove_whitespace(part, a)
 		alias := unescape(strings.join(parts, " ", a), a)
 		alias = adjust_uri(il, alias)
-		if strings.has_suffix(alias, "\\_") do alias = concat(alias[:len(alias) - 2], "_", allocator = a)
+		if strings.has_suffix(alias, "\\_") {
+			alias = concat(alias[:len(alias) - 2], "_", allocator = a)
+		}
 		info.alias = alias
 	}
 	if n.text == "" do info.rawtext = rawaliastext
@@ -547,27 +651,7 @@ adjust_uri :: proc(il: ^Inliner, uri: string) -> string {
 search_embedded_link :: proc "contextless" (s: string) -> (start, lt: int, ok: bool) {
 	n := len(s)
 	if n < 3 || s[n - 1] != '>' do return
-	valid :: proc "contextless" (s: string, lt: int) -> bool {
-		n := len(s)
-		a, b := lt + 1, n - 1 // content s[a:b]
-		if b <= a do return false
-		first, _ := rune_at(s, a)
-		if is_space(first) do return false
-		last := rune_before(s, b)
-		if last == 0 || is_space(last) do return false
-		i := a
-		for i < b {
-			c := s[i]
-			if c == 0 && i + 1 < b && (s[i + 1] == '<' || s[i + 1] == '>') {
-				i += 2
-			} else if c == '<' || c == '>' {
-				return false
-			} else {
-				i += 1
-			}
-		}
-		return true
-	}
+	valid := embedded_link_valid
 	for k := 0; k < n; k += 1 {
 		if s[k] == ' ' || s[k] == '\n' {
 			j := k
@@ -581,61 +665,45 @@ search_embedded_link :: proc "contextless" (s: string) -> (start, lt: int, ok: b
 	return
 }
 
+// <(?!\s)(([^<>]|\x00[<>])+)(?<![\s\x00])>$ with '<' at ``lt``.
+@(private = "file")
+embedded_link_valid :: proc "contextless" (s: string, lt: int) -> bool {
+	n := len(s)
+	a, b := lt + 1, n - 1 // content s[a:b]
+	if b <= a do return false
+	first, _ := rune_at(s, a)
+	if is_space(first) do return false
+	last := rune_before(s, b)
+	if last == 0 || is_space(last) do return false
+	i := a
+	for i < b {
+		c := s[i]
+		if c == 0 && i + 1 < b && (s[i + 1] == '<' || s[i + 1] == '>') {
+			i += 2
+		} else if c == '<' || c == '>' {
+			return false
+		} else {
+			i += 1
+		}
+	}
+	return true
+}
+
 // --- implicit inline markup: standalone URIs, e-mail, PEP & RFC references ---------
 
 // ``Inliner.implicit_inline``
 @(private = "file")
 implicit_inline :: proc(il: ^Inliner, text: string) -> (out: Node_List) {
 	rest := text
-	outer: for len(rest) > 0 {
+	for len(rest) > 0 {
 		if il.depth < 32 {
-			// standalone URI / e-mail
-			if ms, me, scheme, is_email, found := search_uri(il, rest); found {
-				if is_email || scheme_known(scheme) {
-					il.depth += 1
-					list_extend(&out, implicit_inline(il, rest[:ms]))
-					il.depth -= 1
-					whole := rest[ms:me]
-					n := make_inline(il, .Reference)
-					n.num[0] = i32(Ref_Kind.Uri)
-					n.raw = unescape(whole, il.allocator, restore_backslashes = true)
-					n.text = whole
-					n.name = unescape(whole, il.allocator)
-					if is_email do n.name = concat("mailto:", n.name, allocator = il.allocator)
-					list_append(&out, n)
-					rest = rest[me:]
-					continue outer
-				}
-			}
-			if il.p.settings.pep_references {
-				if ms, me, num, found := search_pep(il, rest); found {
-					il.depth += 1
-					list_extend(&out, implicit_inline(il, rest[:ms]))
-					il.depth -= 1
-					n := make_inline(il, .Reference)
-					n.num[0] = i32(Ref_Kind.Pep)
-					n.raw = unescape(rest[ms:me], il.allocator, restore_backslashes = true)
-					n.text = rest[ms:me]
-					n.name = num
-					list_append(&out, n)
-					rest = rest[me:]
-					continue outer
-				}
-			}
-			if il.p.settings.rfc_references {
-				if ms, me, num, found := search_rfc(il, rest); found {
-					il.depth += 1
-					list_extend(&out, implicit_inline(il, rest[:ms]))
-					il.depth -= 1
-					n := make_inline(il, .Reference)
-					n.num[0] = i32(Ref_Kind.Rfc)
-					n.raw = unescape(rest[ms:me], il.allocator, restore_backslashes = true)
-					n.text = rest[ms:me]
-					n.name = num
-					list_append(&out, n)
-					rest = rest[me:]
-					continue outer
-				}
+			if m, found := search_implicit(il, rest); found {
+				il.depth += 1
+				list_extend(&out, implicit_inline(il, rest[:m.start]))
+				il.depth -= 1
+				list_append(&out, implicit_reference(il, rest[m.start:m.end], m))
+				rest = rest[m.end:]
+				continue
 			}
 		}
 		t := make_inline(il, .Text)
@@ -644,6 +712,52 @@ implicit_inline :: proc(il: ^Inliner, text: string) -> (out: Node_List) {
 		break
 	}
 	return
+}
+
+@(private = "file")
+Implicit_Match :: struct {
+	start, end: int,
+	kind:       Ref_Kind, // Uri, Pep or Rfc
+	num:        string,   // PEP / RFC number
+	is_email:   bool,
+}
+
+// First implicit reference in ``s``, trying the patterns in docutils order:
+// standalone URI / e-mail, then PEP and RFC references (when enabled).
+@(private = "file")
+search_implicit :: proc(il: ^Inliner, s: string) -> (m: Implicit_Match, found: bool) {
+	if ms, me, scheme, is_email, ok := search_uri(il, s); ok {
+		if is_email || scheme_known(scheme) {
+			return {start = ms, end = me, kind = .Uri, is_email = is_email}, true
+		}
+	}
+	if il.p.settings.pep_references {
+		if ms, me, num, ok := search_pep(il, s); ok {
+			return {start = ms, end = me, kind = .Pep, num = num}, true
+		}
+	}
+	if il.p.settings.rfc_references {
+		if ms, me, num, ok := search_rfc(il, s); ok {
+			return {start = ms, end = me, kind = .Rfc, num = num}, true
+		}
+	}
+	return
+}
+
+// The Reference node for implicit reference ``m`` (text ``whole``).
+@(private = "file")
+implicit_reference :: proc(il: ^Inliner, whole: string, m: Implicit_Match) -> ^Node {
+	n := make_inline(il, .Reference)
+	n.num[0] = i32(m.kind)
+	n.raw = unescape(whole, il.allocator, restore_backslashes = true)
+	n.text = whole
+	if m.kind != .Uri {
+		n.name = m.num
+		return n
+	}
+	n.name = unescape(whole, il.allocator)
+	if m.is_email do n.name = concat("mailto:", n.name, allocator = il.allocator)
+	return n
 }
 
 scheme_known :: proc(scheme: string) -> bool {
@@ -672,7 +786,8 @@ is_uric :: #force_inline proc "contextless" (c: byte) -> bool {
 	switch c {
 	case 'a' ..= 'z', 'A' ..= 'Z', '0' ..= '9', 0:
 		return true
-	case '-', '_', '.', '!', '~', '*', '\'', '(', ')', '[', ']', ';', '/', ':', '@', '&', '=', '+', '$', ',', '%':
+	case '-', '_', '.', '!', '~', '*', '\'', '(', ')', '[', ']', ';', '/', ':', '@', '&', '=',
+	     '+', '$', ',', '%':
 		return true
 	}
 	return false
@@ -694,7 +809,8 @@ is_emailc :: #force_inline proc "contextless" (c: byte) -> bool {
 	switch c {
 	case 'a' ..= 'z', 'A' ..= 'Z', '0' ..= '9', 0:
 		return true
-	case '-', '_', '!', '~', '*', '\'', '{', '|', '}', '/', '#', '?', '^', '`', '&', '=', '+', '$', '%':
+	case '-', '_', '!', '~', '*', '\'', '{', '|', '}', '/', '#', '?', '^', '`', '&', '=', '+',
+	     '$', '%':
 		return true
 	}
 	return false
@@ -710,7 +826,15 @@ uri_end_at :: #force_inline proc "contextless" (s: string, q: int) -> bool {
 
 // Leftmost ``Inliner.patterns.uri`` match in ``s``.
 @(private = "file")
-search_uri :: proc(il: ^Inliner, s: string) -> (start, end: int, scheme: string, is_email: bool, found: bool) {
+search_uri :: proc(
+	il: ^Inliner,
+	s: string,
+) -> (
+	start, end: int,
+	scheme: string,
+	is_email: bool,
+	found: bool,
+) {
 	email_fail := -1 // e-mail local parts failing before this offset
 	for i := 0; i < len(s); i += 1 {
 		c := s[i]
@@ -723,14 +847,26 @@ search_uri :: proc(il: ^Inliner, s: string) -> (start, end: int, scheme: string,
 				if !(is_space(r) || is_start_prefix_char(r)) do continue
 			}
 		}
-		if e, sc, email, ok := uri_whole_at(il, s, i, &email_fail); ok do return i, e, sc, email, true
+		if e, sc, email, ok := uri_whole_at(il, s, i, &email_fail); ok {
+			return i, e, sc, email, true
+		}
 	}
 	return
 }
 
 // ``patterns.uri.match(s[i:])`` (absolute URI or e-mail + end-string suffix).
 @(private = "file")
-uri_whole_at :: proc(il: ^Inliner, s: string, i: int, email_fail: ^int) -> (end: int, scheme: string, is_email: bool, ok: bool) {
+uri_whole_at :: proc(
+	il: ^Inliner,
+	s: string,
+	i: int,
+	email_fail: ^int,
+) -> (
+	end: int,
+	scheme: string,
+	is_email: bool,
+	ok: bool,
+) {
 	if e, sc, found := absolute_uri_at(il, s, i); found do return e, sc, false, true
 	if e, found := email_at(s, i, il.charlevel, email_fail); found {
 		if il.charlevel || e >= len(s) || suffix_char_ok(s, e) do return e, "", true, true
@@ -745,20 +881,14 @@ suffix_char_ok :: #force_inline proc "contextless" (s: string, pos: int) -> bool
 	return is_space(r) || is_end_suffix_char(r)
 }
 
-// (?P<absolute>(?P<scheme>[a-zA-Z][a-zA-Z0-9.+-]*):(((//?)?uric*uri_end)(\?uric*uri_end)?(\#uric*uri_end)?)) + suffix
+// (?P<absolute>(?P<scheme>[a-zA-Z][a-zA-Z0-9.+-]*):
+//   (((//?)?uric*uri_end)(\?uric*uri_end)?(\#uric*uri_end)?)) + suffix
 @(private = "file")
 absolute_uri_at :: proc(il: ^Inliner, s: string, i: int) -> (end: int, scheme: string, ok: bool) {
 	c := s[i]
 	if !((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z')) do return
 	j := i + 1
-	for j < len(s) {
-		b := s[j]
-		if (b >= 'a' && b <= 'z') || (b >= 'A' && b <= 'Z') || (b >= '0' && b <= '9') || b == '.' || b == '+' || b == '-' {
-			j += 1
-		} else {
-			break
-		}
-	}
+	for j < len(s) && is_scheme_char(s[j]) do j += 1
 	if j >= len(s) || s[j] != ':' do return
 	scheme = s[i:j]
 	body := j + 1
@@ -768,14 +898,31 @@ absolute_uri_at :: proc(il: ^Inliner, s: string, i: int) -> (end: int, scheme: s
 		if !uri_end_at(s, p - 1) do continue
 		// optional query ('?' is not a uric, so only possible at the run end)
 		if p < len(s) && s[p] == '?' {
-			qrun := p + 1
-			for qrun < len(s) && is_uric(s[qrun]) do qrun += 1
-			for q := qrun; q > p + 1; q -= 1 {
-				if !uri_end_at(s, q - 1) do continue
-				if e, found := fragment_and_suffix(il, s, q); found do return e, scheme, true
-			}
+			if e, found := query_and_suffix(il, s, p); found do return e, scheme, true
 		}
 		if e, found := fragment_and_suffix(il, s, p); found do return e, scheme, true
+	}
+	return
+}
+
+// [a-zA-Z0-9.+-]
+@(private = "file")
+is_scheme_char :: #force_inline proc "contextless" (b: byte) -> bool {
+	switch b {
+	case 'a' ..= 'z', 'A' ..= 'Z', '0' ..= '9', '.', '+', '-':
+		return true
+	}
+	return false
+}
+
+// (\?uric*uri_end) at ``p`` followed by the optional fragment and suffix.
+@(private = "file")
+query_and_suffix :: proc(il: ^Inliner, s: string, p: int) -> (end: int, ok: bool) {
+	qrun := p + 1
+	for qrun < len(s) && is_uric(s[qrun]) do qrun += 1
+	for q := qrun; q > p + 1; q -= 1 {
+		if !uri_end_at(s, q - 1) do continue
+		if e, found := fragment_and_suffix(il, s, q); found do return e, true
 	}
 	return
 }
@@ -802,15 +949,7 @@ fragment_and_suffix :: proc(il: ^Inliner, s: string, p: int) -> (end: int, ok: b
 email_at :: proc(s: string, i: int, charlevel: bool, email_fail: ^int) -> (end: int, ok: bool) {
 	if email_fail != nil && i < email_fail^ do return
 	if i >= len(s) || !is_emailc(s[i]) do return
-	j := i
-	for {
-		for j < len(s) && is_emailc(s[j]) do j += 1
-		if j + 1 < len(s) && s[j] == '.' && is_emailc(s[j + 1]) {
-			j += 1
-			continue
-		}
-		break
-	}
+	j := email_local_end(s, i)
 	if j >= len(s) || s[j] != '@' || s[j - 1] == 0 {
 		if email_fail != nil do email_fail^ = j
 		return
@@ -827,6 +966,38 @@ email_at :: proc(s: string, i: int, charlevel: bool, email_fail: ^int) -> (end: 
 	return
 }
 
+// pep-(?P<pepnum1>\d+)(.txt)? + suffix at ``i``.
+@(private = "file")
+pep_dash_at :: proc(il: ^Inliner, s: string, i: int) -> (end: int, num: string, ok: bool) {
+	d := i + 4
+	for e := decimal_run_end(s, d); e > d; e -= rune_width(rune_before(s, e)) {
+		// (.txt)? : any character then "txt"
+		if e < len(s) && s[e] != '\n' {
+			_, w := rune_at(s, e)
+			t := e + w + 3
+			if strings.has_prefix(s[e + w:], "txt") && (il.charlevel || suffix_char_ok(s, t)) {
+				return t, s[d:e], true
+			}
+		}
+		if il.charlevel || suffix_char_ok(s, e) do return e, s[d:e], true
+	}
+	return
+}
+
+// emailc+(?:\.emailc+)* starting at ``i``: the end of the local part.
+@(private = "file")
+email_local_end :: proc "contextless" (s: string, i: int) -> int {
+	j := i
+	for {
+		for j < len(s) && is_emailc(s[j]) do j += 1
+		if j + 1 < len(s) && s[j] == '.' && is_emailc(s[j + 1]) {
+			j += 1
+			continue
+		}
+		return j
+	}
+}
+
 // pep: ((pep-(?P<pepnum1>\d+)(.txt)?)|(PEP\s+(?P<pepnum2>\d+))) + prefix/suffix
 @(private = "file")
 search_pep :: proc(il: ^Inliner, s: string) -> (start, end: int, num: string, found: bool) {
@@ -834,17 +1005,7 @@ search_pep :: proc(il: ^Inliner, s: string) -> (start, end: int, num: string, fo
 		if s[i] != 'p' && s[i] != 'P' do continue
 		if !inline_prefix_ok(il, s, i) do continue
 		if strings.has_prefix(s[i:], "pep-") {
-			d := i + 4
-			for e := decimal_run_end(s, d); e > d; e -= rune_width(rune_before(s, e)) {
-				// (.txt)? : any character then "txt"
-				if e < len(s) && s[e] != '\n' {
-					_, w := rune_at(s, e)
-					if strings.has_prefix(s[e + w:], "txt") && (il.charlevel || suffix_char_ok(s, e + w + 3)) {
-						return i, e + w + 3, s[d:e], true
-					}
-				}
-				if il.charlevel || suffix_char_ok(s, e) do return i, e, s[d:e], true
-			}
+			if e, n, ok := pep_dash_at(il, s, i); ok do return i, e, n, true
 		} else if strings.has_prefix(s[i:], "PEP") {
 			j := i + 3
 			ws := j

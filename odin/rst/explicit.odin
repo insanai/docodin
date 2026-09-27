@@ -1,5 +1,6 @@
 package rst
 
+import "base:runtime"
 import "core:strings"
 
 // Explicit markup (``Body.explicit_*``, ``Explicit`` state): footnotes,
@@ -35,7 +36,9 @@ explicit_list :: proc(sm: ^State_Machine, blank_finish: bool) {
 			nodes, blank_finish = anonymous_target(sm, l, m.end)
 		case:
 			previous_line(sm)
-			if !blank_finish do append_child(sm.parent, unindent_warning(sm, "Explicit markup"))
+			if !blank_finish {
+				append_child(sm.parent, unindent_warning(sm, "Explicit markup"))
+			}
 			return
 		}
 		append_chain(sm.parent, nodes.first)
@@ -58,12 +61,7 @@ match_footnote :: proc "contextless" (line: string) -> (label: string, end: int,
 	i := explicit_start(line)
 	if i < 0 || i >= len(line) || line[i] != '[' do return
 	s := i + 1
-	close :: proc "contextless" (line: string, s, e: int) -> (string, int, bool) {
-		if e < len(line) && line[e] == ']' {
-			if end := spaces_or_end(line, e + 1); end >= 0 do return line[s:e], end, true
-		}
-		return "", 0, false
-	}
+	close := footnote_label_close
 	// [0-9]+
 	j := s
 	for j < len(line) && line[j] >= '0' && line[j] <= '9' do j += 1
@@ -81,6 +79,15 @@ match_footnote :: proc "contextless" (line: string) -> (label: string, end: int,
 		if l, e, found := close(line, s, s + 1); found do return l, e, true
 	}
 	return
+}
+
+// ``\]([ ]+|$)`` at ``e``: the label ``line[s:e]`` and match.end().
+@(private = "file")
+footnote_label_close :: proc "contextless" (line: string, s, e: int) -> (string, int, bool) {
+	if e < len(line) && line[e] == ']' {
+		if end := spaces_or_end(line, e + 1); end >= 0 do return line[s:e], end, true
+	}
+	return "", 0, false
 }
 
 // citation: \.\.[ ]+\[(simplename)\]([ ]+|$)
@@ -116,7 +123,15 @@ match_directive :: proc "contextless" (line: string) -> (name: string, end: int,
 
 // (simplename)[ ]?::([ ]+|$) at ``i``; without the optional space for the
 // SubstitutionDef 'embedded_directive' pattern (simplename)::( +|$).
-match_directive_name :: proc "contextless" (line: string, i: int, allow_space := true) -> (name: string, end: int, ok: bool) {
+match_directive_name :: proc "contextless" (
+	line: string,
+	i: int,
+	allow_space := true,
+) -> (
+	name: string,
+	end: int,
+	ok: bool,
+) {
 	ends := simplename_ends(line, i)
 	for k in 0 ..< ends.count {
 		e := ends.ends[k]
@@ -136,7 +151,14 @@ match_directive_name :: proc "contextless" (line: string, i: int, allow_space :=
 }
 
 // ``Body.explicit_construct``
-explicit_construct :: proc(sm: ^State_Machine, line: string, end: int) -> (nodes: Node_List, blank_finish: bool) {
+explicit_construct :: proc(
+	sm: ^State_Machine,
+	line: string,
+	end: int,
+) -> (
+	nodes: Node_List,
+	blank_finish: bool,
+) {
 	errors: Node_List
 	if label, mend, ok := match_footnote(line); ok {
 		return footnote(sm, line, label, mend, .Footnote)
@@ -147,11 +169,14 @@ explicit_construct :: proc(sm: ^State_Machine, line: string, end: int) -> (nodes
 	if tend, is_target := match_explicit_char(line, '_'); is_target {
 		res, bf, err := hyperlink_target(sm, line, tend)
 		if !err do return res, bf
-		list_append(&errors, make_message(sm.p, WARNING, "malformed hyperlink target.", abs_line_number(sm)))
+		msg := make_message(sm.p, WARNING, "malformed hyperlink target.", abs_line_number(sm))
+		list_append(&errors, msg)
 	} else if send, is_sub := match_explicit_char(line, '|'); is_sub {
 		res, bf, err := substitution_def(sm, line, send)
 		if !err do return res, bf
-		list_append(&errors, make_message(sm.p, WARNING, "malformed substitution definition.", abs_line_number(sm)))
+		msg := make_message(sm.p, WARNING,
+			"malformed substitution definition.", abs_line_number(sm))
+		list_append(&errors, msg)
 	} else if name, dend, is_dir := match_directive(line); is_dir {
 		return directive(sm, line, name, dend)
 	}
@@ -164,7 +189,16 @@ explicit_construct :: proc(sm: ^State_Machine, line: string, end: int) -> (nodes
 
 // ``Body.footnote`` / ``Body.citation``
 @(private = "file")
-footnote :: proc(sm: ^State_Machine, line: string, label: string, mend: int, kind: Node_Kind) -> (nodes: Node_List, blank_finish: bool) {
+footnote :: proc(
+	sm: ^State_Machine,
+	line: string,
+	label: string,
+	mend: int,
+	kind: Node_Kind,
+) -> (
+	nodes: Node_List,
+	blank_finish: bool,
+) {
 	lineno := abs_line_number(sm)
 	r := get_first_known_indented(sm, cp_len(line[:mend]))
 	fn := make_node(sm, kind, lineno)
@@ -193,31 +227,48 @@ footnote :: proc(sm: ^State_Machine, line: string, label: string, mend: int, kin
 //   (_|(?!_)(?P<quote>`?)(?![ `])(?P<name>.+?)(?<![\s\x00])(?P=quote))
 //   (?<!(?<!\x00):)(?<![\s\x00])[ ]?:([ ]+|$)
 @(private = "file")
-match_target :: proc "contextless" (s: string) -> (name: string, end: int, anonymous: bool, ok: bool) {
-	tail :: proc "contextless" (s: string, pos: int) -> int {
-		// (?<!(?<!\x00):)(?<![\s\x00])[ ]?:([ ]+|$)
-		if pos <= 0 || pos > len(s) do return -1
-		prev := s[pos - 1]
-		if prev == ':' && (pos < 2 || s[pos - 2] != 0) do return -1
-		pr := rune_before(s, pos)
-		if pr == 0 || is_space(pr) do return -1
-		for sp in ([2]int{1, 0}) {
-			j := pos
-			if sp == 1 {
-				if j >= len(s) || s[j] != ' ' do continue
-				j += 1
-			}
-			if j < len(s) && s[j] == ':' {
-				if e := spaces_or_end(s, j + 1); e >= 0 do return e
-			}
-		}
-		return -1
-	}
+match_target :: proc "contextless" (
+	s: string,
+) -> (
+	name: string,
+	end: int,
+	anonymous: bool,
+	ok: bool,
+) {
 	if len(s) == 0 do return
 	if s[0] == '_' {
-		if e := tail(s, 1); e >= 0 do return "", e, true, true
+		if e := target_tail(s, 1); e >= 0 do return "", e, true, true
 		return
 	}
+	name, end, ok = match_target_name(s)
+	return
+}
+
+// (?<!(?<!\x00):)(?<![\s\x00])[ ]?:([ ]+|$) at ``pos``: match.end() or -1.
+@(private = "file")
+target_tail :: proc "contextless" (s: string, pos: int) -> int {
+	if pos <= 0 || pos > len(s) do return -1
+	prev := s[pos - 1]
+	if prev == ':' && (pos < 2 || s[pos - 2] != 0) do return -1
+	pr := rune_before(s, pos)
+	if pr == 0 || is_space(pr) do return -1
+	for sp in ([2]int{1, 0}) {
+		j := pos
+		if sp == 1 {
+			if j >= len(s) || s[j] != ' ' do continue
+			j += 1
+		}
+		if j < len(s) && s[j] == ':' {
+			if e := spaces_or_end(s, j + 1); e >= 0 do return e
+		}
+	}
+	return -1
+}
+
+// The named alternative of ``match_target``:
+//   (?P<quote>`?)(?![ `])(?P<name>.+?)(?<![\s\x00])(?P=quote) + tail
+@(private = "file")
+match_target_name :: proc "contextless" (s: string) -> (name: string, end: int, ok: bool) {
 	q := 0
 	quoted := s[0] == '`'
 	if quoted do q = 1
@@ -235,7 +286,7 @@ match_target :: proc "contextless" (s: string) -> (name: string, end: int, anony
 				}
 			}
 			if pos >= 0 {
-				if end = tail(s, pos); end >= 0 do return s[q:e], end, false, true
+				if end = target_tail(s, pos); end >= 0 do return s[q:e], end, true
 			}
 		}
 		if e >= len(s) do break
@@ -247,10 +298,19 @@ match_target :: proc "contextless" (s: string) -> (name: string, end: int, anony
 
 // ``Body.hyperlink_target``; ``malformed`` corresponds to ``MarkupError``.
 @(private = "file")
-hyperlink_target :: proc(sm: ^State_Machine, line: string, mend: int) -> (nodes: Node_List, blank_finish: bool, malformed: bool) {
+hyperlink_target :: proc(
+	sm: ^State_Machine,
+	line: string,
+	mend: int,
+) -> (
+	nodes: Node_List,
+	blank_finish: bool,
+	malformed: bool,
+) {
 	a := sm.p.allocator
 	lineno := abs_line_number(sm)
-	r := get_first_known_indented(sm, cp_len(line[:mend]), until_blank = true, strip_indent = false)
+	indent := cp_len(line[:mend])
+	r := get_first_known_indented(sm, indent, until_blank = true, strip_indent = false)
 	blank_finish = r.blank_finish
 	if len(r.lines) == 0 do return {}, blank_finish, true
 	blocktext := concat(line[:mend], join_lines(r.lines, a), allocator = a)
@@ -275,7 +335,14 @@ hyperlink_target :: proc(sm: ^State_Machine, line: string, mend: int) -> (nodes:
 }
 
 // ``Body.anonymous_target`` ("__ uri" lines)
-anonymous_target :: proc(sm: ^State_Machine, line: string, mend: int) -> (nodes: Node_List, blank_finish: bool) {
+anonymous_target :: proc(
+	sm: ^State_Machine,
+	line: string,
+	mend: int,
+) -> (
+	nodes: Node_List,
+	blank_finish: bool,
+) {
 	a := sm.p.allocator
 	lineno := abs_line_number(sm)
 	r := get_first_known_indented(sm, cp_len(line[:mend]), until_blank = true)
@@ -288,7 +355,13 @@ anonymous_target :: proc(sm: ^State_Machine, line: string, mend: int) -> (nodes:
 
 // ``Body.make_target`` / ``parse_target``: ``name`` is the escaped target
 // name ("" for anonymous targets).
-make_target :: proc(sm: ^State_Machine, block: []string, blocktext: string, lineno: int, name: string) -> ^Node {
+make_target :: proc(
+	sm: ^State_Machine,
+	block: []string,
+	blocktext: string,
+	lineno: int,
+	name: string,
+) -> ^Node {
 	a := sm.p.allocator
 	t := make_node(sm, .Target, lineno)
 	t.raw = blocktext
@@ -313,7 +386,13 @@ make_target :: proc(sm: ^State_Machine, block: []string, blocktext: string, line
 }
 
 // ``Body.is_reference``: ((?P<simple>simplename)_|`(?![ ])(?P<phrase>.+?)(?<![\s\x00])`_)$
-is_reference :: proc(reference: string, allocator := context.allocator) -> (refname: string, ok: bool) {
+is_reference :: proc(
+	reference: string,
+	allocator := context.allocator,
+) -> (
+	refname: string,
+	ok: bool,
+) {
 	s := whitespace_normalize(reference, allocator)
 	n := len(s)
 	if n >= 2 && s[n - 1] == '_' && simplename_end(s, 0) == n - 1 {
@@ -348,7 +427,15 @@ match_substitution :: proc "contextless" (s: string) -> (name: string, end: int,
 
 // ``Body.substitution_def``; ``malformed`` corresponds to ``MarkupError``.
 @(private = "file")
-substitution_def :: proc(sm: ^State_Machine, line: string, mend: int) -> (nodes: Node_List, blank_finish: bool, malformed: bool) {
+substitution_def :: proc(
+	sm: ^State_Machine,
+	line: string,
+	mend: int,
+) -> (
+	nodes: Node_List,
+	blank_finish: bool,
+	malformed: bool,
+) {
 	a := sm.p.allocator
 	lineno := abs_line_number(sm)
 	r := get_first_known_indented(sm, cp_len(line[:mend]), strip_indent = false)
@@ -358,18 +445,8 @@ substitution_def :: proc(sm: ^State_Machine, line: string, mend: int) -> (nodes:
 	copy(block, r.lines)
 	offset := r.offset
 	blocktext := concat(line[:mend], join_lines(block, a), allocator = a)
-	escaped := escape2null(rstrip(block[0]), a)
-	blockindex := 0
-	subname: string
-	end: int
-	for {
-		found: bool
-		subname, end, found = match_substitution(escaped)
-		if found do break
-		blockindex += 1
-		if blockindex >= len(block) do return {}, blank_finish, true
-		escaped = concat(escaped, " ", escape2null(strip(block[blockindex]), a), allocator = a)
-	}
+	subname, escaped, end, blockindex, found := substitution_name(block, a)
+	if !found do return {}, blank_finish, true
 	block = block[blockindex:]
 	// block[0] = (block[0].strip() + ' ')[start:-1]; escape2null keeps offsets
 	first := strip(block[0])
@@ -379,10 +456,14 @@ substitution_def :: proc(sm: ^State_Machine, line: string, mend: int) -> (nodes:
 		block = block[1:]
 		offset += 1
 	}
-	for len(block) > 0 && len(strip(block[len(block) - 1])) == 0 do block = block[:len(block) - 1]
+	for len(block) > 0 && len(strip(block[len(block) - 1])) == 0 {
+		block = block[:len(block) - 1]
+	}
 	if len(block) == 0 {
-		msg := strings.concatenate({"Substitution definition \"", subname, "\" missing contents."}, a)
-		list_append(&nodes, make_message_block(sm.p, WARNING, msg, blocktext, source_line(sm, lineno)))
+		parts := []string{"Substitution definition \"", subname, "\" missing contents."}
+		msg := strings.concatenate(parts, a)
+		line := source_line(sm, lineno)
+		list_append(&nodes, make_message_block(sm.p, WARNING, msg, blocktext, line))
 		return
 	}
 	block[0] = strip(block[0])
@@ -392,29 +473,63 @@ substitution_def :: proc(sm: ^State_Machine, line: string, mend: int) -> (nodes:
 	// docutils drops the consumed name lines without adjusting ``offset``:
 	// inside, absolute numbers run ``blockindex`` behind the source lines.
 	sub.num[0] = i32(blockindex)
-	// SubstitutionDef state: whitespace transitions, then either an embedded
-	// directive or text (both end the state).
 	nsm := make_state_machine(sm.p, block, offset, sub)
 	nsm.line_delta = sm.line_delta + blockindex
+	blank_finish = substitution_def_state(&nsm, sub, blank_finish)
+	sub.cur_line = i32(sm.p.cur_line) // validated and registered here
+	list_append(&nodes, sub)
+	return
+}
+
+// The name part of a substitution definition, which may span lines:
+// the name, the escaped text scanned, match.end() and the last line used.
+@(private = "file")
+substitution_name :: proc(
+	block: []string,
+	a: runtime.Allocator,
+) -> (
+	subname, escaped: string,
+	end, blockindex: int,
+	found: bool,
+) {
+	escaped = escape2null(rstrip(block[0]), a)
 	for {
-		l, ok := next_line(&nsm)
+		subname, end, found = match_substitution(escaped)
+		if found do return
+		blockindex += 1
+		if blockindex >= len(block) do return
+		escaped = concat(escaped, " ", escape2null(strip(block[blockindex]), a), allocator = a)
+	}
+}
+
+// SubstitutionDef state: whitespace transitions, then either an embedded
+// directive or text (both end the state).
+@(private = "file")
+substitution_def_state :: proc(
+	nsm: ^State_Machine,
+	sub: ^Node,
+	blank_finish_in: bool,
+) -> (
+	blank_finish: bool,
+) {
+	blank_finish = blank_finish_in
+	for {
+		l, ok := next_line(nsm)
 		if !ok do break
 		if len(l) == 0 do continue
 		if l[0] == ' ' {
-			body_indent(&nsm)
+			body_indent(nsm)
 			continue
 		}
 		if name, dend, is_dir := match_directive_name(l, 0, allow_space = false); is_dir {
-			dnodes, bf := directive(&nsm, l, name, dend)
+			dnodes, bf := directive(nsm, l, name, dend)
 			append_chain(sub, dnodes.first)
-			if !at_eof(&nsm) do blank_finish = bf
-		} else if !at_eof(&nsm) {
-			blank_finish = is_next_line_blank(&nsm)
+			if !at_eof(nsm) do blank_finish = bf
+		} else if !at_eof(nsm) {
+			blank_finish = is_next_line_blank(nsm)
 		}
 		break
 	}
-	sub.cur_line = i32(sm.p.cur_line) // validated and registered here
-	list_append(&nodes, sub)
 	return
 }
 
@@ -422,14 +537,23 @@ substitution_def :: proc(sm: ^State_Machine, line: string, mend: int) -> (nodes:
 
 // ``Body.directive``/``run_directive`` up to the point where the directive
 // class is needed: the host runs it from the recorded block.
-directive :: proc(sm: ^State_Machine, line: string, name: string, mend: int) -> (nodes: Node_List, blank_finish: bool) {
+directive :: proc(
+	sm: ^State_Machine,
+	line: string,
+	name: string,
+	mend: int,
+) -> (
+	nodes: Node_List,
+	blank_finish: bool,
+) {
 	lineno := abs_line_number(sm)
 	initial := sm.line_offset
 	r := get_first_known_indented(sm, cp_len(line[:mend]), strip_top = false)
 	last := min(sm.line_offset + 1, len(sm.lines))
 	d := make_node(sm, .Directive, lineno)
 	d.name = name
-	d.raw = join_lines(sm.lines[max(initial, 0):max(last, max(initial, 0))], sm.p.allocator)
+	first := max(initial, 0)
+	d.raw = join_lines(sm.lines[first:max(last, first)], sm.p.allocator)
 	info := new(Directive_Info, sm.p.allocator)
 	info.lines = r.lines
 	info.line_offset = r.offset
@@ -443,7 +567,14 @@ directive :: proc(sm: ^State_Machine, line: string, name: string, mend: int) -> 
 // ``Body.comment``.  ``match_line``/``mend`` describe the explicit-markup
 // match; the indented block is taken from the *current* line (which differs
 // after a MarkupError, exactly like docutils).
-comment :: proc(sm: ^State_Machine, match_line: string, mend: int) -> (nodes: Node_List, blank_finish: bool) {
+comment :: proc(
+	sm: ^State_Machine,
+	match_line: string,
+	mend: int,
+) -> (
+	nodes: Node_List,
+	blank_finish: bool,
+) {
 	if is_next_line_blank(sm) {
 		first := match_line[mend:]
 		if len(strip(first)) == 0 {
@@ -460,7 +591,9 @@ comment :: proc(sm: ^State_Machine, match_line: string, mend: int) -> (nodes: No
 	lineno := abs_line_number(sm)
 	r := get_first_known_indented(sm, cp_len(match_line[:mend]))
 	lines := r.lines
-	for len(lines) > 0 && len(strip(lines[len(lines) - 1])) == 0 do lines = lines[:len(lines) - 1]
+	for len(lines) > 0 && len(strip(lines[len(lines) - 1])) == 0 {
+		lines = lines[:len(lines) - 1]
+	}
 	c := make_node(sm, .Comment, lineno)
 	c.text = join_lines(lines, sm.p.allocator)
 	c.cur_line = i32(sm.p.cur_line)

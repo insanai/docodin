@@ -14,7 +14,10 @@ Parse_Flag :: enum u32 {
 }
 Parse_Flags :: bit_set[Parse_Flag; u32]
 
-settings_from_flags :: proc "contextless" (flags: Parse_Flags, tab_width, line_length_limit: int) -> Settings {
+settings_from_flags :: proc "contextless" (
+	flags: Parse_Flags,
+	tab_width, line_length_limit: int,
+) -> Settings {
 	return Settings {
 		tab_width                     = tab_width,
 		line_length_limit             = line_length_limit,
@@ -46,7 +49,17 @@ split_raw_lines :: proc(text: string, line_count: int, allocator: runtime.Alloca
 // ``final_offset`` is the top state machine's final ``line_offset`` (docutils
 // leaves it at len(lines) or len(lines)+1, which determines the reporter's
 // "current line" for messages created after parsing).
-parse_text :: proc(p: ^Parser, text: string, input_offset: int, match_titles: bool, raw_line_count := -1) -> (doc: ^Node, line_count: int, final_offset: int) {
+parse_text :: proc(
+	p: ^Parser,
+	text: string,
+	input_offset: int,
+	match_titles: bool,
+	raw_line_count := -1,
+) -> (
+	doc: ^Node,
+	line_count: int,
+	final_offset: int,
+) {
 	doc = new_node(.Document, 0, p.allocator)
 	lines: []string
 	if raw_line_count >= 0 {
@@ -57,7 +70,9 @@ parse_text :: proc(p: ^Parser, text: string, input_offset: int, match_titles: bo
 	line_count = len(lines)
 	if p.settings.line_length_limit > 0 {
 		if bad := find_overlong_line(lines, p.settings.line_length_limit); bad > 0 {
-			msg := strings.concatenate({"Line ", int_str(bad, p.allocator), " exceeds the line-length-limit."}, p.allocator)
+			lineno := int_str(bad, p.allocator)
+			parts := []string{"Line ", lineno, " exceeds the line-length-limit."}
+			msg := strings.concatenate(parts, p.allocator)
 			append_child(doc, make_message(p, ERROR, msg, 0))
 			final_offset = -1
 			return

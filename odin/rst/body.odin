@@ -1,5 +1,6 @@
 package rst
 
+import "base:runtime"
 import "core:strconv"
 import "core:strings"
 
@@ -38,7 +39,11 @@ classify :: proc "contextless" (line: string) -> (m: Line_Match) {
 	if line[0] == ' ' { m.t = .Indent; return }
 	ok: bool
 	if m.end, ok = match_bullet(line); ok { m.t = .Bullet; return }
-	if m.enumer, ok = match_enumerator(line); ok { m.t = .Enumerator; m.end = m.enumer.end; return }
+	if m.enumer, ok = match_enumerator(line); ok {
+		m.t = .Enumerator
+		m.end = m.enumer.end
+		return
+	}
 	if m.name, m.end, ok = match_field_marker(line); ok { m.t = .Field_Marker; return }
 	if m.end, ok = match_option_marker(line); ok { m.t = .Option_Marker; return }
 	if match_doctest(line) { m.t = .Doctest; return }
@@ -192,41 +197,65 @@ match_attribution :: proc "contextless" (line: string) -> int {
 	return i
 }
 
-split_attribution :: proc(sm: ^State_Machine, indented: []string, line_offset: int) -> (r: Attribution_Split) {
+split_attribution :: proc(
+	sm: ^State_Machine,
+	indented: []string,
+	line_offset: int,
+) -> (
+	r: Attribution_Split,
+) {
 	blank := -2
 	nonblank_seen := false
 	for i in 0 ..< len(indented) {
 		line := indented[i]
-		if len(line) > 0 {
-			if nonblank_seen && blank == i - 1 {
-				if mend := match_attribution(line); mend >= 0 {
-					attribution_end, indent, ok := check_attribution(indented, i)
-					if ok {
-						end := min(attribution_end, len(indented))
-						a_lines := make([]string, end - i, sm.p.allocator)
-						copy(a_lines, indented[i:end])
-						a_lines[0] = a_lines[0][mend:]
-						for k in 1 ..< len(a_lines) do a_lines[k] = cp_slice(a_lines[k], indent)
-						r.quote = indented[:i]
-						r.attribution = a_lines
-						r.attr_offset = i
-						r.rest = indented[end:]
-						r.rest_offset = line_offset + attribution_end
-						r.found = true
-						return
-					}
-				}
-			}
-			nonblank_seen = true
-		} else {
+		if len(line) == 0 {
 			blank = i
+			continue
 		}
+		if nonblank_seen && blank == i - 1 {
+			if mend := match_attribution(line); mend >= 0 {
+				if r = attribution_at(sm, indented, line_offset, i, mend); r.found do return
+			}
+		}
+		nonblank_seen = true
 	}
 	r.quote = indented
 	return
 }
 
-check_attribution :: proc "contextless" (indented: []string, start: int) -> (end: int, indent: int, ok: bool) {
+// The split at a candidate attribution line ``i`` (``found`` when valid).
+@(private = "file")
+attribution_at :: proc(
+	sm: ^State_Machine,
+	indented: []string,
+	line_offset, i, mend: int,
+) -> (
+	r: Attribution_Split,
+) {
+	attribution_end, indent, ok := check_attribution(indented, i)
+	if !ok do return
+	end := min(attribution_end, len(indented))
+	a_lines := make([]string, end - i, sm.p.allocator)
+	copy(a_lines, indented[i:end])
+	a_lines[0] = a_lines[0][mend:]
+	for k in 1 ..< len(a_lines) do a_lines[k] = cp_slice(a_lines[k], indent)
+	r.quote = indented[:i]
+	r.attribution = a_lines
+	r.attr_offset = i
+	r.rest = indented[end:]
+	r.rest_offset = line_offset + attribution_end
+	r.found = true
+	return
+}
+
+check_attribution :: proc "contextless" (
+	indented: []string,
+	start: int,
+) -> (
+	end: int,
+	indent: int,
+	ok: bool,
+) {
 	indent = -1
 	i := start + 1
 	broke := false
@@ -296,7 +325,13 @@ body_bullet :: proc(sm: ^State_Machine, line: string, end: int) {
 ORDINAL_NONE :: min(int)
 
 // ``Body.parse_enumerator``
-parse_enumerator :: proc "contextless" (m: Enum_Match, expected := Enum_Sequence.None) -> (seq: Enum_Sequence, ordinal: int) {
+parse_enumerator :: proc "contextless" (
+	m: Enum_Match,
+	expected := Enum_Sequence.None,
+) -> (
+	seq: Enum_Sequence,
+	ordinal: int,
+) {
 	text := m.text
 	if text == "#" {
 		seq = .Auto
@@ -315,6 +350,12 @@ parse_enumerator :: proc "contextless" (m: Enum_Match, expected := Enum_Sequence
 			}
 		}
 	}
+	return seq, enumerator_ordinal(seq, text)
+}
+
+// The ordinal of enumerator ``text`` in sequence ``seq`` (or ORDINAL_NONE).
+@(private = "file")
+enumerator_ordinal :: proc "contextless" (seq: Enum_Sequence, text: string) -> (ordinal: int) {
 	switch seq {
 	case .Auto:
 		ordinal = 1
@@ -370,7 +411,16 @@ sequence_matches :: proc "contextless" (seq: Enum_Sequence, text: string) -> boo
 }
 
 // ``Body.make_enumerator``: next enumerator and auto-enumerator prefixes.
-make_enumerator :: proc(ordinal: int, seq: Enum_Sequence, format: Enum_Format, buf: []byte) -> (next_enum: string, auto_enum: string, ok: bool) {
+make_enumerator :: proc(
+	ordinal: int,
+	seq: Enum_Sequence,
+	format: Enum_Format,
+	buf: []byte,
+) -> (
+	next_enum: string,
+	auto_enum: string,
+	ok: bool,
+) {
 	num_buf: [32]byte
 	enumerator: string
 	switch seq {
@@ -407,7 +457,12 @@ make_enumerator :: proc(ordinal: int, seq: Enum_Sequence, format: Enum_Format, b
 }
 
 // ``Body.is_enumerated_list_item``
-is_enumerated_list_item :: proc(sm: ^State_Machine, ordinal: int, seq: Enum_Sequence, format: Enum_Format) -> bool {
+is_enumerated_list_item :: proc(
+	sm: ^State_Machine,
+	ordinal: int,
+	seq: Enum_Sequence,
+	format: Enum_Format,
+) -> bool {
 	if ordinal == ORDINAL_NONE do return false
 	next, ok := next_line(sm)
 	previous_line(sm)
@@ -416,10 +471,9 @@ is_enumerated_list_item :: proc(sm: ^State_Machine, ordinal: int, seq: Enum_Sequ
 	r, _ := rune_at(next, 0)
 	if is_space(r) do return true
 	buf: [96]byte
-	if next_enum, auto_enum, made := make_enumerator(ordinal + 1, seq, format, buf[:]); made {
-		if strings.has_prefix(next, next_enum) || strings.has_prefix(next, auto_enum) do return true
-	}
-	return false
+	next_enum, auto_enum, made := make_enumerator(ordinal + 1, seq, format, buf[:])
+	if !made do return false
+	return strings.has_prefix(next, next_enum) || strings.has_prefix(next, auto_enum)
 }
 
 @(private = "file")
@@ -440,7 +494,10 @@ body_enumerator :: proc(sm: ^State_Machine, line: string, m: Enum_Match) -> bool
 	if ordinal != 1 {
 		el.num[0] = i32(clamp(ordinal, int(min(i32)), int(max(i32))))
 		el.num[1] = 1
-		msg := strings.concatenate({"Enumerated list start value not ordinal-1: \"", m.text, "\" (ordinal ", int_str(ordinal, sm.p.allocator), ")"}, sm.p.allocator)
+		msg := strings.concatenate({
+			"Enumerated list start value not ordinal-1: \"", m.text,
+			"\" (ordinal ", int_str(ordinal, sm.p.allocator), ")",
+		}, sm.p.allocator)
 		// reported with ``base_node=enumlist``: the node's (source) line
 		append_child(sm.parent, make_message(sm.p, INFO, msg, source_line(sm, int(el.line))))
 	}
@@ -456,15 +513,11 @@ body_enumerator :: proc(sm: ^State_Machine, line: string, m: Enum_Match) -> bool
 		if !ok do break
 		lm := classify(l)
 		if lm.t == .Blank do continue
-		valid := false
 		if lm.t == .Enumerator {
 			s2, o2 := parse_enumerator(lm.enumer, list_seq)
-			valid = lm.enumer.format == m.format
-			if valid && s2 != .Auto {
-				valid = s2 == list_seq && !auto && o2 != ORDINAL_NONE && o2 == lastordinal + 1
-			}
-			valid = valid && is_enumerated_list_item(sm, o2, s2, lm.enumer.format)
-			if valid {
+			if next_enumerator_valid(
+				sm, lm.enumer, m.format, s2, o2, list_seq, lastordinal, auto,
+			) {
 				if s2 == .Auto do auto = true
 				it, bf := list_item(sm, lm.end)
 				append_child(el, it)
@@ -478,6 +531,26 @@ body_enumerator :: proc(sm: ^State_Machine, line: string, m: Enum_Match) -> bool
 	}
 	if !blank_finish do append_child(sm.parent, unindent_warning(sm, "Enumerated list"))
 	return true
+}
+
+// ``EnumeratedList.enumerator``: whether ``e`` (parsed as ``seq``/``ordinal``)
+// continues the list.
+@(private = "file")
+next_enumerator_valid :: proc(
+	sm: ^State_Machine,
+	e: Enum_Match,
+	format: Enum_Format,
+	seq: Enum_Sequence,
+	ordinal: int,
+	list_seq: Enum_Sequence,
+	lastordinal: int,
+	auto: bool,
+) -> bool {
+	valid := e.format == format
+	if valid && seq != .Auto {
+		valid = seq == list_seq && !auto && ordinal != ORDINAL_NONE && ordinal == lastordinal + 1
+	}
+	return valid && is_enumerated_list_item(sm, ordinal, seq, e.format)
 }
 
 // --- field lists ----------------------------------------------------------------
@@ -508,7 +581,15 @@ body_field_marker :: proc(sm: ^State_Machine, line: string, name: string, end: i
 
 // ``Body.field``: children are ``Field_Name`` (raw = name, inline children)
 // and ``Field_Body``.
-field :: proc(sm: ^State_Machine, line: string, name: string, end: int) -> (f: ^Node, blank_finish: bool) {
+field :: proc(
+	sm: ^State_Machine,
+	line: string,
+	name: string,
+	end: int,
+) -> (
+	f: ^Node,
+	blank_finish: bool,
+) {
 	lineno := abs_line_number(sm)
 	r := get_first_known_indented(sm, cp_len(line[:end]))
 	f = make_node(sm, .Field, lineno)
@@ -550,10 +631,19 @@ rfc2822_field_list :: proc(sm: ^State_Machine, line: string, end: int) {
 		previous_line(sm)
 		break
 	}
-	if !blank_finish do append_child(sm.parent, unindent_warning(sm, "RFC2822-style field list"))
+	if !blank_finish {
+		append_child(sm.parent, unindent_warning(sm, "RFC2822-style field list"))
+	}
 }
 
-rfc2822_field :: proc(sm: ^State_Machine, line: string, end: int) -> (f: ^Node, blank_finish: bool) {
+rfc2822_field :: proc(
+	sm: ^State_Machine,
+	line: string,
+	end: int,
+) -> (
+	f: ^Node,
+	blank_finish: bool,
+) {
 	name := line[:strings.index_byte(line, ':')]
 	lineno := abs_line_number(sm)
 	r := get_first_known_indented(sm, cp_len(line[:end]), until_blank = true)
@@ -582,7 +672,8 @@ body_option_marker :: proc(sm: ^State_Machine, line: string, end: int) -> bool {
 		return false
 	case .Markup_Error:
 		// "This shouldn't happen; pattern won't match." — kept for fidelity.
-		append_child(sm.parent, make_message(sm.p, ERROR, concat("Invalid option list marker: ", err, allocator = sm.p.allocator), reporter_line(sm)))
+		msg := concat("Invalid option list marker: ", err, allocator = sm.p.allocator)
+		append_child(sm.parent, make_message(sm.p, ERROR, msg, reporter_line(sm)))
 		r := get_first_known_indented(sm, cp_len(line[:end]))
 		block_quote(sm, r.lines, r.offset, sm.parent)
 		if !r.blank_finish do append_child(sm.parent, unindent_warning(sm, "Option list"))
@@ -617,7 +708,16 @@ body_option_marker :: proc(sm: ^State_Machine, line: string, end: int) -> bool {
 
 Option_Status :: enum u8 {Ok, Not_Item, Markup_Error}
 
-option_list_item :: proc(sm: ^State_Machine, line: string, end: int) -> (item: ^Node, blank_finish: bool, status: Option_Status, err: string) {
+option_list_item :: proc(
+	sm: ^State_Machine,
+	line: string,
+	end: int,
+) -> (
+	item: ^Node,
+	blank_finish: bool,
+	status: Option_Status,
+	err: string,
+) {
 	offset := abs_line_offset(sm)
 	lineno := abs_line_number(sm)
 	group := make_node(sm, .Option_Group, lineno)
@@ -642,9 +742,15 @@ option_list_item :: proc(sm: ^State_Machine, line: string, end: int) -> (item: ^
 // ``Body.parse_option_marker``: fills ``group`` with ``Option`` nodes.
 // Returns the ``MarkupError`` text on failure.
 parse_option_marker :: proc(sm: ^State_Machine, marker: string, group: ^Node) -> (err: string) {
-	a := sm.p.allocator
-	text := rstrip(marker)
-	// re.split(r', (?![^<]*>)', text)
+	for optionstring in split_option_marker(rstrip(marker), sm.p.allocator) {
+		if err = parse_option(sm, optionstring, group); err != "" do return
+	}
+	return ""
+}
+
+// re.split(r', (?![^<]*>)', text)
+@(private = "file")
+split_option_marker :: proc(text: string, a: runtime.Allocator) -> [dynamic]string {
 	pieces := make([dynamic]string, 0, 2, a)
 	start := 0
 	for i := 0; i + 1 < len(text); i += 1 {
@@ -663,41 +769,51 @@ parse_option_marker :: proc(sm: ^State_Machine, marker: string, group: ^Node) ->
 		i += 1
 	}
 	append(&pieces, text[start:])
-	for optionstring in pieces {
-		tokens := make([dynamic]string, 0, 3, a)
-		for t in split_whitespace(optionstring, a) do append(&tokens, t)
-		if len(tokens) == 0 do return option_markup_error(sm, 0, optionstring)
-		delimiter := " "
-		if eq := strings.index_byte(tokens[0], '='); eq >= 0 {
-			first, rest := tokens[0][:eq], tokens[0][eq + 1:]
-			tokens[0] = first
-			inject_at(&tokens, 1, rest)
-			delimiter = "="
-		} else if cp_len(tokens[0]) > 2 && ((tokens[0][0] == '-' && !strings.has_prefix(tokens[0], "--")) || tokens[0][0] == '+') {
-			first, rest := tokens[0][:2], tokens[0][2:]
-			tokens[0] = first
-			inject_at(&tokens, 1, rest)
-			delimiter = ""
-		}
-		if len(tokens) > 1 && strings.has_prefix(tokens[1], "<") && strings.has_suffix(tokens[len(tokens) - 1], ">") {
-			joined := strings.join(tokens[1:], " ", a)
-			resize(&tokens, 2)
-			tokens[1] = joined
-		}
-		if len(tokens) > 2 do return option_markup_error(sm, len(tokens), optionstring)
-		opt := make_node(sm, .Option, int(group.line))
-		opt.raw = optionstring
-		os := make_node(sm, .Option_String, int(group.line))
-		os.text = tokens[0]
-		append_child(opt, os)
-		if len(tokens) > 1 {
-			arg := make_node(sm, .Option_Argument, int(group.line))
-			arg.text = tokens[1]
-			arg.name = delimiter
-			append_child(opt, arg)
-		}
-		append_child(group, opt)
+	return pieces
+}
+
+// One option of ``Body.parse_option_marker``, appended to ``group``.
+@(private = "file")
+parse_option :: proc(sm: ^State_Machine, optionstring: string, group: ^Node) -> (err: string) {
+	a := sm.p.allocator
+	tokens := make([dynamic]string, 0, 3, a)
+	for t in split_whitespace(optionstring, a) do append(&tokens, t)
+	if len(tokens) == 0 do return option_markup_error(sm, 0, optionstring)
+	delimiter := " "
+	t0 := tokens[0]
+	// a short option with its argument attached ("-ofile", "+x")
+	attached := cp_len(t0) > 2 && ((t0[0] == '-' && !strings.has_prefix(t0, "--")) || t0[0] == '+')
+	if eq := strings.index_byte(t0, '='); eq >= 0 {
+		first, rest := t0[:eq], t0[eq + 1:]
+		tokens[0] = first
+		inject_at(&tokens, 1, rest)
+		delimiter = "="
+	} else if attached {
+		first, rest := t0[:2], t0[2:]
+		tokens[0] = first
+		inject_at(&tokens, 1, rest)
+		delimiter = ""
 	}
+	if len(tokens) > 1 &&
+	   strings.has_prefix(tokens[1], "<") &&
+	   strings.has_suffix(tokens[len(tokens) - 1], ">") {
+		joined := strings.join(tokens[1:], " ", a)
+		resize(&tokens, 2)
+		tokens[1] = joined
+	}
+	if len(tokens) > 2 do return option_markup_error(sm, len(tokens), optionstring)
+	opt := make_node(sm, .Option, int(group.line))
+	opt.raw = optionstring
+	os := make_node(sm, .Option_String, int(group.line))
+	os.text = tokens[0]
+	append_child(opt, os)
+	if len(tokens) > 1 {
+		arg := make_node(sm, .Option_Argument, int(group.line))
+		arg.text = tokens[1]
+		arg.name = delimiter
+		append_child(opt, arg)
+	}
+	append_child(group, opt)
 	return ""
 }
 
@@ -743,7 +859,8 @@ body_line_block :: proc(sm: ^State_Machine, line: string, end: int) {
 		}
 	}
 	if !blank_finish {
-		append_child(sm.parent, make_message(sm.p, WARNING, "Line block ends without a blank line.", lineno + 1))
+		msg := make_message(sm.p, WARNING, "Line block ends without a blank line.", lineno + 1)
+		append_child(sm.parent, msg)
 	}
 	// docutils attaches the nested blocks created below at this line
 	block.cur_line = i32(sm.p.cur_line)
@@ -753,7 +870,15 @@ body_line_block :: proc(sm: ^State_Machine, line: string, end: int) {
 	}
 }
 
-line_block_line :: proc(sm: ^State_Machine, line: string, end: int, lineno: int) -> (ln: ^Node, blank_finish: bool) {
+line_block_line :: proc(
+	sm: ^State_Machine,
+	line: string,
+	end: int,
+	lineno: int,
+) -> (
+	ln: ^Node,
+	blank_finish: bool,
+) {
 	r := get_first_known_indented(sm, cp_len(line[:end]), until_blank = true)
 	text := join_lines(r.lines, sm.p.allocator)
 	ln = make_node(sm, .Line, lineno)
@@ -816,11 +941,13 @@ body_line :: proc(sm: ^State_Machine, line: string) -> (eof: bool) {
 	if stripped == "::" do return body_text(sm, line)
 	if len(stripped) < 4 {
 		append_child(sm.parent, make_message(sm.p, INFO,
-			"Unexpected possible title overline or transition.\nTreating it as ordinary text because it's so short.",
+			"Unexpected possible title overline or transition.\n" +
+			"Treating it as ordinary text because it's so short.",
 			abs_line_number(sm)))
 		return body_text(sm, line)
 	}
-	append_child(sm.parent, make_message_block(sm.p, ERROR, "Unexpected section title or transition.", line, abs_line_number(sm)))
+	append_child(sm.parent, make_message_block(sm.p, ERROR,
+		"Unexpected section title or transition.", line, abs_line_number(sm)))
 	return false
 }
 
@@ -847,17 +974,25 @@ line_state :: proc(sm: ^State_Machine, overline: string) -> (eof: bool) {
 		blocktext := concat(overline, "\n", l2, allocator = a)
 		lineno := abs_line_number(sm) - 1
 		if len(rstrip(overline)) < 4 do return short_overline(sm, lineno, 1)
-		append_child(sm.parent, make_message_block(sm.p, ERROR, "Invalid section title or transition marker.", blocktext, lineno))
+		append_child(sm.parent, make_message_block(sm.p, ERROR,
+			"Invalid section title or transition marker.", blocktext, lineno))
 		return false
 	}
-	// Line.text / Line.indent: potential over- & underlined title
+	return line_title(sm, overline, l2)
+}
+
+// ``Line.text`` / ``Line.indent``: potential over- & underlined title.
+@(private = "file")
+line_title :: proc(sm: ^State_Machine, overline, l2: string) -> (eof: bool) {
+	a := sm.p.allocator
 	lineno := abs_line_number(sm) - 1
 	title := l2
 	l3, ok3 := next_line(sm)
 	if !ok3 { // EOF raised inside the transition method: the run continues
 		blocktext := concat(overline, "\n", title, allocator = a)
 		if len(rstrip(overline)) < 4 do return short_overline(sm, lineno, 2)
-		append_child(sm.parent, make_message_block(sm.p, ERROR, "Incomplete section title.", blocktext, lineno))
+		append_child(sm.parent, make_message_block(sm.p, ERROR,
+			"Incomplete section title.", blocktext, lineno))
 		return false
 	}
 	source := concat(overline, "\n", title, "\n", l3, allocator = a)
@@ -865,18 +1000,21 @@ line_state :: proc(sm: ^State_Machine, overline: string) -> (eof: bool) {
 	un := rstrip(l3)
 	if !match_line(un) {
 		if len(ov) < 4 do return short_overline(sm, lineno, 2)
-		append_child(sm.parent, make_message_block(sm.p, ERROR, "Missing matching underline for section title overline.", source, lineno))
+		append_child(sm.parent, make_message_block(sm.p, ERROR,
+			"Missing matching underline for section title overline.", source, lineno))
 		return false
 	} else if ov != un {
 		if len(ov) < 4 do return short_overline(sm, lineno, 2)
-		append_child(sm.parent, make_message_block(sm.p, ERROR, "Title overline & underline mismatch.", source, lineno))
+		append_child(sm.parent, make_message_block(sm.p, ERROR,
+			"Title overline & underline mismatch.", source, lineno))
 		return false
 	}
 	title = rstrip(title)
 	messages: Node_List
 	if column_width(title) > len(ov) {
 		if len(ov) < 4 do return short_overline(sm, lineno, 2)
-		list_append(&messages, make_message_block(sm.p, WARNING, "Title overline too short.", source, lineno))
+		msg := make_message_block(sm.p, WARNING, "Title overline too short.", source, lineno)
+		list_append(&messages, msg)
 	}
 	style := concat(ov[:1], un[:1], allocator = a)
 	emit_section_title(sm, lstrip(title), source, style, lineno + 1, messages)
@@ -886,7 +1024,8 @@ line_state :: proc(sm: ^State_Machine, overline: string) -> (eof: bool) {
 @(private = "file")
 short_overline :: proc(sm: ^State_Machine, lineno: int, lines: int) -> (eof: bool) {
 	append_child(sm.parent, make_message(sm.p, INFO,
-		"Possible incomplete section title.\nTreating the overline as ordinary text because it's so short.",
+		"Possible incomplete section title.\n" +
+		"Treating the overline as ordinary text because it's so short.",
 		lineno))
 	return state_correction(sm, lines)
 }
@@ -902,7 +1041,14 @@ state_correction :: proc(sm: ^State_Machine, lines: int) -> (eof: bool) {
 	return body_text(sm, line)
 }
 
-emit_section_title :: proc(sm: ^State_Machine, title: string, source: string, style: string, lineno: int, messages: Node_List) {
+emit_section_title :: proc(
+	sm: ^State_Machine,
+	title: string,
+	source: string,
+	style: string,
+	lineno: int,
+	messages: Node_List,
+) {
 	n := make_node(sm, .Section_Title, lineno)
 	n.raw = title
 	n.text = source
@@ -978,18 +1124,21 @@ text_underline :: proc(sm: ^State_Machine, line1: string, l2: string) -> bool {
 		if len(underline) < 4 {
 			if sm.match_titles {
 				append_child(sm.parent, make_message(sm.p, INFO,
-					"Possible title underline, too short for the title.\nTreating it as ordinary text because it's so short.",
+					"Possible title underline, too short for the title.\n" +
+					"Treating it as ordinary text because it's so short.",
 					lineno))
 			}
 			return false
 		}
 		blocktext := concat(line1, "\n", l2, allocator = a)
-		list_append(&messages, make_message_block(sm.p, WARNING, "Title underline too short.", blocktext, lineno))
+		msg := make_message_block(sm.p, WARNING, "Title underline too short.", blocktext, lineno)
+		list_append(&messages, msg)
 	}
 	if !sm.match_titles {
 		blocktext := concat(line1, "\n", l2, allocator = a)
 		append_chain(sm.parent, messages.first)
-		append_child(sm.parent, make_message_block(sm.p, ERROR, "Unexpected section title.", blocktext, source_line(sm, abs_line_number(sm))))
+		append_child(sm.parent, make_message_block(sm.p, ERROR,
+			"Unexpected section title.", blocktext, source_line(sm, abs_line_number(sm))))
 		return true
 	}
 	emit_section_title(sm, title, source, underline[:1], lineno - 1, messages)
@@ -998,7 +1147,14 @@ text_underline :: proc(sm: ^State_Machine, line1: string, l2: string) -> bool {
 
 // ``RSTState.paragraph``: appends the paragraph to ``out``; returns whether a
 // literal block follows ("::").
-paragraph :: proc(sm: ^State_Machine, lines: []string, lineno: int, out: ^Node) -> (literalnext: bool) {
+paragraph :: proc(
+	sm: ^State_Machine,
+	lines: []string,
+	lineno: int,
+	out: ^Node,
+) -> (
+	literalnext: bool,
+) {
 	data := rstrip(join_lines(lines, sm.p.allocator))
 	text := data
 	if ends_with_literal_marker(data) {
@@ -1051,38 +1207,7 @@ quoted_literal_block :: proc(sm: ^State_Machine, out: ^Node) {
 	lines := sm.lines[min(offset, len(sm.lines)):]
 	q := make_state_machine(sm.p, lines, abs_line_offset(sm), out)
 	messages: Node_List
-	ctx_start, ctx_end := -1, -1
-	quote: byte = 0
-	initial_lineno := 0
-	loop: for {
-		line, ok := next_line(&q)
-		if !ok do break
-		if quote != 0 && len(line) > 0 && line[0] == quote { // 'quoted' (checked first)
-			ctx_end = q.line_offset + 1
-			continue
-		}
-		if len(line) == 0 { // blank
-			if ctx_start >= 0 do break loop
-			continue
-		}
-		if line[0] == ' ' { // indent
-			list_append(&messages, make_message(sm.p, ERROR, "Unexpected indentation.", abs_line_number(&q)))
-			previous_line(&q)
-			break loop
-		}
-		if quote == 0 && is_punct7(line[0]) { // initial_quoted
-			quote = line[0]
-			initial_lineno = abs_line_number(&q)
-			ctx_start, ctx_end = q.line_offset, q.line_offset + 1
-			continue
-		}
-		// text
-		if ctx_start >= 0 {
-			list_append(&messages, make_message(sm.p, ERROR, "Inconsistent literal block quoting.", abs_line_number(&q)))
-			previous_line(&q)
-		}
-		break loop
-	}
+	ctx_start, ctx_end, initial_lineno := scan_quoted_literal(&q, &messages)
 	// QuotedLiteralBlock.eof
 	before := out.last
 	if ctx_start >= 0 {
@@ -1091,7 +1216,8 @@ quoted_literal_block :: proc(sm: ^State_Machine, out: ^Node) {
 		lb.raw = lb.text
 		append_child(out, lb)
 	} else {
-		append_child(out, make_message(sm.p, WARNING, "Literal block expected; none found.", abs_line_number(&q)))
+		append_child(out, make_message(sm.p, WARNING,
+			"Literal block expected; none found.", abs_line_number(&q)))
 		previous_line(&q)
 	}
 	append_chain(out, messages.first)
@@ -1101,6 +1227,51 @@ quoted_literal_block :: proc(sm: ^State_Machine, out: ^Node) {
 	for n := before.next if before != nil else out.first; n != nil; n = n.next {
 		if n.kind == .System_Message do n.cur_line = i32(sm.p.cur_line)
 	}
+}
+
+// The ``QuotedLiteralBlock`` state loop: the quoted lines' offsets
+// (``ctx_start`` -1 when none) and the first one's line number.
+@(private = "file")
+scan_quoted_literal :: proc(
+	q: ^State_Machine,
+	messages: ^Node_List,
+) -> (
+	ctx_start, ctx_end, initial_lineno: int,
+) {
+	ctx_start, ctx_end = -1, -1
+	quote: byte = 0
+	for {
+		line, ok := next_line(q)
+		if !ok do break
+		if quote != 0 && len(line) > 0 && line[0] == quote { // 'quoted' (checked first)
+			ctx_end = q.line_offset + 1
+			continue
+		}
+		if len(line) == 0 { // blank
+			if ctx_start >= 0 do break
+			continue
+		}
+		if line[0] == ' ' { // indent
+			list_append(messages, make_message(q.p, ERROR,
+				"Unexpected indentation.", abs_line_number(q)))
+			previous_line(q)
+			break
+		}
+		if quote == 0 && is_punct7(line[0]) { // initial_quoted
+			quote = line[0]
+			initial_lineno = abs_line_number(q)
+			ctx_start, ctx_end = q.line_offset, q.line_offset + 1
+			continue
+		}
+		// text
+		if ctx_start >= 0 {
+			list_append(messages, make_message(q.p, ERROR,
+				"Inconsistent literal block quoting.", abs_line_number(q)))
+			previous_line(q)
+		}
+		break
+	}
+	return
 }
 
 // ``Text.indent``: definition list.
@@ -1134,18 +1305,28 @@ text_indent :: proc(sm: ^State_Machine, termline: string) {
 	if !blank_finish do append_child(sm.parent, unindent_warning(sm, "Definition list"))
 }
 
-definition_list_item :: proc(sm: ^State_Machine, termline: string) -> (item: ^Node, blank_finish: bool) {
+definition_list_item :: proc(
+	sm: ^State_Machine,
+	termline: string,
+) -> (
+	item: ^Node,
+	blank_finish: bool,
+) {
 	dd_lineno := abs_line_number(sm)
 	dt_lineno := dd_lineno - 1
 	r := get_indented(sm)
 	item = make_node(sm, .Definition_List_Item, dt_lineno)
-	item.raw = concat(termline, "\n" if len(r.lines) > 0 else "", join_lines(r.lines, sm.p.allocator), allocator = sm.p.allocator)
+	item.raw = concat(
+		termline, "\n" if len(r.lines) > 0 else "", join_lines(r.lines, sm.p.allocator),
+		allocator = sm.p.allocator,
+	)
 	term(sm, termline, dt_lineno, item)
 	dd := make_node(sm, .Definition, dd_lineno)
 	append_child(item, dd)
 	if strings.has_suffix(termline, "::") {
 		append_child(dd, make_message(sm.p, INFO,
-			"Blank line missing before literal block (after the \"::\")? Interpreted as a definition list item.",
+			"Blank line missing before literal block (after the \"::\")? " +
+			"Interpreted as a definition list item.",
 			dd_lineno))
 	}
 	nested_parse(sm, r.lines, r.offset, dd)
@@ -1169,31 +1350,10 @@ term :: proc(sm: ^State_Machine, line: string, lineno: int, item: ^Node) {
 			n = next
 			continue
 		}
-		// re.split(' +: +', text)
-		text := n.text
-		pieces := make([dynamic]string, 0, 2, a)
-		start, i := 0, 0
-		for i < len(text) {
-			if text[i] != ' ' {
-				i += 1
-				continue
-			}
-			j := i
-			for j < len(text) && text[j] == ' ' do j += 1
-			if j < len(text) && text[j] == ':' && j + 1 < len(text) && text[j + 1] == ' ' {
-				k := j + 1
-				for k < len(text) && text[k] == ' ' do k += 1
-				append(&pieces, text[start:i])
-				start = k
-				i = k
-			} else {
-				i = j
-			}
-		}
-		if len(pieces) == 0 {
+		pieces := split_classifiers(n.text, a)
+		if len(pieces) == 1 {
 			append_child(current, n)
 		} else {
-			append(&pieces, text[start:])
 			head := make_node(sm, .Text, lineno)
 			head.text = rstrip(pieces[0])
 			append_child(current, head)
@@ -1209,4 +1369,30 @@ term :: proc(sm: ^State_Machine, line: string, lineno: int, item: ^Node) {
 		}
 		n = next
 	}
+}
+
+// re.split(' +: +', text)
+@(private = "file")
+split_classifiers :: proc(text: string, a: runtime.Allocator) -> [dynamic]string {
+	pieces := make([dynamic]string, 0, 2, a)
+	start, i := 0, 0
+	for i < len(text) {
+		if text[i] != ' ' {
+			i += 1
+			continue
+		}
+		j := i
+		for j < len(text) && text[j] == ' ' do j += 1
+		if j < len(text) && text[j] == ':' && j + 1 < len(text) && text[j + 1] == ' ' {
+			k := j + 1
+			for k < len(text) && text[k] == ' ' do k += 1
+			append(&pieces, text[start:i])
+			start = k
+			i = k
+		} else {
+			i = j
+		}
+	}
+	append(&pieces, text[start:])
+	return pieces
 }
