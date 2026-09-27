@@ -1,9 +1,11 @@
 package reader_tests
 
+import "core:os"
 import "core:strings"
 import "core:testing"
 
 import dt "../../doctree"
+import rst "../../rst"
 import reader ".."
 
 // Unit tests of the native reader.  The differential test
@@ -170,4 +172,35 @@ test_include :: proc(t: ^testing.T) {
 	para := dt.first_child(doc, last)
 	testing.expect_value(t, dt.astext(doc, para), want)
 	free_all(context.temp_allocator)
+}
+
+@(test)
+test_parse_tree_kept :: proc(t: ^testing.T) {
+	context.allocator = context.temp_allocator
+	s := dt.default_settings()
+	s.warning_stream = .Collect
+	doc, info := reader.parse_document("Title\n=====\n\nText.\n", s, "t.rst",
+		tree_allocator = context.temp_allocator)
+	defer dt.destroy(doc)
+	tree := &info.tree.parser.tree
+	testing.expect(t, info.tree.root != rst.NO_NODE && info.tree.inserted == 0)
+	testing.expect_value(t, rst.child_count(tree, info.tree.root), 2)
+	// without a tree allocator, no tree
+	doc2, info2 := reader.parse_document("Text.\n", s, "t.rst")
+	defer dt.destroy(doc2)
+	testing.expect(t, info2.tree.root == rst.NO_NODE)
+}
+
+@(test)
+test_parse_tree_dropped_after_include :: proc(t: ^testing.T) {
+	context.allocator = context.temp_allocator
+	path := "reader_tree_include.rst.txt"
+	testing.expect(t, os.write_entire_file(path, transmute([]byte)string("Included.\n")) == nil)
+	defer os.remove(path)
+	s := dt.default_settings()
+	s.warning_stream = .Collect
+	text := strings.concatenate({".. include:: ", path, "\n\nAfter.\n"})
+	doc, info := reader.parse_document(text, s, "t.rst", tree_allocator = context.temp_allocator)
+	defer dt.destroy(doc)
+	testing.expect(t, info.tree.inserted > 0 && info.tree.root == rst.NO_NODE)
 }

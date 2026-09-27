@@ -112,6 +112,22 @@ Parse_Info :: struct {
 	// ``len(reporter.written) == exception_at`` would not exist.
 	exception:           string,
 	exception_at:        int,
+	// The native parse of the document, when ``parse_document`` is given a
+	// ``tree_allocator`` (tools that read the parse tree as well, such as
+	// the language server, then parse once).
+	tree:                Parse_Tree,
+}
+
+// The parser of the document with its tree, allocated with the caller's
+// ``tree_allocator``.  The tree holds the top-level parse only: directive
+// content is parsed by the directives, in parsers of their own.
+Parse_Tree :: struct {
+	parser:   rst.Parser, // no include hook (it belonged to the reader)
+	root:     rst.Node, // the ``Document`` node; NO_NODE when not kept
+	// Lines that ``include`` directives inserted into the input.  Those
+	// lines live in the reader's arena, and the lines of the nodes after
+	// them count them: the tree is not kept then (``root`` is NO_NODE).
+	inserted: int,
 }
 
 // ``Parser.parse(text, new_document(source_path, settings))``.
@@ -125,12 +141,15 @@ parse :: proc(
 	return doc
 }
 
-// ``parse`` with information about the run.
+// ``parse`` with information about the run.  With a ``tree_allocator``,
+// the parse tree is kept in ``info.tree`` (views of ``text``, which must
+// outlive it).
 parse_document :: proc(
 	text: string,
 	settings: dt.Settings,
 	source_path: string,
 	allocator := context.allocator,
+	tree_allocator := runtime.Allocator{},
 ) -> (
 	doc: ^dt.Doc,
 	info: Parse_Info,
@@ -153,6 +172,8 @@ parse_document :: proc(
 	defer dt.detach_observer(doc, dt.observe_parse_message)
 	start(&c, &top)
 	p := new_parser(&c, c.flags, int(doc.settings.line_length_limit))
+	keep_tree := tree_allocator.procedure != nil
+	if keep_tree do p.allocator = tree_allocator
 	setup_include_hook(&c, &top, &p)
 	tree_doc, count, final_offset := rst.parse_text(&p, text, 0, true)
 	// ``RSTStateMachine.run`` (not run when a line is too long)
@@ -162,6 +183,13 @@ parse_document :: proc(
 	finish(&c, &top, final_offset, count)
 	info.unported_directives = c.unported
 	info.exception, info.exception_at = c.exception, c.exception_at
+	if keep_tree {
+		info.tree.inserted = p.inserted
+		if p.inserted == 0 {
+			p.include_hook, p.hook_data, p.root = nil, nil, nil
+			info.tree.parser, info.tree.root = p, tree_doc
+		}
+	}
 	return
 }
 
