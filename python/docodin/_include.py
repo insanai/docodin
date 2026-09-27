@@ -117,6 +117,8 @@ class IncludeHook:
                 self._note_log(document.include_log[logged:])
         except (DirectiveError, MarkupError, _NotDry):
             captured = []
+        except Exception:  # noqa: BLE001 - raised again, in document order, by the real run
+            captured = []
         finally:
             ctx.capture_insert = None
             (document.current_source, document.current_line, sm.line_offset,

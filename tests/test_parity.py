@@ -210,3 +210,32 @@ def test_directive_content_spliced_around_options():
     text = ".. note:: x\n   :name: a b\n\n   Sub\n   ---\n"
     assert (_document_state(docodin.Parser(), text)
             == _document_state(docutils.parsers.rst.Parser(), text))
+
+
+def test_include_errors_are_reported_in_document_order(tmp_path, monkeypatch):
+    """An ``include`` failing with an exception must not hide the messages of
+    the ``include`` directives before it (docodin reads included files while
+    parsing natively)."""
+    import io
+
+    import docodin
+
+    (tmp_path / "exists.rst").write_text("Included.\n", encoding="utf-8")
+    monkeypatch.chdir(tmp_path)
+    text = ".. include:: missing.rst\n.. include:: exists.rst\n\nText.\n"
+
+    def run(parser):
+        settings = docutils.frontend.get_default_settings(docutils.parsers.rst.Parser)
+        settings.warning_stream = stream = io.StringIO()
+        settings.halt_level = 5
+        settings.input_encoding = "no-such-codec"  # opening the included file raises
+        document = docutils.utils.new_document("main.rst", settings)
+        try:
+            parser.parse(text, document)
+        except LookupError as error:
+            return stream.getvalue(), str(error)
+        return stream.getvalue(), None
+
+    expected = run(docutils.parsers.rst.Parser())
+    assert expected[1] is not None and "missing.rst" in expected[0]
+    assert run(docodin.Parser()) == expected
