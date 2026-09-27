@@ -1,0 +1,973 @@
+{
+ "detached": [
+  {
+   "node": {
+    "attributes": {
+     "ids": [
+      "inside-a-docutils-command-line-front-end-tool"
+     ],
+     "names": [
+      "inside a docutils command-line front-end tool"
+     ]
+    },
+    "document": true,
+    "line": 5,
+    "source": "docs/howto/cmdline-tool.rst",
+    "tag": "section"
+   },
+   "parent": 0
+  }
+ ],
+ "expected": {
+  "pformat": "<document ids=\"inside-a-docutils-command-line-front-end-tool\" names=\"inside\\ a\\ docutils\\ command-line\\ front-end\\ tool\" source=\"docs/howto/cmdline-tool.rst\" title=\"Inside A Docutils Command-Line Front-End Tool\">\n    <title>\n        Inside A Docutils Command-Line Front-End Tool\n    <decoration>\n        <header>\n            <paragraph>\n                <reference anonymous=\"1\" name=\"Docutils\" refuri=\"https://docutils.sourceforge.io\">\n                    Docutils\n                 | \n                <reference anonymous=\"1\" name=\"Overview\" refuri=\"../index.html\">\n                    Overview\n                 | \n                <reference anonymous=\"1\" name=\"About\" refuri=\"../index.html#project-fundamentals\">\n                    About\n                 | \n                <reference anonymous=\"1\" name=\"Users\" refuri=\"../index.html#user\">\n                    Users\n                 | \n                <reference anonymous=\"1\" name=\"Reference\" refuri=\"../index.html#ref\">\n                    Reference\n                 | \n                <reference anonymous=\"1\" name=\"Developers\" refuri=\"../index.html#howto\">\n                    Developers\n            <target anonymous=\"1\" ids=\"target-1\" refuri=\"https://docutils.sourceforge.io\">\n            <target anonymous=\"1\" ids=\"target-2\" refuri=\"../index.html\">\n            <target anonymous=\"1\" ids=\"target-3\" refuri=\"../index.html#project-fundamentals\">\n            <target anonymous=\"1\" ids=\"target-4\" refuri=\"../index.html#user\">\n            <target anonymous=\"1\" ids=\"target-5\" refuri=\"../index.html#ref\">\n            <target anonymous=\"1\" ids=\"target-6\" refuri=\"../index.html#howto\">\n    <docinfo>\n        <author>\n            David Goodger\n        <contact>\n            <reference refuri=\"mailto:docutils-develop@lists.sourceforge.net\">\n                docutils-develop@lists.sourceforge.net\n        <date>\n            2024-08-15\n        <revision>\n            9906\n        <copyright>\n            This document has been placed in the public domain.\n    <comment xml:space=\"preserve\">\n        Minimal menu bar for inclusion in documentation sources\n        in ``docutils/docs/*/`` sub-diretories.\n        \n        Attention: this is not a standalone document.\n    <note>\n        <paragraph>\n            This document describes the traditional approach with\n            hand-crafted front-end scripts.\n            Since version 0.21, the package installer installs\n            front-end scripts generated from \"console_scripts\"\n            <reference name=\"entry point\" refuri=\"https://packaging.python.org/en/latest/specifications/entry-points/\">\n                entry point\n             definitions.\n    <paragraph>\n        <reference name=\"The Docutils Publisher\" refuri=\"./publisher.html\">\n            The Docutils Publisher\n         class was set up to make building\n        command-line tools easy.  All that's required is to choose components\n        and supply settings for variations.  Let's take a look at a typical\n        command-line front-end tool, \n        <literal>\n            tools/rst2html.py\n        , from top to\n        bottom.\n    <paragraph>\n        On Unixish systems, it's best to make the file executable (\n        <literal>\n            chmod +x\n            file\n        ), and supply an interpreter on the first line, the \"shebang\" or\n        \"hash-bang\" line:\n    <literal_block xml:space=\"preserve\">\n        #!/usr/bin/env python\n    <paragraph>\n        Windows systems can be set up to associate the Python interpreter with\n        the \n        <literal>\n            .py\n         extension.\n    <paragraph>\n        Next are some comments providing metadata:\n    <literal_block xml:space=\"preserve\">\n        # $Id: cmdline-tool.rst 9906 2024-08-15 08:43:38Z grubert $\n        # Author: David Goodger <goodger@python.org>\n        # Copyright: This module has been placed in the public domain.\n    <paragraph>\n        The module docstring describes the purpose of the tool:\n    <literal_block xml:space=\"preserve\">\n        \"\"\"\n        A minimal front end to the Docutils Publisher, producing HTML.\n        \"\"\"\n    <paragraph>\n        This next block attempts to invoke locale support for\n        internationalization services.  It's not\n        supported on all platforms though, so it's forgiving:\n    <literal_block xml:space=\"preserve\">\n        try:\n            import locale\n            locale.setlocale(locale.LC_ALL, '')\n        except:\n            pass\n    <paragraph>\n        The real work will be done by the code that's imported here:\n    <literal_block xml:space=\"preserve\">\n        from docutils.core import publish_cmdline, default_description\n    <paragraph>\n        We construct a description of the tool, for command-line help:\n    <literal_block xml:space=\"preserve\">\n        description = ('Generates (X)HTML documents from standalone '\n                       'reStructuredText sources.  ' + default_description)\n    <paragraph>\n        Now we call the Publisher convenience function, which takes over.\n        Most of its defaults are used (\"standalone\" Reader,\n        \"reStructuredText\" Parser, etc.).  The HTML Writer is chosen by name,\n        and a description for command-line help is passed in:\n    <literal_block xml:space=\"preserve\">\n        publish_cmdline(writer='html', description=description)\n    <paragraph>\n        That's it!  \n        <reference name=\"The Docutils Publisher\" refuri=\"./publisher.html\">\n            The Docutils Publisher\n         takes care of the rest.\n    <target ids=\"entry-point\" names=\"entry\\ point\" refuri=\"https://packaging.python.org/en/latest/specifications/entry-points/\">\n    <target ids=\"the-docutils-publisher\" names=\"the\\ docutils\\ publisher\" refuri=\"./publisher.html\">\n"
+ },
+ "format": "docodin-doctree/1",
+ "input": {
+  "overrides": {},
+  "source_path": "docs/howto/cmdline-tool.rst",
+  "writer": "pseudoxml"
+ },
+ "registry": {
+  "autofootnote_refs": [],
+  "autofootnote_start": 1,
+  "autofootnotes": [],
+  "citation_refs": [],
+  "citations": [],
+  "current_line": null,
+  "current_source": null,
+  "decoration": 3,
+  "footnote_refs": [],
+  "footnotes": [],
+  "id_counter": [
+   [
+    "target-",
+    6
+   ]
+  ],
+  "ids": [
+   [
+    "target-1",
+    23
+   ],
+   [
+    "target-2",
+    24
+   ],
+   [
+    "target-3",
+    25
+   ],
+   [
+    "target-4",
+    26
+   ],
+   [
+    "target-5",
+    27
+   ],
+   [
+    "target-6",
+    28
+   ],
+   [
+    "inside-a-docutils-command-line-front-end-tool",
+    99
+   ],
+   [
+    "entry-point",
+    97
+   ],
+   [
+    "the-docutils-publisher",
+    98
+   ]
+  ],
+  "indirect_targets": [],
+  "nameids": [
+   [
+    "inside a docutils command-line front-end tool",
+    "inside-a-docutils-command-line-front-end-tool"
+   ],
+   [
+    "entry point",
+    "entry-point"
+   ],
+   [
+    "the docutils publisher",
+    "the-docutils-publisher"
+   ]
+  ],
+  "nametypes": [
+   [
+    "inside a docutils command-line front-end tool",
+    false
+   ],
+   [
+    "entry point",
+    true
+   ],
+   [
+    "the docutils publisher",
+    true
+   ]
+  ],
+  "parse_messages": [],
+  "refids": [],
+  "refnames": [
+   [
+    "entry point",
+    [
+     46
+    ]
+   ],
+   [
+    "the docutils publisher",
+    [
+     50,
+     94
+    ]
+   ]
+  ],
+  "substitution_defs": [],
+  "substitution_names": [],
+  "symbol_footnote_refs": [],
+  "symbol_footnote_start": 0,
+  "symbol_footnotes": [],
+  "transform_messages": []
+ },
+ "reporter": {
+  "debug": false,
+  "halt_level": 4,
+  "max_level": -1,
+  "observers": [],
+  "report_level": 2,
+  "source": "docs/howto/cmdline-tool.rst",
+  "source_lines": {
+   "input_offset": 0,
+   "line_offset": 96,
+   "runs": [
+    [
+     "docs/howto/cmdline-tool.rst",
+     0,
+     2
+    ],
+    [
+     "internal padding before docs/header.rst",
+     -1,
+     1
+    ],
+    [
+     "docs/header.rst",
+     0,
+     16
+    ],
+    [
+     "internal padding after docs/header.rst",
+     16,
+     1
+    ],
+    [
+     "docs/howto/cmdline-tool.rst",
+     2,
+     75
+    ]
+   ]
+  },
+  "written": []
+ },
+ "settings": {
+  "_config_files": [],
+  "_destination": null,
+  "_disable_config": true,
+  "_source": "docs/howto/cmdline-tool.rst",
+  "auto_id_prefix": "%",
+  "character_level_inline_markup": false,
+  "config": null,
+  "datestamp": null,
+  "debug": null,
+  "detailed": null,
+  "docinfo_xform": true,
+  "doctitle_xform": true,
+  "dump_internals": null,
+  "dump_pseudo_xml": null,
+  "dump_settings": null,
+  "dump_transforms": null,
+  "error_encoding": "utf-8",
+  "error_encoding_error_handler": "backslashreplace",
+  "exit_status_level": 5,
+  "expose_internals": null,
+  "file_insertion_enabled": true,
+  "footnote_backlinks": true,
+  "generator": null,
+  "halt_level": 4,
+  "id_prefix": "",
+  "input_encoding": "utf-8",
+  "input_encoding_error_handler": "strict",
+  "language_code": "en",
+  "line_length_limit": 10000,
+  "output": null,
+  "output_encoding": "utf-8",
+  "output_encoding_error_handler": "strict",
+  "output_path": null,
+  "pep_base_url": "https://peps.python.org/",
+  "pep_file_url_template": "pep-%04d",
+  "pep_references": null,
+  "raw_enabled": true,
+  "report_level": 2,
+  "rfc_base_url": "https://tools.ietf.org/html/",
+  "rfc_references": null,
+  "root_prefix": "",
+  "sectnum_xform": true,
+  "sectsubtitle_xform": false,
+  "smart_quotes": false,
+  "smartquotes_locales": null,
+  "source_link": null,
+  "source_url": null,
+  "strict_visitor": null,
+  "strip_classes": null,
+  "strip_comments": null,
+  "strip_elements_with_classes": null,
+  "syntax_highlight": "long",
+  "tab_width": 8,
+  "title": null,
+  "toc_backlinks": "entry",
+  "traceback": true,
+  "trim_footnote_reference_space": null,
+  "validate": null
+ },
+ "stage": "transformed",
+ "transformer": {
+  "queue": [],
+  "serialno": 20
+ },
+ "tree": {
+  "attributes": {
+   "ids": [
+    "inside-a-docutils-command-line-front-end-tool"
+   ],
+   "names": [
+    "inside a docutils command-line front-end tool"
+   ],
+   "source": "docs/howto/cmdline-tool.rst",
+   "title": "Inside A Docutils Command-Line Front-End Tool"
+  },
+  "children": [
+   {
+    "children": [
+     {
+      "tag": "#text",
+      "text": "Inside A Docutils Command-Line Front-End Tool"
+     }
+    ],
+    "document": true,
+    "line": 5,
+    "rawsource": "Inside A Docutils Command-Line Front-End Tool",
+    "source": "docs/howto/cmdline-tool.rst",
+    "tag": "title"
+   },
+   {
+    "children": [
+     {
+      "children": [
+       {
+        "children": [
+         {
+          "attributes": {
+           "anonymous": true,
+           "name": "Docutils",
+           "refuri": "https://docutils.sourceforge.io"
+          },
+          "children": [
+           {
+            "tag": "#text",
+            "text": "Docutils"
+           }
+          ],
+          "rawsource": "Docutils__",
+          "resolved": true,
+          "tag": "reference"
+         },
+         {
+          "tag": "#text",
+          "text": " | "
+         },
+         {
+          "attributes": {
+           "anonymous": true,
+           "name": "Overview",
+           "refuri": "../index.html"
+          },
+          "children": [
+           {
+            "tag": "#text",
+            "text": "Overview"
+           }
+          ],
+          "rawsource": "Overview__",
+          "resolved": true,
+          "tag": "reference"
+         },
+         {
+          "tag": "#text",
+          "text": " | "
+         },
+         {
+          "attributes": {
+           "anonymous": true,
+           "name": "About",
+           "refuri": "../index.html#project-fundamentals"
+          },
+          "children": [
+           {
+            "tag": "#text",
+            "text": "About"
+           }
+          ],
+          "rawsource": "About__",
+          "resolved": true,
+          "tag": "reference"
+         },
+         {
+          "tag": "#text",
+          "text": " | "
+         },
+         {
+          "attributes": {
+           "anonymous": true,
+           "name": "Users",
+           "refuri": "../index.html#user"
+          },
+          "children": [
+           {
+            "tag": "#text",
+            "text": "Users"
+           }
+          ],
+          "rawsource": "Users__",
+          "resolved": true,
+          "tag": "reference"
+         },
+         {
+          "tag": "#text",
+          "text": " | "
+         },
+         {
+          "attributes": {
+           "anonymous": true,
+           "name": "Reference",
+           "refuri": "../index.html#ref"
+          },
+          "children": [
+           {
+            "tag": "#text",
+            "text": "Reference"
+           }
+          ],
+          "rawsource": "Reference__",
+          "resolved": true,
+          "tag": "reference"
+         },
+         {
+          "tag": "#text",
+          "text": " | "
+         },
+         {
+          "attributes": {
+           "anonymous": true,
+           "name": "Developers",
+           "refuri": "../index.html#howto"
+          },
+          "children": [
+           {
+            "tag": "#text",
+            "text": "Developers"
+           }
+          ],
+          "rawsource": "Developers__",
+          "resolved": true,
+          "tag": "reference"
+         }
+        ],
+        "document": true,
+        "line": 7,
+        "rawsource": "Docutils__ | Overview__ | About__ | Users__ | Reference__ | Developers__",
+        "source": "docs/header.rst",
+        "tag": "paragraph"
+       },
+       {
+        "attributes": {
+         "anonymous": true,
+         "ids": [
+          "target-1"
+         ],
+         "refuri": "https://docutils.sourceforge.io"
+        },
+        "document": true,
+        "line": 12,
+        "rawsource": "__ https://docutils.sourceforge.io",
+        "referenced": true,
+        "source": "docs/header.rst",
+        "tag": "target"
+       },
+       {
+        "attributes": {
+         "anonymous": true,
+         "ids": [
+          "target-2"
+         ],
+         "refuri": "../index.html"
+        },
+        "document": true,
+        "line": 13,
+        "rawsource": "__ ../index.html",
+        "referenced": true,
+        "source": "docs/header.rst",
+        "tag": "target"
+       },
+       {
+        "attributes": {
+         "anonymous": true,
+         "ids": [
+          "target-3"
+         ],
+         "refuri": "../index.html#project-fundamentals"
+        },
+        "document": true,
+        "line": 14,
+        "rawsource": "__ ../index.html#project-fundamentals",
+        "referenced": true,
+        "source": "docs/header.rst",
+        "tag": "target"
+       },
+       {
+        "attributes": {
+         "anonymous": true,
+         "ids": [
+          "target-4"
+         ],
+         "refuri": "../index.html#user"
+        },
+        "document": true,
+        "line": 15,
+        "rawsource": "__ ../index.html#user",
+        "referenced": true,
+        "source": "docs/header.rst",
+        "tag": "target"
+       },
+       {
+        "attributes": {
+         "anonymous": true,
+         "ids": [
+          "target-5"
+         ],
+         "refuri": "../index.html#ref"
+        },
+        "document": true,
+        "line": 16,
+        "rawsource": "__ ../index.html#ref",
+        "referenced": true,
+        "source": "docs/header.rst",
+        "tag": "target"
+       },
+       {
+        "attributes": {
+         "anonymous": true,
+         "ids": [
+          "target-6"
+         ],
+         "refuri": "../index.html#howto"
+        },
+        "document": true,
+        "line": 17,
+        "rawsource": "__ ../index.html#howto",
+        "referenced": true,
+        "source": "docs/header.rst",
+        "tag": "target"
+       }
+      ],
+      "document": true,
+      "line": 15,
+      "source": "docs/header.rst",
+      "tag": "header"
+     }
+    ],
+    "document": true,
+    "line": 15,
+    "source": "docs/header.rst",
+    "tag": "decoration"
+   },
+   {
+    "children": [
+     {
+      "children": [
+       {
+        "tag": "#text",
+        "text": "David Goodger"
+       }
+      ],
+      "tag": "author"
+     },
+     {
+      "children": [
+       {
+        "attributes": {
+         "refuri": "mailto:docutils-develop@lists.sourceforge.net"
+        },
+        "children": [
+         {
+          "tag": "#text",
+          "text": "docutils-develop@lists.sourceforge.net"
+         }
+        ],
+        "rawsource": "docutils-develop@lists.sourceforge.net",
+        "tag": "reference"
+       }
+      ],
+      "tag": "contact"
+     },
+     {
+      "children": [
+       {
+        "document": true,
+        "tag": "#text",
+        "text": "2024-08-15"
+       }
+      ],
+      "tag": "date"
+     },
+     {
+      "children": [
+       {
+        "document": true,
+        "tag": "#text",
+        "text": "9906"
+       }
+      ],
+      "tag": "revision"
+     },
+     {
+      "children": [
+       {
+        "tag": "#text",
+        "text": "This document has been placed in the public domain."
+       }
+      ],
+      "tag": "copyright"
+     }
+    ],
+    "document": true,
+    "tag": "docinfo"
+   },
+   {
+    "attributes": {
+     "xml:space": "preserve"
+    },
+    "children": [
+     {
+      "tag": "#text",
+      "text": "Minimal menu bar for inclusion in documentation sources\nin ``docutils/docs/*/`` sub-diretories.\n\nAttention: this is not a standalone document."
+     }
+    ],
+    "document": true,
+    "line": 5,
+    "rawsource": "Minimal menu bar for inclusion in documentation sources\nin ``docutils/docs/*/`` sub-diretories.\n\nAttention: this is not a standalone document.",
+    "source": "docs/header.rst",
+    "tag": "comment"
+   },
+   {
+    "children": [
+     {
+      "children": [
+       {
+        "tag": "#text",
+        "text": "This document describes the traditional approach with\nhand-crafted front-end scripts.\nSince version 0.21, the package installer installs\nfront-end scripts generated from \"console_scripts\"\n"
+       },
+       {
+        "attributes": {
+         "name": "entry point",
+         "refuri": "https://packaging.python.org/en/latest/specifications/entry-points/"
+        },
+        "children": [
+         {
+          "tag": "#text",
+          "text": "entry point"
+         }
+        ],
+        "rawsource": "`entry point`_",
+        "resolved": true,
+        "tag": "reference"
+       },
+       {
+        "tag": "#text",
+        "text": " definitions."
+       }
+      ],
+      "line": 13,
+      "rawsource": "This document describes the traditional approach with\nhand-crafted front-end scripts.\nSince version 0.21, the package installer installs\nfront-end scripts generated from \"console_scripts\"\n`entry point`_ definitions.",
+      "source": "docs/howto/cmdline-tool.rst",
+      "tag": "paragraph"
+     }
+    ],
+    "document": true,
+    "line": 13,
+    "rawsource": "This document describes the traditional approach with\nhand-crafted front-end scripts.\nSince version 0.21, the package installer installs\nfront-end scripts generated from \"console_scripts\"\n`entry point`_ definitions.",
+    "source": "docs/howto/cmdline-tool.rst",
+    "tag": "note"
+   },
+   {
+    "children": [
+     {
+      "attributes": {
+       "name": "The Docutils Publisher",
+       "refuri": "./publisher.html"
+      },
+      "children": [
+       {
+        "tag": "#text",
+        "text": "The Docutils Publisher"
+       }
+      ],
+      "rawsource": "`The Docutils Publisher`_",
+      "resolved": true,
+      "tag": "reference"
+     },
+     {
+      "tag": "#text",
+      "text": " class was set up to make building\ncommand-line tools easy.  All that's required is to choose components\nand supply settings for variations.  Let's take a look at a typical\ncommand-line front-end tool, "
+     },
+     {
+      "children": [
+       {
+        "tag": "#text",
+        "text": "tools/rst2html.py"
+       }
+      ],
+      "rawsource": "``tools/rst2html.py``",
+      "tag": "literal"
+     },
+     {
+      "tag": "#text",
+      "text": ", from top to\nbottom."
+     }
+    ],
+    "document": true,
+    "line": 19,
+    "rawsource": "`The Docutils Publisher`_ class was set up to make building\ncommand-line tools easy.  All that's required is to choose components\nand supply settings for variations.  Let's take a look at a typical\ncommand-line front-end tool, ``tools/rst2html.py``, from top to\nbottom.",
+    "source": "docs/howto/cmdline-tool.rst",
+    "tag": "paragraph"
+   },
+   {
+    "children": [
+     {
+      "tag": "#text",
+      "text": "On Unixish systems, it's best to make the file executable ("
+     },
+     {
+      "children": [
+       {
+        "tag": "#text",
+        "text": "chmod +x\nfile"
+       }
+      ],
+      "rawsource": "``chmod +x\nfile``",
+      "tag": "literal"
+     },
+     {
+      "tag": "#text",
+      "text": "), and supply an interpreter on the first line, the \"shebang\" or\n\"hash-bang\" line:"
+     }
+    ],
+    "document": true,
+    "line": 25,
+    "rawsource": "On Unixish systems, it's best to make the file executable (``chmod +x\nfile``), and supply an interpreter on the first line, the \"shebang\" or\n\"hash-bang\" line::",
+    "source": "docs/howto/cmdline-tool.rst",
+    "tag": "paragraph"
+   },
+   {
+    "attributes": {
+     "xml:space": "preserve"
+    },
+    "children": [
+     {
+      "tag": "#text",
+      "text": "#!/usr/bin/env python"
+     }
+    ],
+    "document": true,
+    "line": 29,
+    "rawsource": "#!/usr/bin/env python",
+    "source": "docs/howto/cmdline-tool.rst",
+    "tag": "literal_block"
+   },
+   {
+    "children": [
+     {
+      "tag": "#text",
+      "text": "Windows systems can be set up to associate the Python interpreter with\nthe "
+     },
+     {
+      "children": [
+       {
+        "tag": "#text",
+        "text": ".py"
+       }
+      ],
+      "rawsource": "``.py``",
+      "tag": "literal"
+     },
+     {
+      "tag": "#text",
+      "text": " extension."
+     }
+    ],
+    "document": true,
+    "line": 31,
+    "rawsource": "Windows systems can be set up to associate the Python interpreter with\nthe ``.py`` extension.",
+    "source": "docs/howto/cmdline-tool.rst",
+    "tag": "paragraph"
+   },
+   {
+    "children": [
+     {
+      "tag": "#text",
+      "text": "Next are some comments providing metadata:"
+     }
+    ],
+    "document": true,
+    "line": 34,
+    "rawsource": "Next are some comments providing metadata::",
+    "source": "docs/howto/cmdline-tool.rst",
+    "tag": "paragraph"
+   },
+   {
+    "attributes": {
+     "xml:space": "preserve"
+    },
+    "children": [
+     {
+      "tag": "#text",
+      "text": "# $Id: cmdline-tool.rst 9906 2024-08-15 08:43:38Z grubert $\n# Author: David Goodger <goodger@python.org>\n# Copyright: This module has been placed in the public domain."
+     }
+    ],
+    "document": true,
+    "line": 36,
+    "rawsource": "# $Id: cmdline-tool.rst 9906 2024-08-15 08:43:38Z grubert $\n# Author: David Goodger <goodger@python.org>\n# Copyright: This module has been placed in the public domain.",
+    "source": "docs/howto/cmdline-tool.rst",
+    "tag": "literal_block"
+   },
+   {
+    "children": [
+     {
+      "tag": "#text",
+      "text": "The module docstring describes the purpose of the tool:"
+     }
+    ],
+    "document": true,
+    "line": 40,
+    "rawsource": "The module docstring describes the purpose of the tool::",
+    "source": "docs/howto/cmdline-tool.rst",
+    "tag": "paragraph"
+   },
+   {
+    "attributes": {
+     "xml:space": "preserve"
+    },
+    "children": [
+     {
+      "tag": "#text",
+      "text": "\"\"\"\nA minimal front end to the Docutils Publisher, producing HTML.\n\"\"\""
+     }
+    ],
+    "document": true,
+    "line": 42,
+    "rawsource": "\"\"\"\nA minimal front end to the Docutils Publisher, producing HTML.\n\"\"\"",
+    "source": "docs/howto/cmdline-tool.rst",
+    "tag": "literal_block"
+   },
+   {
+    "children": [
+     {
+      "tag": "#text",
+      "text": "This next block attempts to invoke locale support for\ninternationalization services.  It's not\nsupported on all platforms though, so it's forgiving:"
+     }
+    ],
+    "document": true,
+    "line": 46,
+    "rawsource": "This next block attempts to invoke locale support for\ninternationalization services.  It's not\nsupported on all platforms though, so it's forgiving::",
+    "source": "docs/howto/cmdline-tool.rst",
+    "tag": "paragraph"
+   },
+   {
+    "attributes": {
+     "xml:space": "preserve"
+    },
+    "children": [
+     {
+      "tag": "#text",
+      "text": "try:\n    import locale\n    locale.setlocale(locale.LC_ALL, '')\nexcept:\n    pass"
+     }
+    ],
+    "document": true,
+    "line": 50,
+    "rawsource": "try:\n    import locale\n    locale.setlocale(locale.LC_ALL, '')\nexcept:\n    pass",
+    "source": "docs/howto/cmdline-tool.rst",
+    "tag": "literal_block"
+   },
+   {
+    "children": [
+     {
+      "tag": "#text",
+      "text": "The real work will be done by the code that's imported here:"
+     }
+    ],
+    "document": true,
+    "line": 56,
+    "rawsource": "The real work will be done by the code that's imported here::",
+    "source": "docs/howto/cmdline-tool.rst",
+    "tag": "paragraph"
+   },
+   {
+    "attributes": {
+     "xml:space": "preserve"
+    },
+    "children": [
+     {
+      "tag": "#text",
+      "text": "from docutils.core import publish_cmdline, default_description"
+     }
+    ],
+    "document": true,
+    "line": 58,
+    "rawsource": "from docutils.core import publish_cmdline, default_description",
+    "source": "docs/howto/cmdline-tool.rst",
+    "tag": "literal_block"
+   },
+   {
+    "children": [
+     {
+      "tag": "#text",
+      "text": "We construct a description of the tool, for command-line help:"
+     }
+    ],
+    "document": true,
+    "line": 60,
+    "rawsource": "We construct a description of the tool, for command-line help::",
+    "source": "docs/howto/cmdline-tool.rst",
+    "tag": "paragraph"
+   },
+   {
+    "attributes": {
+     "xml:space": "preserve"
+    },
+    "children": [
+     {
+      "tag": "#text",
+      "text": "description = ('Generates (X)HTML documents from standalone '\n               'reStructuredText sources.  ' + default_description)"
+     }
+    ],
+    "document": true,
+    "line": 62,
+    "rawsource": "description = ('Generates (X)HTML documents from standalone '\n               'reStructuredText sources.  ' + default_description)",
+    "source": "docs/howto/cmdline-tool.rst",
+    "tag": "literal_block"
+   },
+   {
+    "children": [
+     {
+      "tag": "#text",
+      "text": "Now we call the Publisher convenience function, which takes over.\nMost of its defaults are used (\"standalone\" Reader,\n\"reStructuredText\" Parser, etc.).  The HTML Writer is chosen by name,\nand a description for command-line help is passed in:"
+     }
+    ],
+    "document": true,
+    "line": 65,
+    "rawsource": "Now we call the Publisher convenience function, which takes over.\nMost of its defaults are used (\"standalone\" Reader,\n\"reStructuredText\" Parser, etc.).  The HTML Writer is chosen by name,\nand a description for command-line help is passed in::",
+    "source": "docs/howto/cmdline-tool.rst",
+    "tag": "paragraph"
+   },
+   {
+    "attributes": {
+     "xml:space": "preserve"
+    },
+    "children": [
+     {
+      "tag": "#text",
+      "text": "publish_cmdline(writer='html', description=description)"
+     }
+    ],
+    "document": true,
+    "line": 70,
+    "rawsource": "publish_cmdline(writer='html', description=description)",
+    "source": "docs/howto/cmdline-tool.rst",
+    "tag": "literal_block"
+   },
+   {
+    "children": [
+     {
+      "tag": "#text",
+      "text": "That's it!  "
+     },
+     {
+      "attributes": {
+       "name": "The Docutils Publisher",
+       "refuri": "./publisher.html"
+      },
+      "children": [
+       {
+        "tag": "#text",
+        "text": "The Docutils Publisher"
+       }
+      ],
+      "rawsource": "`The Docutils Publisher`_",
+      "resolved": true,
+      "tag": "reference"
+     },
+     {
+      "tag": "#text",
+      "text": " takes care of the rest."
+     }
+    ],
+    "document": true,
+    "line": 72,
+    "rawsource": "That's it!  `The Docutils Publisher`_ takes care of the rest.",
+    "source": "docs/howto/cmdline-tool.rst",
+    "tag": "paragraph"
+   },
+   {
+    "attributes": {
+     "ids": [
+      "entry-point"
+     ],
+     "names": [
+      "entry point"
+     ],
+     "refuri": "https://packaging.python.org/en/latest/specifications/entry-points/"
+    },
+    "document": true,
+    "line": 93,
+    "rawsource": ".. _entry point:\n    https://packaging.python.org/en/latest/specifications/entry-points/",
+    "referenced": true,
+    "source": "docs/howto/cmdline-tool.rst",
+    "tag": "target"
+   },
+   {
+    "attributes": {
+     "ids": [
+      "the-docutils-publisher"
+     ],
+     "names": [
+      "the docutils publisher"
+     ],
+     "refuri": "./publisher.html"
+    },
+    "document": true,
+    "line": 95,
+    "rawsource": ".. _The Docutils Publisher: ./publisher.html",
+    "referenced": true,
+    "source": "docs/howto/cmdline-tool.rst",
+    "tag": "target"
+   }
+  ],
+  "document": true,
+  "tag": "document"
+ }
+}

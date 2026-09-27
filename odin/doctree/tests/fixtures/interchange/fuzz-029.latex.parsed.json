@@ -1,0 +1,459 @@
+{
+ "detached": [],
+ "expected": {
+  "pformat": "<document source=\"fuzz-029.rst\">\n    <block_quote>\n        <paragraph>\n            Short\n            --\n        <block_quote>\n            <footnote auto=\"1\" ids=\"named\" names=\"named\">\n                <paragraph>\n                    auto named\n    <paragraph>\n        <problematic ids=\"problematic-1\" refid=\"system-message-1\">\n            |\n        unclosed\n        * a\n        + b\n    <system_message backrefs=\"problematic-1\" ids=\"system-message-1\" level=\"2\" line=\"6\" source=\"fuzz-029.rst\" type=\"WARNING\">\n        <paragraph>\n            Inline substitution_reference start-string without end-string.\n"
+ },
+ "format": "docodin-doctree/1",
+ "input": {
+  "overrides": {
+   "halt_level": 5,
+   "report_level": 1
+  },
+  "source_path": "fuzz-029.rst",
+  "writer": "latex"
+ },
+ "registry": {
+  "autofootnote_refs": [],
+  "autofootnote_start": 1,
+  "autofootnotes": [
+   5
+  ],
+  "citation_refs": [],
+  "citations": [],
+  "current_line": null,
+  "current_source": null,
+  "decoration": null,
+  "footnote_refs": [],
+  "footnotes": [],
+  "id_counter": [
+   [
+    "system-message-",
+    1
+   ],
+   [
+    "problematic-",
+    1
+   ]
+  ],
+  "ids": [
+   [
+    "named",
+    5
+   ],
+   [
+    "system-message-1",
+    12
+   ],
+   [
+    "problematic-1",
+    9
+   ]
+  ],
+  "indirect_targets": [],
+  "nameids": [
+   [
+    "named",
+    "named"
+   ]
+  ],
+  "nametypes": [
+   [
+    "named",
+    true
+   ]
+  ],
+  "parse_messages": [
+   12
+  ],
+  "refids": [],
+  "refnames": [],
+  "substitution_defs": [],
+  "substitution_names": [],
+  "symbol_footnote_refs": [],
+  "symbol_footnote_start": 0,
+  "symbol_footnotes": [],
+  "transform_messages": []
+ },
+ "reporter": {
+  "debug": false,
+  "halt_level": 5,
+  "max_level": 2,
+  "observers": [],
+  "report_level": 1,
+  "source": "fuzz-029.rst",
+  "source_lines": {
+   "input_offset": 0,
+   "line_offset": 9,
+   "runs": [
+    [
+     "fuzz-029.rst",
+     0,
+     9
+    ]
+   ]
+  },
+  "written": [
+   {
+    "level": 2,
+    "node": 12,
+    "text": "fuzz-029.rst:6: (WARNING/2) Inline substitution_reference start-string without end-string.\n"
+   }
+  ]
+ },
+ "settings": {
+  "_config_files": [],
+  "_destination": null,
+  "_disable_config": true,
+  "_source": "fuzz-029.rst",
+  "attribution": "dash",
+  "auto_id_prefix": "%",
+  "character_level_inline_markup": false,
+  "compound_enumerators": false,
+  "config": null,
+  "datestamp": null,
+  "debug": null,
+  "docinfo_xform": true,
+  "doctitle_xform": true,
+  "documentclass": "article",
+  "documentoptions": "a4paper",
+  "docutils_footnotes": true,
+  "dump_internals": null,
+  "dump_pseudo_xml": null,
+  "dump_settings": null,
+  "dump_transforms": null,
+  "embed_stylesheet": false,
+  "error_encoding": "utf-8",
+  "error_encoding_error_handler": "backslashreplace",
+  "exit_status_level": 5,
+  "expose_internals": null,
+  "file_insertion_enabled": true,
+  "font_encoding": "T1",
+  "footnote_backlinks": true,
+  "footnote_references": "superscript",
+  "generator": null,
+  "graphicx_option": "",
+  "halt_level": 5,
+  "hyperlink_color": "blue",
+  "hyperref_options": "",
+  "id_prefix": "",
+  "input_encoding": "utf-8",
+  "input_encoding_error_handler": "strict",
+  "language_code": "en",
+  "latex_preamble": "% PDF Standard Fonts\n\\usepackage{mathptmx} % Times\n\\usepackage[scaled=.90]{helvet}\n\\usepackage{courier}",
+  "legacy_class_functions": false,
+  "legacy_column_widths": null,
+  "line_length_limit": 10000,
+  "literal_block_env": "",
+  "output": null,
+  "output_encoding": "utf-8",
+  "output_encoding_error_handler": "strict",
+  "output_path": null,
+  "pep_base_url": "https://peps.python.org/",
+  "pep_file_url_template": "pep-%04d",
+  "pep_references": null,
+  "raw_enabled": true,
+  "reference_label": "",
+  "report_level": 1,
+  "rfc_base_url": "https://tools.ietf.org/html/",
+  "rfc_references": null,
+  "root_prefix": "",
+  "section_enumerator_separator": "-",
+  "section_prefix_for_enumerators": null,
+  "sectnum_xform": true,
+  "sectsubtitle_xform": false,
+  "smart_quotes": false,
+  "smartquotes_locales": null,
+  "source_link": null,
+  "source_url": null,
+  "strict_visitor": null,
+  "strip_classes": null,
+  "strip_comments": null,
+  "strip_elements_with_classes": null,
+  "stylesheet": "",
+  "stylesheet_dirs": [
+   "."
+  ],
+  "stylesheet_path": null,
+  "syntax_highlight": "long",
+  "tab_width": 8,
+  "table_style": [
+   "standard"
+  ],
+  "template": "default.tex",
+  "title": null,
+  "toc_backlinks": "entry",
+  "traceback": true,
+  "trim_footnote_reference_space": null,
+  "use_bibtex": "",
+  "use_latex_abstract": false,
+  "use_latex_citations": null,
+  "use_latex_docinfo": false,
+  "use_latex_toc": true,
+  "use_part_section": false,
+  "use_verbatim_when_possible": null,
+  "validate": null
+ },
+ "stage": "parsed",
+ "transformer": {
+  "queue": [
+   [
+    "220-004",
+    "docutils.transforms.references.Substitutions",
+    null,
+    {}
+   ],
+   [
+    "260-005",
+    "docutils.transforms.references.PropagateTargets",
+    null,
+    {}
+   ],
+   [
+    "320-006",
+    "docutils.transforms.frontmatter.DocTitle",
+    null,
+    {}
+   ],
+   [
+    "340-008",
+    "docutils.transforms.frontmatter.DocInfo",
+    null,
+    {}
+   ],
+   [
+    "350-007",
+    "docutils.transforms.frontmatter.SectionSubTitle",
+    null,
+    {}
+   ],
+   [
+    "420-020",
+    "docutils.transforms.universal.StripClassesAndElements",
+    null,
+    {}
+   ],
+   [
+    "440-009",
+    "docutils.transforms.references.AnonymousHyperlinks",
+    null,
+    {}
+   ],
+   [
+    "460-010",
+    "docutils.transforms.references.IndirectHyperlinks",
+    null,
+    {}
+   ],
+   [
+    "620-011",
+    "docutils.transforms.references.Footnotes",
+    null,
+    {}
+   ],
+   [
+    "640-012",
+    "docutils.transforms.references.ExternalTargets",
+    null,
+    {}
+   ],
+   [
+    "660-013",
+    "docutils.transforms.references.InternalTargets",
+    null,
+    {}
+   ],
+   [
+    "740-003",
+    "docutils.transforms.universal.StripComments",
+    null,
+    {}
+   ],
+   [
+    "770-022",
+    "docutils.transforms.references.CitationReferences",
+    null,
+    {}
+   ],
+   [
+    "820-001",
+    "docutils.transforms.universal.Decorations",
+    null,
+    {}
+   ],
+   [
+    "830-015",
+    "docutils.transforms.misc.Transitions",
+    null,
+    {}
+   ],
+   [
+    "835-016",
+    "docutils.transforms.universal.Validate",
+    null,
+    {}
+   ],
+   [
+    "840-002",
+    "docutils.transforms.universal.ExposeInternals",
+    null,
+    {}
+   ],
+   [
+    "850-014",
+    "docutils.transforms.references.DanglingReferences",
+    null,
+    {}
+   ],
+   [
+    "855-017",
+    "docutils.transforms.universal.SmartQuotes",
+    null,
+    {}
+   ],
+   [
+    "860-018",
+    "docutils.transforms.universal.Messages",
+    null,
+    {}
+   ],
+   [
+    "870-019",
+    "docutils.transforms.universal.FilterMessages",
+    null,
+    {}
+   ],
+   [
+    "920-021",
+    "docutils.transforms.writer_aux.Admonitions",
+    null,
+    {}
+   ]
+  ],
+  "serialno": 22
+ },
+ "tree": {
+  "attributes": {
+   "source": "fuzz-029.rst"
+  },
+  "children": [
+   {
+    "children": [
+     {
+      "children": [
+       {
+        "tag": "#text",
+        "text": "Short\n--"
+       }
+      ],
+      "line": 1,
+      "rawsource": "Short\n--",
+      "source": "fuzz-029.rst",
+      "tag": "paragraph"
+     },
+     {
+      "children": [
+       {
+        "attributes": {
+         "auto": 1,
+         "ids": [
+          "named"
+         ],
+         "names": [
+          "named"
+         ]
+        },
+        "children": [
+         {
+          "children": [
+           {
+            "tag": "#text",
+            "text": "auto named"
+           }
+          ],
+          "line": 4,
+          "rawsource": "auto named",
+          "source": "fuzz-029.rst",
+          "tag": "paragraph"
+         }
+        ],
+        "line": 4,
+        "rawsource": "auto named\n",
+        "source": "fuzz-029.rst",
+        "tag": "footnote"
+       }
+      ],
+      "line": 4,
+      "rawsource": ".. [#named] auto named\n",
+      "source": "fuzz-029.rst",
+      "tag": "block_quote"
+     }
+    ],
+    "document": true,
+    "line": 1,
+    "rawsource": "Short\n--\n\n    .. [#named] auto named\n",
+    "source": "fuzz-029.rst",
+    "tag": "block_quote"
+   },
+   {
+    "children": [
+     {
+      "attributes": {
+       "ids": [
+        "problematic-1"
+       ],
+       "refid": "system-message-1"
+      },
+      "children": [
+       {
+        "tag": "#text",
+        "text": "|"
+       }
+      ],
+      "rawsource": "|",
+      "tag": "problematic"
+     },
+     {
+      "tag": "#text",
+      "text": "unclosed\n* a\n+ b"
+     }
+    ],
+    "document": true,
+    "line": 6,
+    "rawsource": "|unclosed\n* a\n+ b",
+    "source": "fuzz-029.rst",
+    "tag": "paragraph"
+   },
+   {
+    "attributes": {
+     "backrefs": [
+      "problematic-1"
+     ],
+     "ids": [
+      "system-message-1"
+     ],
+     "level": 2,
+     "line": 6,
+     "source": "fuzz-029.rst",
+     "type": "WARNING"
+    },
+    "children": [
+     {
+      "children": [
+       {
+        "tag": "#text",
+        "text": "Inline substitution_reference start-string without end-string."
+       }
+      ],
+      "tag": "paragraph"
+     }
+    ],
+    "document": true,
+    "line": 8,
+    "source": "fuzz-029.rst",
+    "tag": "system_message"
+   }
+  ],
+  "document": true,
+  "tag": "document"
+ }
+}

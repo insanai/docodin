@@ -1,0 +1,580 @@
+{
+ "detached": [
+  {
+   "node": {
+    "attributes": {
+     "level": 2,
+     "line": 5,
+     "source": "fuzz-022.rst",
+     "type": "WARNING"
+    },
+    "children": [
+     {
+      "children": [
+       {
+        "tag": "#text",
+        "text": "Bullet list ends without a blank line; unexpected unindent."
+       }
+      ],
+      "tag": "paragraph"
+     }
+    ],
+    "document": true,
+    "line": 4,
+    "source": "fuzz-022.rst",
+    "tag": "system_message"
+   },
+   "parent": 0
+  },
+  {
+   "node": {
+    "attributes": {
+     "level": 2,
+     "line": 8,
+     "source": "fuzz-022.rst",
+     "type": "WARNING"
+    },
+    "children": [
+     {
+      "children": [
+       {
+        "tag": "#text",
+        "text": "Explicit markup ends without a blank line; unexpected unindent."
+       }
+      ],
+      "tag": "paragraph"
+     }
+    ],
+    "document": true,
+    "line": 7,
+    "source": "fuzz-022.rst",
+    "tag": "system_message"
+   },
+   "parent": 0
+  },
+  {
+   "node": {
+    "attributes": {
+     "level": 2,
+     "line": 9,
+     "source": "fuzz-022.rst",
+     "type": "WARNING"
+    },
+    "children": [
+     {
+      "children": [
+       {
+        "tag": "#text",
+        "text": "Bullet list ends without a blank line; unexpected unindent."
+       }
+      ],
+      "tag": "paragraph"
+     }
+    ],
+    "document": true,
+    "line": 8,
+    "source": "fuzz-022.rst",
+    "tag": "system_message"
+   },
+   "parent": 0
+  },
+  {
+   "node": {
+    "attributes": {
+     "level": 3,
+     "line": 15,
+     "source": "fuzz-022.rst",
+     "type": "ERROR"
+    },
+    "children": [
+     {
+      "children": [
+       {
+        "tag": "#text",
+        "text": "Duplicate substitution definition name: \"img\"."
+       }
+      ],
+      "tag": "paragraph"
+     }
+    ],
+    "document": true,
+    "line": 15,
+    "source": "fuzz-022.rst",
+    "tag": "system_message"
+   },
+   "parent": 28
+  }
+ ],
+ "expected": {
+  "pformat": "<document source=\"fuzz-022.rst\">\n    <definition_list>\n        <definition_list_item>\n            <term>\n                Term\n            <classifier>\n                classifier\n            <definition>\n                <paragraph>\n                    Def\n    <bullet_list bullet=\"*\">\n        <list_item>\n            <paragraph>\n                a\n    <bullet_list bullet=\"+\">\n        <list_item>\n            <paragraph>\n                b\n    <substitution_definition dupnames=\"img\">\n        <image alt=\"img\" uri=\"a.png\">\n    <bullet_list bullet=\"*\">\n        <list_item>\n            <paragraph>\n                a\n    <bullet_list bullet=\"+\">\n        <list_item>\n            <paragraph>\n                b\n    <section ids=\"title\" names=\"title\">\n        <title>\n            Title\n        <substitution_definition names=\"sub\">\n            text\n        <substitution_definition names=\"img\">\n            <image alt=\"img\" uri=\"a.png\">\n"
+ },
+ "format": "docodin-doctree/1",
+ "input": {
+  "overrides": {
+   "halt_level": 5,
+   "report_level": 5
+  },
+  "source_path": "fuzz-022.rst",
+  "writer": "html5"
+ },
+ "registry": {
+  "autofootnote_refs": [],
+  "autofootnote_start": 1,
+  "autofootnotes": [],
+  "citation_refs": [],
+  "citations": [],
+  "current_line": null,
+  "current_source": null,
+  "decoration": null,
+  "footnote_refs": [],
+  "footnotes": [],
+  "id_counter": [],
+  "ids": [
+   [
+    "title",
+    28
+   ]
+  ],
+  "indirect_targets": [],
+  "nameids": [
+   [
+    "title",
+    "title"
+   ]
+  ],
+  "nametypes": [
+   [
+    "title",
+    false
+   ]
+  ],
+  "parse_messages": [
+   35,
+   38,
+   41,
+   44
+  ],
+  "refids": [],
+  "refnames": [],
+  "substitution_defs": [
+   [
+    "img",
+    33
+   ],
+   [
+    "sub",
+    31
+   ]
+  ],
+  "substitution_names": [
+   [
+    "img",
+    "img"
+   ],
+   [
+    "sub",
+    "sub"
+   ]
+  ],
+  "symbol_footnote_refs": [],
+  "symbol_footnote_start": 0,
+  "symbol_footnotes": [],
+  "transform_messages": []
+ },
+ "reporter": {
+  "debug": false,
+  "halt_level": 5,
+  "max_level": 3,
+  "observers": [],
+  "report_level": 5,
+  "source": "fuzz-022.rst",
+  "source_lines": {
+   "input_offset": 0,
+   "line_offset": 16,
+   "runs": [
+    [
+     "fuzz-022.rst",
+     0,
+     15
+    ]
+   ]
+  },
+  "written": []
+ },
+ "settings": {
+  "_config_files": [],
+  "_destination": null,
+  "_disable_config": true,
+  "_source": "fuzz-022.rst",
+  "attribution": "dash",
+  "auto_id_prefix": "%",
+  "character_level_inline_markup": false,
+  "cloak_email_addresses": null,
+  "compact_field_lists": true,
+  "compact_lists": true,
+  "config": null,
+  "datestamp": null,
+  "debug": null,
+  "docinfo_xform": true,
+  "doctitle_xform": true,
+  "dump_internals": null,
+  "dump_pseudo_xml": null,
+  "dump_settings": null,
+  "dump_transforms": null,
+  "embed_images": null,
+  "embed_stylesheet": true,
+  "error_encoding": "utf-8",
+  "error_encoding_error_handler": "backslashreplace",
+  "exit_status_level": 5,
+  "expose_internals": null,
+  "file_insertion_enabled": true,
+  "footnote_backlinks": true,
+  "footnote_references": "brackets",
+  "generator": null,
+  "halt_level": 5,
+  "id_prefix": "",
+  "image_loading": null,
+  "initial_header_level": "2",
+  "input_encoding": "utf-8",
+  "input_encoding_error_handler": "strict",
+  "language_code": "en",
+  "line_length_limit": 10000,
+  "math_output": "MathML",
+  "output": null,
+  "output_encoding": "utf-8",
+  "output_encoding_error_handler": "xmlcharrefreplace",
+  "output_path": null,
+  "pep_base_url": "https://peps.python.org/",
+  "pep_file_url_template": "pep-%04d",
+  "pep_references": null,
+  "raw_enabled": true,
+  "report_level": 5,
+  "rfc_base_url": "https://tools.ietf.org/html/",
+  "rfc_references": null,
+  "root_prefix": "",
+  "section_self_link": false,
+  "sectnum_xform": true,
+  "sectsubtitle_xform": false,
+  "smart_quotes": false,
+  "smartquotes_locales": null,
+  "source_link": null,
+  "source_url": null,
+  "strict_visitor": null,
+  "strip_classes": null,
+  "strip_comments": null,
+  "strip_elements_with_classes": null,
+  "stylesheet": null,
+  "stylesheet_dirs": [
+   ".",
+   "<docutils>/writers/html5_polyglot"
+  ],
+  "stylesheet_path": [
+   "minimal.css",
+   "plain.css"
+  ],
+  "syntax_highlight": "long",
+  "tab_width": 8,
+  "table_style": "",
+  "title": null,
+  "toc_backlinks": "entry",
+  "traceback": true,
+  "trim_footnote_reference_space": null,
+  "validate": null,
+  "xml_declaration": false
+ },
+ "stage": "transformed",
+ "transformer": {
+  "queue": [],
+  "serialno": 21
+ },
+ "tree": {
+  "attributes": {
+   "source": "fuzz-022.rst"
+  },
+  "children": [
+   {
+    "children": [
+     {
+      "children": [
+       {
+        "children": [
+         {
+          "tag": "#text",
+          "text": "Term"
+         }
+        ],
+        "line": 1,
+        "rawsource": "Term : classifier",
+        "source": "fuzz-022.rst",
+        "tag": "term"
+       },
+       {
+        "children": [
+         {
+          "tag": "#text",
+          "text": "classifier"
+         }
+        ],
+        "rawsource": "classifier",
+        "tag": "classifier"
+       },
+       {
+        "children": [
+         {
+          "children": [
+           {
+            "tag": "#text",
+            "text": "Def"
+           }
+          ],
+          "line": 2,
+          "rawsource": "Def",
+          "source": "fuzz-022.rst",
+          "tag": "paragraph"
+         }
+        ],
+        "line": 2,
+        "source": "fuzz-022.rst",
+        "tag": "definition"
+       }
+      ],
+      "line": 1,
+      "rawsource": "Term : classifier\nDef\n",
+      "source": "fuzz-022.rst",
+      "tag": "definition_list_item"
+     }
+    ],
+    "document": true,
+    "line": 1,
+    "source": "fuzz-022.rst",
+    "tag": "definition_list"
+   },
+   {
+    "attributes": {
+     "bullet": "*"
+    },
+    "children": [
+     {
+      "children": [
+       {
+        "children": [
+         {
+          "tag": "#text",
+          "text": "a"
+         }
+        ],
+        "line": 4,
+        "rawsource": "a",
+        "source": "fuzz-022.rst",
+        "tag": "paragraph"
+       }
+      ],
+      "document": true,
+      "line": 4,
+      "rawsource": "a",
+      "source": "fuzz-022.rst",
+      "tag": "list_item"
+     }
+    ],
+    "document": true,
+    "line": 4,
+    "source": "fuzz-022.rst",
+    "tag": "bullet_list"
+   },
+   {
+    "attributes": {
+     "bullet": "+"
+    },
+    "children": [
+     {
+      "children": [
+       {
+        "children": [
+         {
+          "tag": "#text",
+          "text": "b"
+         }
+        ],
+        "line": 5,
+        "rawsource": "b",
+        "source": "fuzz-022.rst",
+        "tag": "paragraph"
+       }
+      ],
+      "document": true,
+      "line": 5,
+      "rawsource": "b\n",
+      "source": "fuzz-022.rst",
+      "tag": "list_item"
+     }
+    ],
+    "document": true,
+    "line": 5,
+    "source": "fuzz-022.rst",
+    "tag": "bullet_list"
+   },
+   {
+    "attributes": {
+     "dupnames": [
+      "img"
+     ]
+    },
+    "children": [
+     {
+      "attributes": {
+       "alt": "img",
+       "uri": "a.png"
+      },
+      "line": 7,
+      "rawsource": "image:: a.png",
+      "source": "fuzz-022.rst",
+      "tag": "image"
+     }
+    ],
+    "document": true,
+    "line": 7,
+    "rawsource": ".. |img| image:: a.png",
+    "referenced": true,
+    "source": "fuzz-022.rst",
+    "tag": "substitution_definition"
+   },
+   {
+    "attributes": {
+     "bullet": "*"
+    },
+    "children": [
+     {
+      "children": [
+       {
+        "children": [
+         {
+          "tag": "#text",
+          "text": "a"
+         }
+        ],
+        "line": 8,
+        "rawsource": "a",
+        "source": "fuzz-022.rst",
+        "tag": "paragraph"
+       }
+      ],
+      "document": true,
+      "line": 8,
+      "rawsource": "a",
+      "source": "fuzz-022.rst",
+      "tag": "list_item"
+     }
+    ],
+    "document": true,
+    "line": 8,
+    "source": "fuzz-022.rst",
+    "tag": "bullet_list"
+   },
+   {
+    "attributes": {
+     "bullet": "+"
+    },
+    "children": [
+     {
+      "children": [
+       {
+        "children": [
+         {
+          "tag": "#text",
+          "text": "b"
+         }
+        ],
+        "line": 9,
+        "rawsource": "b",
+        "source": "fuzz-022.rst",
+        "tag": "paragraph"
+       }
+      ],
+      "document": true,
+      "line": 9,
+      "rawsource": "b\n",
+      "source": "fuzz-022.rst",
+      "tag": "list_item"
+     }
+    ],
+    "document": true,
+    "line": 9,
+    "source": "fuzz-022.rst",
+    "tag": "bullet_list"
+   },
+   {
+    "attributes": {
+     "ids": [
+      "title"
+     ],
+     "names": [
+      "title"
+     ]
+    },
+    "children": [
+     {
+      "children": [
+       {
+        "tag": "#text",
+        "text": "Title"
+       }
+      ],
+      "document": true,
+      "line": 12,
+      "rawsource": "Title",
+      "source": "fuzz-022.rst",
+      "tag": "title"
+     },
+     {
+      "attributes": {
+       "names": [
+        "sub"
+       ]
+      },
+      "children": [
+       {
+        "tag": "#text",
+        "text": "text"
+       }
+      ],
+      "document": true,
+      "line": 13,
+      "rawsource": ".. |sub| replace:: text\n",
+      "source": "fuzz-022.rst",
+      "tag": "substitution_definition"
+     },
+     {
+      "attributes": {
+       "names": [
+        "img"
+       ]
+      },
+      "children": [
+       {
+        "attributes": {
+         "alt": "img",
+         "uri": "a.png"
+        },
+        "line": 15,
+        "rawsource": "image:: a.png",
+        "source": "fuzz-022.rst",
+        "tag": "image"
+       }
+      ],
+      "document": true,
+      "line": 15,
+      "rawsource": ".. |img| image:: a.png",
+      "source": "fuzz-022.rst",
+      "tag": "substitution_definition"
+     }
+    ],
+    "document": true,
+    "line": 12,
+    "source": "fuzz-022.rst",
+    "tag": "section"
+   }
+  ],
+  "document": true,
+  "tag": "document"
+ }
+}

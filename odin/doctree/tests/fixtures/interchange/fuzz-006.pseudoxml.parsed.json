@@ -1,0 +1,303 @@
+{
+ "detached": [],
+ "expected": {
+  "pformat": "<document source=\"fuzz-006.rst\">\n    <definition_list>\n        <definition_list_item>\n            <term>\n                Term\n            <definition>\n                <paragraph>\n                    Definiio>n\"[\n"
+ },
+ "format": "docodin-doctree/1",
+ "input": {
+  "overrides": {
+   "halt_level": 5,
+   "report_level": 2
+  },
+  "source_path": "fuzz-006.rst",
+  "writer": "pseudoxml"
+ },
+ "registry": {
+  "autofootnote_refs": [],
+  "autofootnote_start": 1,
+  "autofootnotes": [],
+  "citation_refs": [],
+  "citations": [],
+  "current_line": null,
+  "current_source": null,
+  "decoration": null,
+  "footnote_refs": [],
+  "footnotes": [],
+  "id_counter": [],
+  "ids": [],
+  "indirect_targets": [],
+  "nameids": [],
+  "nametypes": [],
+  "parse_messages": [],
+  "refids": [],
+  "refnames": [],
+  "substitution_defs": [],
+  "substitution_names": [],
+  "symbol_footnote_refs": [],
+  "symbol_footnote_start": 0,
+  "symbol_footnotes": [],
+  "transform_messages": []
+ },
+ "reporter": {
+  "debug": false,
+  "halt_level": 5,
+  "max_level": -1,
+  "observers": [],
+  "report_level": 2,
+  "source": "fuzz-006.rst",
+  "source_lines": {
+   "input_offset": 0,
+   "line_offset": 3,
+   "runs": [
+    [
+     "fuzz-006.rst",
+     0,
+     2
+    ]
+   ]
+  },
+  "written": []
+ },
+ "settings": {
+  "_config_files": [],
+  "_destination": null,
+  "_disable_config": true,
+  "_source": "fuzz-006.rst",
+  "auto_id_prefix": "%",
+  "character_level_inline_markup": false,
+  "config": null,
+  "datestamp": null,
+  "debug": null,
+  "detailed": null,
+  "docinfo_xform": true,
+  "doctitle_xform": true,
+  "dump_internals": null,
+  "dump_pseudo_xml": null,
+  "dump_settings": null,
+  "dump_transforms": null,
+  "error_encoding": "utf-8",
+  "error_encoding_error_handler": "backslashreplace",
+  "exit_status_level": 5,
+  "expose_internals": null,
+  "file_insertion_enabled": true,
+  "footnote_backlinks": true,
+  "generator": null,
+  "halt_level": 5,
+  "id_prefix": "",
+  "input_encoding": "utf-8",
+  "input_encoding_error_handler": "strict",
+  "language_code": "en",
+  "line_length_limit": 10000,
+  "output": null,
+  "output_encoding": "utf-8",
+  "output_encoding_error_handler": "strict",
+  "output_path": null,
+  "pep_base_url": "https://peps.python.org/",
+  "pep_file_url_template": "pep-%04d",
+  "pep_references": null,
+  "raw_enabled": true,
+  "report_level": 2,
+  "rfc_base_url": "https://tools.ietf.org/html/",
+  "rfc_references": null,
+  "root_prefix": "",
+  "sectnum_xform": true,
+  "sectsubtitle_xform": false,
+  "smart_quotes": false,
+  "smartquotes_locales": null,
+  "source_link": null,
+  "source_url": null,
+  "strict_visitor": null,
+  "strip_classes": null,
+  "strip_comments": null,
+  "strip_elements_with_classes": null,
+  "syntax_highlight": "long",
+  "tab_width": 8,
+  "title": null,
+  "toc_backlinks": "entry",
+  "traceback": true,
+  "trim_footnote_reference_space": null,
+  "validate": null
+ },
+ "stage": "parsed",
+ "transformer": {
+  "queue": [
+   [
+    "220-004",
+    "docutils.transforms.references.Substitutions",
+    null,
+    {}
+   ],
+   [
+    "260-005",
+    "docutils.transforms.references.PropagateTargets",
+    null,
+    {}
+   ],
+   [
+    "320-006",
+    "docutils.transforms.frontmatter.DocTitle",
+    null,
+    {}
+   ],
+   [
+    "340-008",
+    "docutils.transforms.frontmatter.DocInfo",
+    null,
+    {}
+   ],
+   [
+    "350-007",
+    "docutils.transforms.frontmatter.SectionSubTitle",
+    null,
+    {}
+   ],
+   [
+    "420-020",
+    "docutils.transforms.universal.StripClassesAndElements",
+    null,
+    {}
+   ],
+   [
+    "440-009",
+    "docutils.transforms.references.AnonymousHyperlinks",
+    null,
+    {}
+   ],
+   [
+    "460-010",
+    "docutils.transforms.references.IndirectHyperlinks",
+    null,
+    {}
+   ],
+   [
+    "620-011",
+    "docutils.transforms.references.Footnotes",
+    null,
+    {}
+   ],
+   [
+    "640-012",
+    "docutils.transforms.references.ExternalTargets",
+    null,
+    {}
+   ],
+   [
+    "660-013",
+    "docutils.transforms.references.InternalTargets",
+    null,
+    {}
+   ],
+   [
+    "740-003",
+    "docutils.transforms.universal.StripComments",
+    null,
+    {}
+   ],
+   [
+    "820-001",
+    "docutils.transforms.universal.Decorations",
+    null,
+    {}
+   ],
+   [
+    "830-015",
+    "docutils.transforms.misc.Transitions",
+    null,
+    {}
+   ],
+   [
+    "835-016",
+    "docutils.transforms.universal.Validate",
+    null,
+    {}
+   ],
+   [
+    "840-002",
+    "docutils.transforms.universal.ExposeInternals",
+    null,
+    {}
+   ],
+   [
+    "850-014",
+    "docutils.transforms.references.DanglingReferences",
+    null,
+    {}
+   ],
+   [
+    "855-017",
+    "docutils.transforms.universal.SmartQuotes",
+    null,
+    {}
+   ],
+   [
+    "860-018",
+    "docutils.transforms.universal.Messages",
+    null,
+    {}
+   ],
+   [
+    "870-019",
+    "docutils.transforms.universal.FilterMessages",
+    null,
+    {}
+   ]
+  ],
+  "serialno": 20
+ },
+ "tree": {
+  "attributes": {
+   "source": "fuzz-006.rst"
+  },
+  "children": [
+   {
+    "children": [
+     {
+      "children": [
+       {
+        "children": [
+         {
+          "tag": "#text",
+          "text": "Term"
+         }
+        ],
+        "line": 1,
+        "rawsource": "Term",
+        "source": "fuzz-006.rst",
+        "tag": "term"
+       },
+       {
+        "children": [
+         {
+          "children": [
+           {
+            "tag": "#text",
+            "text": "Definiio>n\"["
+           }
+          ],
+          "line": 2,
+          "rawsource": "Definiio>n\"[",
+          "source": "fuzz-006.rst",
+          "tag": "paragraph"
+         }
+        ],
+        "line": 2,
+        "source": "fuzz-006.rst",
+        "tag": "definition"
+       }
+      ],
+      "line": 1,
+      "rawsource": "Term\nDefiniio>n\"[",
+      "source": "fuzz-006.rst",
+      "tag": "definition_list_item"
+     }
+    ],
+    "document": true,
+    "line": 1,
+    "source": "fuzz-006.rst",
+    "tag": "definition_list"
+   }
+  ],
+  "document": true,
+  "tag": "document"
+ }
+}

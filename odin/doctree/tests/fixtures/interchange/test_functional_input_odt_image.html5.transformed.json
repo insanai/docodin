@@ -1,0 +1,195 @@
+{
+ "detached": [],
+ "expected": {
+  "pformat": "<document source=\"test/functional/input/odt_image.rst\">\n    <paragraph>\n        The image URI must be de-quoted if the image is opened as local file\n        (cf. \n        <reference refuri=\"https://sourceforge.net/p/docutils/bugs/153\">\n            https://sourceforge.net/p/docutils/bugs/153\n        ).\n    <image height=\"50px\" uri=\"data/blue%20square.png\" width=\"50px\">\n"
+ },
+ "format": "docodin-doctree/1",
+ "input": {
+  "overrides": {},
+  "source_path": "test/functional/input/odt_image.rst",
+  "writer": "html5"
+ },
+ "registry": {
+  "autofootnote_refs": [],
+  "autofootnote_start": 1,
+  "autofootnotes": [],
+  "citation_refs": [],
+  "citations": [],
+  "current_line": null,
+  "current_source": null,
+  "decoration": null,
+  "footnote_refs": [],
+  "footnotes": [],
+  "id_counter": [],
+  "ids": [],
+  "indirect_targets": [],
+  "nameids": [],
+  "nametypes": [],
+  "parse_messages": [],
+  "refids": [],
+  "refnames": [],
+  "substitution_defs": [],
+  "substitution_names": [],
+  "symbol_footnote_refs": [],
+  "symbol_footnote_start": 0,
+  "symbol_footnotes": [],
+  "transform_messages": []
+ },
+ "reporter": {
+  "debug": false,
+  "halt_level": 4,
+  "max_level": -1,
+  "observers": [],
+  "report_level": 2,
+  "source": "test/functional/input/odt_image.rst",
+  "source_lines": {
+   "input_offset": 0,
+   "line_offset": 7,
+   "runs": [
+    [
+     "test/functional/input/odt_image.rst",
+     0,
+     6
+    ]
+   ]
+  },
+  "written": []
+ },
+ "settings": {
+  "_config_files": [],
+  "_destination": null,
+  "_disable_config": true,
+  "_source": "test/functional/input/odt_image.rst",
+  "attribution": "dash",
+  "auto_id_prefix": "%",
+  "character_level_inline_markup": false,
+  "cloak_email_addresses": null,
+  "compact_field_lists": true,
+  "compact_lists": true,
+  "config": null,
+  "datestamp": null,
+  "debug": null,
+  "docinfo_xform": true,
+  "doctitle_xform": true,
+  "dump_internals": null,
+  "dump_pseudo_xml": null,
+  "dump_settings": null,
+  "dump_transforms": null,
+  "embed_images": null,
+  "embed_stylesheet": true,
+  "error_encoding": "utf-8",
+  "error_encoding_error_handler": "backslashreplace",
+  "exit_status_level": 5,
+  "expose_internals": null,
+  "file_insertion_enabled": true,
+  "footnote_backlinks": true,
+  "footnote_references": "brackets",
+  "generator": null,
+  "halt_level": 4,
+  "id_prefix": "",
+  "image_loading": null,
+  "initial_header_level": "2",
+  "input_encoding": "utf-8",
+  "input_encoding_error_handler": "strict",
+  "language_code": "en",
+  "line_length_limit": 10000,
+  "math_output": "MathML",
+  "output": null,
+  "output_encoding": "utf-8",
+  "output_encoding_error_handler": "xmlcharrefreplace",
+  "output_path": null,
+  "pep_base_url": "https://peps.python.org/",
+  "pep_file_url_template": "pep-%04d",
+  "pep_references": null,
+  "raw_enabled": true,
+  "report_level": 2,
+  "rfc_base_url": "https://tools.ietf.org/html/",
+  "rfc_references": null,
+  "root_prefix": "",
+  "section_self_link": false,
+  "sectnum_xform": true,
+  "sectsubtitle_xform": false,
+  "smart_quotes": false,
+  "smartquotes_locales": null,
+  "source_link": null,
+  "source_url": null,
+  "strict_visitor": null,
+  "strip_classes": null,
+  "strip_comments": null,
+  "strip_elements_with_classes": null,
+  "stylesheet": null,
+  "stylesheet_dirs": [
+   ".",
+   "<docutils>/writers/html5_polyglot"
+  ],
+  "stylesheet_path": [
+   "minimal.css",
+   "plain.css"
+  ],
+  "syntax_highlight": "long",
+  "tab_width": 8,
+  "table_style": "",
+  "title": null,
+  "toc_backlinks": "entry",
+  "traceback": true,
+  "trim_footnote_reference_space": null,
+  "validate": null,
+  "xml_declaration": false
+ },
+ "stage": "transformed",
+ "transformer": {
+  "queue": [],
+  "serialno": 21
+ },
+ "tree": {
+  "attributes": {
+   "source": "test/functional/input/odt_image.rst"
+  },
+  "children": [
+   {
+    "children": [
+     {
+      "tag": "#text",
+      "text": "The image URI must be de-quoted if the image is opened as local file\n(cf. "
+     },
+     {
+      "attributes": {
+       "refuri": "https://sourceforge.net/p/docutils/bugs/153"
+      },
+      "children": [
+       {
+        "tag": "#text",
+        "text": "https://sourceforge.net/p/docutils/bugs/153"
+       }
+      ],
+      "rawsource": "https://sourceforge.net/p/docutils/bugs/153",
+      "tag": "reference"
+     },
+     {
+      "tag": "#text",
+      "text": ")."
+     }
+    ],
+    "document": true,
+    "line": 1,
+    "rawsource": "The image URI must be de-quoted if the image is opened as local file\n(cf. https://sourceforge.net/p/docutils/bugs/153).",
+    "source": "test/functional/input/odt_image.rst",
+    "tag": "paragraph"
+   },
+   {
+    "attributes": {
+     "height": "50px",
+     "uri": "data/blue%20square.png",
+     "width": "50px"
+    },
+    "document": true,
+    "line": 4,
+    "rawsource": ".. image:: data/blue%20square.png\n   :width: 50px\n   :height: 50px",
+    "source": "test/functional/input/odt_image.rst",
+    "tag": "image"
+   }
+  ],
+  "document": true,
+  "tag": "document"
+ }
+}

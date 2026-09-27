@@ -1,0 +1,345 @@
+{
+ "detached": [],
+ "expected": {
+  "pformat": "<document source=\"fuzz-014.rst\">\n    <block_quote>\n        <system_message level=\"3\" line=\"1\" source=\"fuzz-014.rst\" type=\"ERROR\">\n            <paragraph>\n                The \"topic\" directive may not be used within topics or body elements.\n            <literal_block xml:space=\"preserve\">\n                .. topic:: T\n                \n                   body\n"
+ },
+ "format": "docodin-doctree/1",
+ "input": {
+  "overrides": {
+   "halt_level": 5,
+   "report_level": 5
+  },
+  "source_path": "fuzz-014.rst",
+  "writer": "latex"
+ },
+ "registry": {
+  "autofootnote_refs": [],
+  "autofootnote_start": 1,
+  "autofootnotes": [],
+  "citation_refs": [],
+  "citations": [],
+  "current_line": null,
+  "current_source": null,
+  "decoration": null,
+  "footnote_refs": [],
+  "footnotes": [],
+  "id_counter": [],
+  "ids": [],
+  "indirect_targets": [],
+  "nameids": [],
+  "nametypes": [],
+  "parse_messages": [
+   2
+  ],
+  "refids": [],
+  "refnames": [],
+  "substitution_defs": [],
+  "substitution_names": [],
+  "symbol_footnote_refs": [],
+  "symbol_footnote_start": 0,
+  "symbol_footnotes": [],
+  "transform_messages": []
+ },
+ "reporter": {
+  "debug": false,
+  "halt_level": 5,
+  "max_level": 3,
+  "observers": [],
+  "report_level": 5,
+  "source": "fuzz-014.rst",
+  "source_lines": {
+   "input_offset": 0,
+   "line_offset": 3,
+   "runs": [
+    [
+     "fuzz-014.rst",
+     0,
+     3
+    ]
+   ]
+  },
+  "written": []
+ },
+ "settings": {
+  "_config_files": [],
+  "_destination": null,
+  "_disable_config": true,
+  "_source": "fuzz-014.rst",
+  "attribution": "dash",
+  "auto_id_prefix": "%",
+  "character_level_inline_markup": false,
+  "compound_enumerators": false,
+  "config": null,
+  "datestamp": null,
+  "debug": null,
+  "docinfo_xform": true,
+  "doctitle_xform": true,
+  "documentclass": "article",
+  "documentoptions": "a4paper",
+  "docutils_footnotes": true,
+  "dump_internals": null,
+  "dump_pseudo_xml": null,
+  "dump_settings": null,
+  "dump_transforms": null,
+  "embed_stylesheet": false,
+  "error_encoding": "utf-8",
+  "error_encoding_error_handler": "backslashreplace",
+  "exit_status_level": 5,
+  "expose_internals": null,
+  "file_insertion_enabled": true,
+  "font_encoding": "T1",
+  "footnote_backlinks": true,
+  "footnote_references": "superscript",
+  "generator": null,
+  "graphicx_option": "",
+  "halt_level": 5,
+  "hyperlink_color": "blue",
+  "hyperref_options": "",
+  "id_prefix": "",
+  "input_encoding": "utf-8",
+  "input_encoding_error_handler": "strict",
+  "language_code": "en",
+  "latex_preamble": "% PDF Standard Fonts\n\\usepackage{mathptmx} % Times\n\\usepackage[scaled=.90]{helvet}\n\\usepackage{courier}",
+  "legacy_class_functions": false,
+  "legacy_column_widths": null,
+  "line_length_limit": 10000,
+  "literal_block_env": "",
+  "output": null,
+  "output_encoding": "utf-8",
+  "output_encoding_error_handler": "strict",
+  "output_path": null,
+  "pep_base_url": "https://peps.python.org/",
+  "pep_file_url_template": "pep-%04d",
+  "pep_references": null,
+  "raw_enabled": true,
+  "reference_label": "",
+  "report_level": 5,
+  "rfc_base_url": "https://tools.ietf.org/html/",
+  "rfc_references": null,
+  "root_prefix": "",
+  "section_enumerator_separator": "-",
+  "section_prefix_for_enumerators": null,
+  "sectnum_xform": true,
+  "sectsubtitle_xform": false,
+  "smart_quotes": false,
+  "smartquotes_locales": null,
+  "source_link": null,
+  "source_url": null,
+  "strict_visitor": null,
+  "strip_classes": null,
+  "strip_comments": null,
+  "strip_elements_with_classes": null,
+  "stylesheet": "",
+  "stylesheet_dirs": [
+   "."
+  ],
+  "stylesheet_path": null,
+  "syntax_highlight": "long",
+  "tab_width": 8,
+  "table_style": [
+   "standard"
+  ],
+  "template": "default.tex",
+  "title": null,
+  "toc_backlinks": "entry",
+  "traceback": true,
+  "trim_footnote_reference_space": null,
+  "use_bibtex": "",
+  "use_latex_abstract": false,
+  "use_latex_citations": null,
+  "use_latex_docinfo": false,
+  "use_latex_toc": true,
+  "use_part_section": false,
+  "use_verbatim_when_possible": null,
+  "validate": null
+ },
+ "stage": "parsed",
+ "transformer": {
+  "queue": [
+   [
+    "220-004",
+    "docutils.transforms.references.Substitutions",
+    null,
+    {}
+   ],
+   [
+    "260-005",
+    "docutils.transforms.references.PropagateTargets",
+    null,
+    {}
+   ],
+   [
+    "320-006",
+    "docutils.transforms.frontmatter.DocTitle",
+    null,
+    {}
+   ],
+   [
+    "340-008",
+    "docutils.transforms.frontmatter.DocInfo",
+    null,
+    {}
+   ],
+   [
+    "350-007",
+    "docutils.transforms.frontmatter.SectionSubTitle",
+    null,
+    {}
+   ],
+   [
+    "420-020",
+    "docutils.transforms.universal.StripClassesAndElements",
+    null,
+    {}
+   ],
+   [
+    "440-009",
+    "docutils.transforms.references.AnonymousHyperlinks",
+    null,
+    {}
+   ],
+   [
+    "460-010",
+    "docutils.transforms.references.IndirectHyperlinks",
+    null,
+    {}
+   ],
+   [
+    "620-011",
+    "docutils.transforms.references.Footnotes",
+    null,
+    {}
+   ],
+   [
+    "640-012",
+    "docutils.transforms.references.ExternalTargets",
+    null,
+    {}
+   ],
+   [
+    "660-013",
+    "docutils.transforms.references.InternalTargets",
+    null,
+    {}
+   ],
+   [
+    "740-003",
+    "docutils.transforms.universal.StripComments",
+    null,
+    {}
+   ],
+   [
+    "770-022",
+    "docutils.transforms.references.CitationReferences",
+    null,
+    {}
+   ],
+   [
+    "820-001",
+    "docutils.transforms.universal.Decorations",
+    null,
+    {}
+   ],
+   [
+    "830-015",
+    "docutils.transforms.misc.Transitions",
+    null,
+    {}
+   ],
+   [
+    "835-016",
+    "docutils.transforms.universal.Validate",
+    null,
+    {}
+   ],
+   [
+    "840-002",
+    "docutils.transforms.universal.ExposeInternals",
+    null,
+    {}
+   ],
+   [
+    "850-014",
+    "docutils.transforms.references.DanglingReferences",
+    null,
+    {}
+   ],
+   [
+    "855-017",
+    "docutils.transforms.universal.SmartQuotes",
+    null,
+    {}
+   ],
+   [
+    "860-018",
+    "docutils.transforms.universal.Messages",
+    null,
+    {}
+   ],
+   [
+    "870-019",
+    "docutils.transforms.universal.FilterMessages",
+    null,
+    {}
+   ],
+   [
+    "920-021",
+    "docutils.transforms.writer_aux.Admonitions",
+    null,
+    {}
+   ]
+  ],
+  "serialno": 22
+ },
+ "tree": {
+  "attributes": {
+   "source": "fuzz-014.rst"
+  },
+  "children": [
+   {
+    "children": [
+     {
+      "attributes": {
+       "level": 3,
+       "line": 1,
+       "source": "fuzz-014.rst",
+       "type": "ERROR"
+      },
+      "children": [
+       {
+        "children": [
+         {
+          "tag": "#text",
+          "text": "The \"topic\" directive may not be used within topics or body elements."
+         }
+        ],
+        "tag": "paragraph"
+       },
+       {
+        "attributes": {
+         "xml:space": "preserve"
+        },
+        "children": [
+         {
+          "tag": "#text",
+          "text": ".. topic:: T\n\n   body"
+         }
+        ],
+        "rawsource": ".. topic:: T\n\n   body",
+        "tag": "literal_block"
+       }
+      ],
+      "tag": "system_message"
+     }
+    ],
+    "document": true,
+    "line": 1,
+    "rawsource": ".. topic:: T\n\n   body",
+    "source": "fuzz-014.rst",
+    "tag": "block_quote"
+   }
+  ],
+  "document": true,
+  "tag": "document"
+ }
+}

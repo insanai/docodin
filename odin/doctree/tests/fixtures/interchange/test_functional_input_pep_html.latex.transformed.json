@@ -1,0 +1,534 @@
+{
+ "detached": [],
+ "expected": {
+  "pformat": "<document source=\"test/functional/input/pep_html.rst\">\n    <paragraph>\n        PEP: 100\n        Title: Test PEP\n        Version: 42\n        Last-Modified: A long time ago.\n        Author: John Doe <\n        <reference refuri=\"mailto:john@example.org\">\n            john@example.org\n        >\n        Discussions-To: <\n        <reference refuri=\"mailto:devnull@example.org\">\n            devnull@example.org\n        >\n        Status: Draft\n        Type: Standards Track\n        Content-Type: text/x-rst\n        Created: 01-Jun-2001\n        Post-History: 13-Jun-2001\n    <section ids=\"abstract\" names=\"abstract\">\n        <title>\n            Abstract\n        <paragraph>\n            This is just a test\n            <footnote_reference auto=\"1\" ids=\"footnote-reference-1\" refid=\"footnote-1\">\n                1\n            .  See the \n            <reference name=\"PEP repository\" refuri=\"http://www.python.org/peps/\">\n                PEP repository\n             for the real\n            thing.\n        <target ids=\"pep-repository\" names=\"pep\\ repository\" refuri=\"http://www.python.org/peps/\">\n    <section ids=\"copyright\" names=\"copyright\">\n        <title>\n            Copyright\n        <paragraph>\n            This document has been placed in the public domain.\n    <section ids=\"references-and-footnotes\" names=\"references\\ and\\ footnotes\">\n        <title>\n            References and Footnotes\n        <footnote auto=\"1\" backrefs=\"footnote-reference-1\" ids=\"footnote-1\" names=\"1\">\n            <label>\n                1\n            <paragraph>\n                PEP editors: \n                <reference refuri=\"mailto:peps@python.org\">\n                    peps@python.org\n"
+ },
+ "format": "docodin-doctree/1",
+ "input": {
+  "overrides": {},
+  "source_path": "test/functional/input/pep_html.rst",
+  "writer": "latex"
+ },
+ "registry": {
+  "autofootnote_refs": [
+   14
+  ],
+  "autofootnote_start": 2,
+  "autofootnotes": [
+   29
+  ],
+  "citation_refs": [],
+  "citations": [],
+  "current_line": null,
+  "current_source": null,
+  "decoration": null,
+  "footnote_refs": [],
+  "footnotes": [],
+  "id_counter": [
+   [
+    "footnote-reference-",
+    1
+   ],
+   [
+    "footnote-",
+    1
+   ]
+  ],
+  "ids": [
+   [
+    "abstract",
+    9
+   ],
+   [
+    "footnote-reference-1",
+    14
+   ],
+   [
+    "pep-repository",
+    20
+   ],
+   [
+    "copyright",
+    21
+   ],
+   [
+    "references-and-footnotes",
+    26
+   ],
+   [
+    "footnote-1",
+    29
+   ]
+  ],
+  "indirect_targets": [],
+  "nameids": [
+   [
+    "abstract",
+    "abstract"
+   ],
+   [
+    "pep repository",
+    "pep-repository"
+   ],
+   [
+    "copyright",
+    "copyright"
+   ],
+   [
+    "references and footnotes",
+    "references-and-footnotes"
+   ],
+   [
+    "1",
+    "footnote-1"
+   ]
+  ],
+  "nametypes": [
+   [
+    "abstract",
+    false
+   ],
+   [
+    "pep repository",
+    true
+   ],
+   [
+    "copyright",
+    false
+   ],
+   [
+    "references and footnotes",
+    false
+   ],
+   [
+    "1",
+    true
+   ]
+  ],
+  "parse_messages": [],
+  "refids": [
+   [
+    "footnote-1",
+    [
+     14
+    ]
+   ]
+  ],
+  "refnames": [
+   [
+    "pep repository",
+    [
+     17
+    ]
+   ]
+  ],
+  "substitution_defs": [],
+  "substitution_names": [],
+  "symbol_footnote_refs": [],
+  "symbol_footnote_start": 0,
+  "symbol_footnotes": [],
+  "transform_messages": []
+ },
+ "reporter": {
+  "debug": false,
+  "halt_level": 4,
+  "max_level": -1,
+  "observers": [],
+  "report_level": 2,
+  "source": "test/functional/input/pep_html.rst",
+  "source_lines": {
+   "input_offset": 0,
+   "line_offset": 33,
+   "runs": [
+    [
+     "test/functional/input/pep_html.rst",
+     0,
+     32
+    ]
+   ]
+  },
+  "written": []
+ },
+ "settings": {
+  "_config_files": [],
+  "_destination": null,
+  "_disable_config": true,
+  "_source": "test/functional/input/pep_html.rst",
+  "attribution": "dash",
+  "auto_id_prefix": "%",
+  "character_level_inline_markup": false,
+  "compound_enumerators": false,
+  "config": null,
+  "datestamp": null,
+  "debug": null,
+  "docinfo_xform": true,
+  "doctitle_xform": true,
+  "documentclass": "article",
+  "documentoptions": "a4paper",
+  "docutils_footnotes": true,
+  "dump_internals": null,
+  "dump_pseudo_xml": null,
+  "dump_settings": null,
+  "dump_transforms": null,
+  "embed_stylesheet": false,
+  "error_encoding": "utf-8",
+  "error_encoding_error_handler": "backslashreplace",
+  "exit_status_level": 5,
+  "expose_internals": null,
+  "file_insertion_enabled": true,
+  "font_encoding": "T1",
+  "footnote_backlinks": true,
+  "footnote_references": "superscript",
+  "generator": null,
+  "graphicx_option": "",
+  "halt_level": 4,
+  "hyperlink_color": "blue",
+  "hyperref_options": "",
+  "id_prefix": "",
+  "input_encoding": "utf-8",
+  "input_encoding_error_handler": "strict",
+  "language_code": "en",
+  "latex_preamble": "% PDF Standard Fonts\n\\usepackage{mathptmx} % Times\n\\usepackage[scaled=.90]{helvet}\n\\usepackage{courier}",
+  "legacy_class_functions": false,
+  "legacy_column_widths": null,
+  "line_length_limit": 10000,
+  "literal_block_env": "",
+  "output": null,
+  "output_encoding": "utf-8",
+  "output_encoding_error_handler": "strict",
+  "output_path": null,
+  "pep_base_url": "https://peps.python.org/",
+  "pep_file_url_template": "pep-%04d",
+  "pep_references": null,
+  "raw_enabled": true,
+  "reference_label": "",
+  "report_level": 2,
+  "rfc_base_url": "https://tools.ietf.org/html/",
+  "rfc_references": null,
+  "root_prefix": "",
+  "section_enumerator_separator": "-",
+  "section_prefix_for_enumerators": null,
+  "sectnum_xform": true,
+  "sectsubtitle_xform": false,
+  "smart_quotes": false,
+  "smartquotes_locales": null,
+  "source_link": null,
+  "source_url": null,
+  "strict_visitor": null,
+  "strip_classes": null,
+  "strip_comments": null,
+  "strip_elements_with_classes": null,
+  "stylesheet": "",
+  "stylesheet_dirs": [
+   "."
+  ],
+  "stylesheet_path": null,
+  "syntax_highlight": "long",
+  "tab_width": 8,
+  "table_style": [
+   "standard"
+  ],
+  "template": "default.tex",
+  "title": null,
+  "toc_backlinks": "entry",
+  "traceback": true,
+  "trim_footnote_reference_space": null,
+  "use_bibtex": "",
+  "use_latex_abstract": false,
+  "use_latex_citations": null,
+  "use_latex_docinfo": false,
+  "use_latex_toc": true,
+  "use_part_section": false,
+  "use_verbatim_when_possible": null,
+  "validate": null
+ },
+ "stage": "transformed",
+ "transformer": {
+  "queue": [],
+  "serialno": 22
+ },
+ "tree": {
+  "attributes": {
+   "source": "test/functional/input/pep_html.rst"
+  },
+  "children": [
+   {
+    "children": [
+     {
+      "tag": "#text",
+      "text": "PEP: 100\nTitle: Test PEP\nVersion: 42\nLast-Modified: A long time ago.\nAuthor: John Doe <"
+     },
+     {
+      "attributes": {
+       "refuri": "mailto:john@example.org"
+      },
+      "children": [
+       {
+        "tag": "#text",
+        "text": "john@example.org"
+       }
+      ],
+      "rawsource": "john@example.org",
+      "tag": "reference"
+     },
+     {
+      "tag": "#text",
+      "text": ">\nDiscussions-To: <"
+     },
+     {
+      "attributes": {
+       "refuri": "mailto:devnull@example.org"
+      },
+      "children": [
+       {
+        "tag": "#text",
+        "text": "devnull@example.org"
+       }
+      ],
+      "rawsource": "devnull@example.org",
+      "tag": "reference"
+     },
+     {
+      "tag": "#text",
+      "text": ">\nStatus: Draft\nType: Standards Track\nContent-Type: text/x-rst\nCreated: 01-Jun-2001\nPost-History: 13-Jun-2001"
+     }
+    ],
+    "document": true,
+    "line": 1,
+    "rawsource": "PEP: 100\nTitle: Test PEP\nVersion: 42\nLast-Modified: A long time ago.\nAuthor: John Doe <john@example.org>\nDiscussions-To: <devnull@example.org>\nStatus: Draft\nType: Standards Track\nContent-Type: text/x-rst\nCreated: 01-Jun-2001\nPost-History: 13-Jun-2001",
+    "source": "test/functional/input/pep_html.rst",
+    "tag": "paragraph"
+   },
+   {
+    "attributes": {
+     "ids": [
+      "abstract"
+     ],
+     "names": [
+      "abstract"
+     ]
+    },
+    "children": [
+     {
+      "children": [
+       {
+        "tag": "#text",
+        "text": "Abstract"
+       }
+      ],
+      "document": true,
+      "line": 15,
+      "rawsource": "Abstract",
+      "source": "test/functional/input/pep_html.rst",
+      "tag": "title"
+     },
+     {
+      "children": [
+       {
+        "tag": "#text",
+        "text": "This is just a test"
+       },
+       {
+        "attributes": {
+         "auto": 1,
+         "ids": [
+          "footnote-reference-1"
+         ],
+         "refid": "footnote-1"
+        },
+        "children": [
+         {
+          "document": true,
+          "tag": "#text",
+          "text": "1"
+         }
+        ],
+        "rawsource": "[#]_",
+        "resolved": true,
+        "tag": "footnote_reference"
+       },
+       {
+        "tag": "#text",
+        "text": ".  See the "
+       },
+       {
+        "attributes": {
+         "name": "PEP repository",
+         "refuri": "http://www.python.org/peps/"
+        },
+        "children": [
+         {
+          "tag": "#text",
+          "text": "PEP repository"
+         }
+        ],
+        "rawsource": "`PEP repository`_",
+        "resolved": true,
+        "tag": "reference"
+       },
+       {
+        "tag": "#text",
+        "text": " for the real\nthing."
+       }
+      ],
+      "document": true,
+      "line": 17,
+      "rawsource": "This is just a test [#]_.  See the `PEP repository`_ for the real\nthing.",
+      "source": "test/functional/input/pep_html.rst",
+      "tag": "paragraph"
+     },
+     {
+      "attributes": {
+       "ids": [
+        "pep-repository"
+       ],
+       "names": [
+        "pep repository"
+       ],
+       "refuri": "http://www.python.org/peps/"
+      },
+      "document": true,
+      "line": 20,
+      "rawsource": ".. _PEP repository: http://www.python.org/peps/",
+      "referenced": true,
+      "source": "test/functional/input/pep_html.rst",
+      "tag": "target"
+     }
+    ],
+    "document": true,
+    "line": 15,
+    "source": "test/functional/input/pep_html.rst",
+    "tag": "section"
+   },
+   {
+    "attributes": {
+     "ids": [
+      "copyright"
+     ],
+     "names": [
+      "copyright"
+     ]
+    },
+    "children": [
+     {
+      "children": [
+       {
+        "tag": "#text",
+        "text": "Copyright"
+       }
+      ],
+      "document": true,
+      "line": 24,
+      "rawsource": "Copyright",
+      "source": "test/functional/input/pep_html.rst",
+      "tag": "title"
+     },
+     {
+      "children": [
+       {
+        "tag": "#text",
+        "text": "This document has been placed in the public domain."
+       }
+      ],
+      "document": true,
+      "line": 26,
+      "rawsource": "This document has been placed in the public domain.",
+      "source": "test/functional/input/pep_html.rst",
+      "tag": "paragraph"
+     }
+    ],
+    "document": true,
+    "line": 24,
+    "source": "test/functional/input/pep_html.rst",
+    "tag": "section"
+   },
+   {
+    "attributes": {
+     "ids": [
+      "references-and-footnotes"
+     ],
+     "names": [
+      "references and footnotes"
+     ]
+    },
+    "children": [
+     {
+      "children": [
+       {
+        "tag": "#text",
+        "text": "References and Footnotes"
+       }
+      ],
+      "document": true,
+      "line": 30,
+      "rawsource": "References and Footnotes",
+      "source": "test/functional/input/pep_html.rst",
+      "tag": "title"
+     },
+     {
+      "attributes": {
+       "auto": 1,
+       "backrefs": [
+        "footnote-reference-1"
+       ],
+       "ids": [
+        "footnote-1"
+       ],
+       "names": [
+        "1"
+       ]
+      },
+      "children": [
+       {
+        "children": [
+         {
+          "tag": "#text",
+          "text": "1"
+         }
+        ],
+        "document": true,
+        "tag": "label"
+       },
+       {
+        "children": [
+         {
+          "tag": "#text",
+          "text": "PEP editors: "
+         },
+         {
+          "attributes": {
+           "refuri": "mailto:peps@python.org"
+          },
+          "children": [
+           {
+            "tag": "#text",
+            "text": "peps@python.org"
+           }
+          ],
+          "rawsource": "peps@python.org",
+          "tag": "reference"
+         }
+        ],
+        "line": 32,
+        "rawsource": "PEP editors: peps@python.org",
+        "source": "test/functional/input/pep_html.rst",
+        "tag": "paragraph"
+       }
+      ],
+      "document": true,
+      "line": 32,
+      "rawsource": "PEP editors: peps@python.org",
+      "source": "test/functional/input/pep_html.rst",
+      "tag": "footnote"
+     }
+    ],
+    "document": true,
+    "line": 30,
+    "source": "test/functional/input/pep_html.rst",
+    "tag": "section"
+   }
+  ],
+  "document": true,
+  "tag": "document"
+ }
+}

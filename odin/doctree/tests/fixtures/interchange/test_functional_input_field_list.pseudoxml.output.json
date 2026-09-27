@@ -1,0 +1,309 @@
+{
+ "detached": [],
+ "expected": {
+  "output": "<document source=\"test/functional/input/field_list.rst\">\n    <docinfo>\n        <field classes=\"short\">\n            <field_name>\n                short\n            <field_body>\n                <paragraph>\n                    This field's name is short.\n        <field classes=\"medium-length\">\n            <field_name>\n                medium-length\n            <field_body>\n                <paragraph>\n                    This field's name is medium-length.\n        <field classes=\"long-field-name\">\n            <field_name>\n                long field name\n            <field_body>\n                <paragraph>\n                    This field's name is long.\n        <field classes=\"very-very-long-field-name\">\n            <field_name>\n                very very long field name\n            <field_body>\n                <paragraph>\n                    This field's name is quite long.\n",
+  "parts": {
+   "encoding": "utf-8",
+   "errors": "strict",
+   "version": "0.22.4",
+   "whole": "<document source=\"test/functional/input/field_list.rst\">\n    <docinfo>\n        <field classes=\"short\">\n            <field_name>\n                short\n            <field_body>\n                <paragraph>\n                    This field's name is short.\n        <field classes=\"medium-length\">\n            <field_name>\n                medium-length\n            <field_body>\n                <paragraph>\n                    This field's name is medium-length.\n        <field classes=\"long-field-name\">\n            <field_name>\n                long field name\n            <field_body>\n                <paragraph>\n                    This field's name is long.\n        <field classes=\"very-very-long-field-name\">\n            <field_name>\n                very very long field name\n            <field_body>\n                <paragraph>\n                    This field's name is quite long.\n"
+  },
+  "pformat": "<document source=\"test/functional/input/field_list.rst\">\n    <docinfo>\n        <field classes=\"short\">\n            <field_name>\n                short\n            <field_body>\n                <paragraph>\n                    This field's name is short.\n        <field classes=\"medium-length\">\n            <field_name>\n                medium-length\n            <field_body>\n                <paragraph>\n                    This field's name is medium-length.\n        <field classes=\"long-field-name\">\n            <field_name>\n                long field name\n            <field_body>\n                <paragraph>\n                    This field's name is long.\n        <field classes=\"very-very-long-field-name\">\n            <field_name>\n                very very long field name\n            <field_body>\n                <paragraph>\n                    This field's name is quite long.\n"
+ },
+ "format": "docodin-doctree/1",
+ "input": {
+  "overrides": {},
+  "source_path": "test/functional/input/field_list.rst",
+  "writer": "pseudoxml"
+ },
+ "registry": {
+  "autofootnote_refs": [],
+  "autofootnote_start": 1,
+  "autofootnotes": [],
+  "citation_refs": [],
+  "citations": [],
+  "current_line": null,
+  "current_source": null,
+  "decoration": null,
+  "footnote_refs": [],
+  "footnotes": [],
+  "id_counter": [],
+  "ids": [],
+  "indirect_targets": [],
+  "nameids": [],
+  "nametypes": [],
+  "parse_messages": [],
+  "refids": [],
+  "refnames": [],
+  "substitution_defs": [],
+  "substitution_names": [],
+  "symbol_footnote_refs": [],
+  "symbol_footnote_start": 0,
+  "symbol_footnotes": [],
+  "transform_messages": []
+ },
+ "reporter": {
+  "debug": false,
+  "halt_level": 4,
+  "max_level": -1,
+  "observers": [],
+  "report_level": 2,
+  "source": "test/functional/input/field_list.rst",
+  "source_lines": {
+   "input_offset": 0,
+   "line_offset": 6,
+   "runs": [
+    [
+     "test/functional/input/field_list.rst",
+     0,
+     5
+    ]
+   ]
+  },
+  "written": []
+ },
+ "settings": {
+  "_config_files": [],
+  "_destination": null,
+  "_disable_config": true,
+  "_source": "test/functional/input/field_list.rst",
+  "auto_id_prefix": "%",
+  "character_level_inline_markup": false,
+  "config": null,
+  "datestamp": null,
+  "debug": null,
+  "detailed": null,
+  "docinfo_xform": true,
+  "doctitle_xform": true,
+  "dump_internals": null,
+  "dump_pseudo_xml": null,
+  "dump_settings": null,
+  "dump_transforms": null,
+  "error_encoding": "utf-8",
+  "error_encoding_error_handler": "backslashreplace",
+  "exit_status_level": 5,
+  "expose_internals": null,
+  "file_insertion_enabled": true,
+  "footnote_backlinks": true,
+  "generator": null,
+  "halt_level": 4,
+  "id_prefix": "",
+  "input_encoding": "utf-8",
+  "input_encoding_error_handler": "strict",
+  "language_code": "en",
+  "line_length_limit": 10000,
+  "output": null,
+  "output_encoding": "utf-8",
+  "output_encoding_error_handler": "strict",
+  "output_path": null,
+  "pep_base_url": "https://peps.python.org/",
+  "pep_file_url_template": "pep-%04d",
+  "pep_references": null,
+  "raw_enabled": true,
+  "report_level": 2,
+  "rfc_base_url": "https://tools.ietf.org/html/",
+  "rfc_references": null,
+  "root_prefix": "",
+  "sectnum_xform": true,
+  "sectsubtitle_xform": false,
+  "smart_quotes": false,
+  "smartquotes_locales": null,
+  "source_link": null,
+  "source_url": null,
+  "strict_visitor": null,
+  "strip_classes": null,
+  "strip_comments": null,
+  "strip_elements_with_classes": null,
+  "syntax_highlight": "long",
+  "tab_width": 8,
+  "title": null,
+  "toc_backlinks": "entry",
+  "traceback": true,
+  "trim_footnote_reference_space": null,
+  "validate": null
+ },
+ "stage": "output",
+ "transformer": {
+  "queue": [],
+  "serialno": 20
+ },
+ "tree": {
+  "attributes": {
+   "source": "test/functional/input/field_list.rst"
+  },
+  "children": [
+   {
+    "children": [
+     {
+      "attributes": {
+       "classes": [
+        "short"
+       ]
+      },
+      "children": [
+       {
+        "children": [
+         {
+          "tag": "#text",
+          "text": "short"
+         }
+        ],
+        "rawsource": "short",
+        "tag": "field_name"
+       },
+       {
+        "children": [
+         {
+          "children": [
+           {
+            "tag": "#text",
+            "text": "This field's name is short."
+           }
+          ],
+          "line": 1,
+          "rawsource": "This field's name is short.",
+          "source": "test/functional/input/field_list.rst",
+          "tag": "paragraph"
+         }
+        ],
+        "rawsource": "This field's name is short.",
+        "tag": "field_body"
+       }
+      ],
+      "document": true,
+      "line": 1,
+      "source": "test/functional/input/field_list.rst",
+      "tag": "field"
+     },
+     {
+      "attributes": {
+       "classes": [
+        "medium-length"
+       ]
+      },
+      "children": [
+       {
+        "children": [
+         {
+          "tag": "#text",
+          "text": "medium-length"
+         }
+        ],
+        "rawsource": "medium-length",
+        "tag": "field_name"
+       },
+       {
+        "children": [
+         {
+          "children": [
+           {
+            "tag": "#text",
+            "text": "This field's name is medium-length."
+           }
+          ],
+          "line": 2,
+          "rawsource": "This field's name is medium-length.",
+          "source": "test/functional/input/field_list.rst",
+          "tag": "paragraph"
+         }
+        ],
+        "rawsource": "This field's name is medium-length.",
+        "tag": "field_body"
+       }
+      ],
+      "document": true,
+      "line": 2,
+      "source": "test/functional/input/field_list.rst",
+      "tag": "field"
+     },
+     {
+      "attributes": {
+       "classes": [
+        "long-field-name"
+       ]
+      },
+      "children": [
+       {
+        "children": [
+         {
+          "tag": "#text",
+          "text": "long field name"
+         }
+        ],
+        "rawsource": "long field name",
+        "tag": "field_name"
+       },
+       {
+        "children": [
+         {
+          "children": [
+           {
+            "tag": "#text",
+            "text": "This field's name is long."
+           }
+          ],
+          "line": 3,
+          "rawsource": "This field's name is long.",
+          "source": "test/functional/input/field_list.rst",
+          "tag": "paragraph"
+         }
+        ],
+        "rawsource": "This field's name is long.",
+        "tag": "field_body"
+       }
+      ],
+      "document": true,
+      "line": 3,
+      "source": "test/functional/input/field_list.rst",
+      "tag": "field"
+     },
+     {
+      "attributes": {
+       "classes": [
+        "very-very-long-field-name"
+       ]
+      },
+      "children": [
+       {
+        "children": [
+         {
+          "tag": "#text",
+          "text": "very very long field name"
+         }
+        ],
+        "rawsource": "very very long field name",
+        "tag": "field_name"
+       },
+       {
+        "children": [
+         {
+          "children": [
+           {
+            "tag": "#text",
+            "text": "This field's name is quite long."
+           }
+          ],
+          "line": 5,
+          "rawsource": "This field's name is quite long.",
+          "source": "test/functional/input/field_list.rst",
+          "tag": "paragraph"
+         }
+        ],
+        "rawsource": "This field's name is quite long.",
+        "tag": "field_body"
+       }
+      ],
+      "document": true,
+      "line": 4,
+      "source": "test/functional/input/field_list.rst",
+      "tag": "field"
+     }
+    ],
+    "document": true,
+    "tag": "docinfo"
+   }
+  ],
+  "document": true,
+  "tag": "document"
+ }
+}

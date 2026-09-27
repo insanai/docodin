@@ -1,0 +1,652 @@
+{
+ "detached": [],
+ "expected": {
+  "pformat": "<document source=\"test/functional/input/compact_lists.rst\">\n    <bullet_list bullet=\"*\">\n        <list_item>\n            <paragraph>\n                This is an ordinary simple bullet list.\n        <list_item>\n            <paragraph>\n                It should be made compact (<p> & </p> tags omitted).\n    <transition>\n    <bullet_list bullet=\"*\">\n        <list_item>\n            <paragraph>\n                This is a bullet list that is not simple.\n            <paragraph>\n                There are multiple paragraphs in some items.\n        <list_item>\n            <paragraph>\n                It should not be made compact.\n        <list_item>\n            <paragraph>\n                Even though some items may have only one paragraph.\n    <transition>\n    <pending>\n        .. internal attributes:\n             .transform: docutils.transforms.misc.ClassAttribute\n             .details:\n               class: ['open']\n               directive: 'class'\n    <bullet_list bullet=\"*\">\n        <list_item>\n            <paragraph>\n                This is a simple bullet list, but class=\"open\" is set.\n        <list_item>\n            <paragraph>\n                It should not be made compact.\n    <transition>\n    <pending>\n        .. internal attributes:\n             .transform: docutils.transforms.misc.ClassAttribute\n             .details:\n               class: ['compact']\n               directive: 'class'\n    <bullet_list bullet=\"*\">\n        <list_item>\n            <paragraph>\n                This is a bullet list that is not simple.\n            <paragraph>\n                There are multiple paragraphs in some items.\n        <list_item>\n            <paragraph>\n                However, the class=\"compact\" setting will cause\n                all first paragraph's <p> & </p> tags to be omitted.\n        <list_item>\n            <paragraph>\n                Items with multiple paragraphs will not appear changed.\n        <list_item>\n            <paragraph>\n                Items may have one paragraph, or multiple.\n            <paragraph>\n                Items with multiple paragraphs will still be followed\n                by vertical whitespace because of the later paragraphs.\n        <list_item>\n            <paragraph>\n                The effect is interesting.\n"
+ },
+ "format": "docodin-doctree/1",
+ "input": {
+  "overrides": {},
+  "source_path": "test/functional/input/compact_lists.rst",
+  "writer": "pseudoxml"
+ },
+ "registry": {
+  "autofootnote_refs": [],
+  "autofootnote_start": 1,
+  "autofootnotes": [],
+  "citation_refs": [],
+  "citations": [],
+  "current_line": null,
+  "current_source": null,
+  "decoration": null,
+  "footnote_refs": [],
+  "footnotes": [],
+  "id_counter": [],
+  "ids": [],
+  "indirect_targets": [],
+  "nameids": [],
+  "nametypes": [],
+  "parse_messages": [],
+  "refids": [],
+  "refnames": [],
+  "substitution_defs": [],
+  "substitution_names": [],
+  "symbol_footnote_refs": [],
+  "symbol_footnote_start": 0,
+  "symbol_footnotes": [],
+  "transform_messages": []
+ },
+ "reporter": {
+  "debug": false,
+  "halt_level": 4,
+  "max_level": -1,
+  "observers": [],
+  "report_level": 2,
+  "source": "test/functional/input/compact_lists.rst",
+  "source_lines": {
+   "input_offset": 0,
+   "line_offset": 40,
+   "runs": [
+    [
+     "test/functional/input/compact_lists.rst",
+     0,
+     39
+    ]
+   ]
+  },
+  "written": []
+ },
+ "settings": {
+  "_config_files": [],
+  "_destination": null,
+  "_disable_config": true,
+  "_source": "test/functional/input/compact_lists.rst",
+  "auto_id_prefix": "%",
+  "character_level_inline_markup": false,
+  "config": null,
+  "datestamp": null,
+  "debug": null,
+  "detailed": null,
+  "docinfo_xform": true,
+  "doctitle_xform": true,
+  "dump_internals": null,
+  "dump_pseudo_xml": null,
+  "dump_settings": null,
+  "dump_transforms": null,
+  "error_encoding": "utf-8",
+  "error_encoding_error_handler": "backslashreplace",
+  "exit_status_level": 5,
+  "expose_internals": null,
+  "file_insertion_enabled": true,
+  "footnote_backlinks": true,
+  "generator": null,
+  "halt_level": 4,
+  "id_prefix": "",
+  "input_encoding": "utf-8",
+  "input_encoding_error_handler": "strict",
+  "language_code": "en",
+  "line_length_limit": 10000,
+  "output": null,
+  "output_encoding": "utf-8",
+  "output_encoding_error_handler": "strict",
+  "output_path": null,
+  "pep_base_url": "https://peps.python.org/",
+  "pep_file_url_template": "pep-%04d",
+  "pep_references": null,
+  "raw_enabled": true,
+  "report_level": 2,
+  "rfc_base_url": "https://tools.ietf.org/html/",
+  "rfc_references": null,
+  "root_prefix": "",
+  "sectnum_xform": true,
+  "sectsubtitle_xform": false,
+  "smart_quotes": false,
+  "smartquotes_locales": null,
+  "source_link": null,
+  "source_url": null,
+  "strict_visitor": null,
+  "strip_classes": null,
+  "strip_comments": null,
+  "strip_elements_with_classes": null,
+  "syntax_highlight": "long",
+  "tab_width": 8,
+  "title": null,
+  "toc_backlinks": "entry",
+  "traceback": true,
+  "trim_footnote_reference_space": null,
+  "validate": null
+ },
+ "stage": "parsed",
+ "transformer": {
+  "queue": [
+   [
+    "210-001",
+    "docutils.transforms.misc.ClassAttribute",
+    22,
+    {}
+   ],
+   [
+    "210-002",
+    "docutils.transforms.misc.ClassAttribute",
+    31,
+    {}
+   ],
+   [
+    "220-006",
+    "docutils.transforms.references.Substitutions",
+    null,
+    {}
+   ],
+   [
+    "260-007",
+    "docutils.transforms.references.PropagateTargets",
+    null,
+    {}
+   ],
+   [
+    "320-008",
+    "docutils.transforms.frontmatter.DocTitle",
+    null,
+    {}
+   ],
+   [
+    "340-010",
+    "docutils.transforms.frontmatter.DocInfo",
+    null,
+    {}
+   ],
+   [
+    "350-009",
+    "docutils.transforms.frontmatter.SectionSubTitle",
+    null,
+    {}
+   ],
+   [
+    "420-022",
+    "docutils.transforms.universal.StripClassesAndElements",
+    null,
+    {}
+   ],
+   [
+    "440-011",
+    "docutils.transforms.references.AnonymousHyperlinks",
+    null,
+    {}
+   ],
+   [
+    "460-012",
+    "docutils.transforms.references.IndirectHyperlinks",
+    null,
+    {}
+   ],
+   [
+    "620-013",
+    "docutils.transforms.references.Footnotes",
+    null,
+    {}
+   ],
+   [
+    "640-014",
+    "docutils.transforms.references.ExternalTargets",
+    null,
+    {}
+   ],
+   [
+    "660-015",
+    "docutils.transforms.references.InternalTargets",
+    null,
+    {}
+   ],
+   [
+    "740-005",
+    "docutils.transforms.universal.StripComments",
+    null,
+    {}
+   ],
+   [
+    "820-003",
+    "docutils.transforms.universal.Decorations",
+    null,
+    {}
+   ],
+   [
+    "830-017",
+    "docutils.transforms.misc.Transitions",
+    null,
+    {}
+   ],
+   [
+    "835-018",
+    "docutils.transforms.universal.Validate",
+    null,
+    {}
+   ],
+   [
+    "840-004",
+    "docutils.transforms.universal.ExposeInternals",
+    null,
+    {}
+   ],
+   [
+    "850-016",
+    "docutils.transforms.references.DanglingReferences",
+    null,
+    {}
+   ],
+   [
+    "855-019",
+    "docutils.transforms.universal.SmartQuotes",
+    null,
+    {}
+   ],
+   [
+    "860-020",
+    "docutils.transforms.universal.Messages",
+    null,
+    {}
+   ],
+   [
+    "870-021",
+    "docutils.transforms.universal.FilterMessages",
+    null,
+    {}
+   ]
+  ],
+  "serialno": 22
+ },
+ "tree": {
+  "attributes": {
+   "source": "test/functional/input/compact_lists.rst"
+  },
+  "children": [
+   {
+    "attributes": {
+     "bullet": "*"
+    },
+    "children": [
+     {
+      "children": [
+       {
+        "children": [
+         {
+          "tag": "#text",
+          "text": "This is an ordinary simple bullet list."
+         }
+        ],
+        "line": 1,
+        "rawsource": "This is an ordinary simple bullet list.",
+        "source": "test/functional/input/compact_lists.rst",
+        "tag": "paragraph"
+       }
+      ],
+      "document": true,
+      "line": 1,
+      "rawsource": "This is an ordinary simple bullet list.",
+      "source": "test/functional/input/compact_lists.rst",
+      "tag": "list_item"
+     },
+     {
+      "children": [
+       {
+        "children": [
+         {
+          "tag": "#text",
+          "text": "It should be made compact (<p> & </p> tags omitted)."
+         }
+        ],
+        "line": 2,
+        "rawsource": "It should be made compact (<p> & </p> tags omitted).",
+        "source": "test/functional/input/compact_lists.rst",
+        "tag": "paragraph"
+       }
+      ],
+      "document": true,
+      "line": 2,
+      "rawsource": "It should be made compact (<p> & </p> tags omitted).\n",
+      "source": "test/functional/input/compact_lists.rst",
+      "tag": "list_item"
+     }
+    ],
+    "document": true,
+    "line": 1,
+    "source": "test/functional/input/compact_lists.rst",
+    "tag": "bullet_list"
+   },
+   {
+    "document": true,
+    "line": 4,
+    "rawsource": "**********",
+    "source": "test/functional/input/compact_lists.rst",
+    "tag": "transition"
+   },
+   {
+    "attributes": {
+     "bullet": "*"
+    },
+    "children": [
+     {
+      "children": [
+       {
+        "children": [
+         {
+          "tag": "#text",
+          "text": "This is a bullet list that is not simple."
+         }
+        ],
+        "line": 6,
+        "rawsource": "This is a bullet list that is not simple.",
+        "source": "test/functional/input/compact_lists.rst",
+        "tag": "paragraph"
+       },
+       {
+        "children": [
+         {
+          "tag": "#text",
+          "text": "There are multiple paragraphs in some items."
+         }
+        ],
+        "line": 8,
+        "rawsource": "There are multiple paragraphs in some items.",
+        "source": "test/functional/input/compact_lists.rst",
+        "tag": "paragraph"
+       }
+      ],
+      "document": true,
+      "line": 6,
+      "rawsource": "This is a bullet list that is not simple.\n\nThere are multiple paragraphs in some items.\n",
+      "source": "test/functional/input/compact_lists.rst",
+      "tag": "list_item"
+     },
+     {
+      "children": [
+       {
+        "children": [
+         {
+          "tag": "#text",
+          "text": "It should not be made compact."
+         }
+        ],
+        "line": 10,
+        "rawsource": "It should not be made compact.",
+        "source": "test/functional/input/compact_lists.rst",
+        "tag": "paragraph"
+       }
+      ],
+      "document": true,
+      "line": 10,
+      "rawsource": "It should not be made compact.\n",
+      "source": "test/functional/input/compact_lists.rst",
+      "tag": "list_item"
+     },
+     {
+      "children": [
+       {
+        "children": [
+         {
+          "tag": "#text",
+          "text": "Even though some items may have only one paragraph."
+         }
+        ],
+        "line": 12,
+        "rawsource": "Even though some items may have only one paragraph.",
+        "source": "test/functional/input/compact_lists.rst",
+        "tag": "paragraph"
+       }
+      ],
+      "document": true,
+      "line": 12,
+      "rawsource": "Even though some items may have only one paragraph.\n",
+      "source": "test/functional/input/compact_lists.rst",
+      "tag": "list_item"
+     }
+    ],
+    "document": true,
+    "line": 6,
+    "source": "test/functional/input/compact_lists.rst",
+    "tag": "bullet_list"
+   },
+   {
+    "document": true,
+    "line": 14,
+    "rawsource": "**********",
+    "source": "test/functional/input/compact_lists.rst",
+    "tag": "transition"
+   },
+   {
+    "document": true,
+    "line": 17,
+    "pending": {
+     "default_priority": 210,
+     "details": {
+      "class": [
+       "open"
+      ],
+      "directive": "class"
+     },
+     "transform": "docutils.transforms.misc.ClassAttribute"
+    },
+    "rawsource": ".. class:: open\n",
+    "source": "test/functional/input/compact_lists.rst",
+    "tag": "pending"
+   },
+   {
+    "attributes": {
+     "bullet": "*"
+    },
+    "children": [
+     {
+      "children": [
+       {
+        "children": [
+         {
+          "tag": "#text",
+          "text": "This is a simple bullet list, but class=\"open\" is set."
+         }
+        ],
+        "line": 18,
+        "rawsource": "This is a simple bullet list, but class=\"open\" is set.",
+        "source": "test/functional/input/compact_lists.rst",
+        "tag": "paragraph"
+       }
+      ],
+      "document": true,
+      "line": 18,
+      "rawsource": "This is a simple bullet list, but class=\"open\" is set.",
+      "source": "test/functional/input/compact_lists.rst",
+      "tag": "list_item"
+     },
+     {
+      "children": [
+       {
+        "children": [
+         {
+          "tag": "#text",
+          "text": "It should not be made compact."
+         }
+        ],
+        "line": 19,
+        "rawsource": "It should not be made compact.",
+        "source": "test/functional/input/compact_lists.rst",
+        "tag": "paragraph"
+       }
+      ],
+      "document": true,
+      "line": 19,
+      "rawsource": "It should not be made compact.\n",
+      "source": "test/functional/input/compact_lists.rst",
+      "tag": "list_item"
+     }
+    ],
+    "document": true,
+    "line": 18,
+    "source": "test/functional/input/compact_lists.rst",
+    "tag": "bullet_list"
+   },
+   {
+    "document": true,
+    "line": 21,
+    "rawsource": "**********",
+    "source": "test/functional/input/compact_lists.rst",
+    "tag": "transition"
+   },
+   {
+    "document": true,
+    "line": 24,
+    "pending": {
+     "default_priority": 210,
+     "details": {
+      "class": [
+       "compact"
+      ],
+      "directive": "class"
+     },
+     "transform": "docutils.transforms.misc.ClassAttribute"
+    },
+    "rawsource": ".. class:: compact\n",
+    "source": "test/functional/input/compact_lists.rst",
+    "tag": "pending"
+   },
+   {
+    "attributes": {
+     "bullet": "*"
+    },
+    "children": [
+     {
+      "children": [
+       {
+        "children": [
+         {
+          "tag": "#text",
+          "text": "This is a bullet list that is not simple."
+         }
+        ],
+        "line": 25,
+        "rawsource": "This is a bullet list that is not simple.",
+        "source": "test/functional/input/compact_lists.rst",
+        "tag": "paragraph"
+       },
+       {
+        "children": [
+         {
+          "tag": "#text",
+          "text": "There are multiple paragraphs in some items."
+         }
+        ],
+        "line": 27,
+        "rawsource": "There are multiple paragraphs in some items.",
+        "source": "test/functional/input/compact_lists.rst",
+        "tag": "paragraph"
+       }
+      ],
+      "document": true,
+      "line": 25,
+      "rawsource": "This is a bullet list that is not simple.\n\nThere are multiple paragraphs in some items.\n",
+      "source": "test/functional/input/compact_lists.rst",
+      "tag": "list_item"
+     },
+     {
+      "children": [
+       {
+        "children": [
+         {
+          "tag": "#text",
+          "text": "However, the class=\"compact\" setting will cause\nall first paragraph's <p> & </p> tags to be omitted."
+         }
+        ],
+        "line": 29,
+        "rawsource": "However, the class=\"compact\" setting will cause\nall first paragraph's <p> & </p> tags to be omitted.",
+        "source": "test/functional/input/compact_lists.rst",
+        "tag": "paragraph"
+       }
+      ],
+      "document": true,
+      "line": 29,
+      "rawsource": "However, the class=\"compact\" setting will cause\nall first paragraph's <p> & </p> tags to be omitted.\n",
+      "source": "test/functional/input/compact_lists.rst",
+      "tag": "list_item"
+     },
+     {
+      "children": [
+       {
+        "children": [
+         {
+          "tag": "#text",
+          "text": "Items with multiple paragraphs will not appear changed."
+         }
+        ],
+        "line": 32,
+        "rawsource": "Items with multiple paragraphs will not appear changed.",
+        "source": "test/functional/input/compact_lists.rst",
+        "tag": "paragraph"
+       }
+      ],
+      "document": true,
+      "line": 32,
+      "rawsource": "Items with multiple paragraphs will not appear changed.\n",
+      "source": "test/functional/input/compact_lists.rst",
+      "tag": "list_item"
+     },
+     {
+      "children": [
+       {
+        "children": [
+         {
+          "tag": "#text",
+          "text": "Items may have one paragraph, or multiple."
+         }
+        ],
+        "line": 34,
+        "rawsource": "Items may have one paragraph, or multiple.",
+        "source": "test/functional/input/compact_lists.rst",
+        "tag": "paragraph"
+       },
+       {
+        "children": [
+         {
+          "tag": "#text",
+          "text": "Items with multiple paragraphs will still be followed\nby vertical whitespace because of the later paragraphs."
+         }
+        ],
+        "line": 36,
+        "rawsource": "Items with multiple paragraphs will still be followed\nby vertical whitespace because of the later paragraphs.",
+        "source": "test/functional/input/compact_lists.rst",
+        "tag": "paragraph"
+       }
+      ],
+      "document": true,
+      "line": 34,
+      "rawsource": "Items may have one paragraph, or multiple.\n\nItems with multiple paragraphs will still be followed\nby vertical whitespace because of the later paragraphs.\n",
+      "source": "test/functional/input/compact_lists.rst",
+      "tag": "list_item"
+     },
+     {
+      "children": [
+       {
+        "children": [
+         {
+          "tag": "#text",
+          "text": "The effect is interesting."
+         }
+        ],
+        "line": 39,
+        "rawsource": "The effect is interesting.",
+        "source": "test/functional/input/compact_lists.rst",
+        "tag": "paragraph"
+       }
+      ],
+      "document": true,
+      "line": 39,
+      "rawsource": "The effect is interesting.",
+      "source": "test/functional/input/compact_lists.rst",
+      "tag": "list_item"
+     }
+    ],
+    "document": true,
+    "line": 25,
+    "source": "test/functional/input/compact_lists.rst",
+    "tag": "bullet_list"
+   }
+  ],
+  "document": true,
+  "tag": "document"
+ }
+}

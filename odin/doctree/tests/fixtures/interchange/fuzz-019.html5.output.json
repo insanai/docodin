@@ -1,0 +1,336 @@
+{
+ "detached": [],
+ "expected": {
+  "output": "<!DOCTYPE html>\n<html xmlns=\"http://www.w3.org/1999/xhtml\" xml:lang=\"en\" lang=\"en\">\n<head>\n<meta charset=\"utf-8\" />\n<meta name=\"generator\" content=\"Docutils 0.22.4: https://docutils.sourceforge.io/\" />\n<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\" />\n<title>fuzz-019.rst</title>\n<style type=\"text/css\">\n\n/* Minimal style sheet for the HTML output of Docutils.                    */\n/*                                                                         */\n/* :Author: Günter Milde, based on html4css1.css by David Goodger          */\n/* :Id: $Id: minimal.css 10018 2025-03-06 16:19:15Z milde $                                                               */\n/* :Copyright: © 2015, 2021 Günter Milde.                                  */\n/* :License: Released under the terms of the `2-Clause BSD license`_,      */\n/*    in short:                                                            */\n/*                                                                         */\n/*    Copying and distribution of this file, with or without modification, */\n/*    are permitted in any medium without royalty provided the copyright   */\n/*    notice and this notice are preserved.                                */\n/*                                                                         */\n/*    This file is offered as-is, without any warranty.                    */\n/*                                                                         */\n/* .. _2-Clause BSD license: http://www.spdx.org/licenses/BSD-2-Clause     */\n\n/* This CSS3 stylesheet defines rules for Docutils elements without        */\n/* HTML equivalent. It is required to make the document semantics visible. */\n/*                                                                         */\n/* .. _validates: http://jigsaw.w3.org/css-validator/validator$link        */\n\n/* titles */\np.topic-title,\np.admonition-title,\np.system-message-title {\n  font-weight: bold;\n}\np.sidebar-title,\np.rubric {\n  font-weight: bold;\n  font-size: larger;\n}\np.rubric {\n  color: maroon;\n}\np.subtitle,\np.section-subtitle,\np.sidebar-subtitle {\n  font-weight: bold;\n  margin-top: -0.5em;\n}\nh1 + p.subtitle {\n  font-size: 1.6em;\n}\na.toc-backref {\n  color: inherit;\n  text-decoration: none;\n}\n\n/* Warnings, Errors */\n.system-messages h2,\n.system-message-title,\npre.problematic,\nspan.problematic {\n  color: red;\n}\n\n/* Inline Literals */\n.docutils.literal {\n  font-family: monospace;\n  white-space: pre-wrap;\n}\n/* do not wrap at hyphens and similar: */\n.literal > span.pre { white-space: nowrap; }\n\n/* keep line-breaks (\\n) visible */\n.pre-wrap { white-space: pre-wrap; }\n\n/* Lists */\n\n/* compact and simple lists: no margin between items */\n.simple  li, .simple  ul, .simple  ol, .simple  > li p,\n.compact li, .compact ul, .compact ol, .compact > li p,\ndl.simple  > dd, dl.compact > dd, dl.docinfo > dd {\n  margin-top: 0;\n  margin-bottom: 0;\n}\n/* Nested Paragraphs */\np:first-child { margin-top: 0; }\np:last-child { margin-bottom: 0; }\ndetails > p:last-child { margin-bottom: 1em; }\n\n/* Table of Contents */\n.contents ul.auto-toc { /* section numbers present */\n  list-style-type: none;\n}\n\n/* Enumerated Lists */\nol.arabic     { list-style: decimal }\nol.loweralpha { list-style: lower-alpha }\nol.upperalpha { list-style: upper-alpha }\nol.lowerroman { list-style: lower-roman }\nol.upperroman { list-style: upper-roman }\n\n/* Definition Lists and Derivatives */\ndt .classifier { font-style: italic }\ndt .classifier:before {\n  font-style: normal;\n  margin: 0.5em;\n  content: \":\";\n}\n/* Field Lists and similar */\n/* bold field name, content starts on the same line */\ndl.field-list,\ndl.option-list,\ndl.docinfo {\n  display: flow-root;\n}\ndl.field-list > dt,\ndl.option-list > dt,\ndl.docinfo > dt {\n  font-weight: bold;\n  clear: left;\n  float: left;\n  margin: 0;\n  padding: 0;\n  padding-right: 0.25em;\n}\n/* Offset for field content (corresponds to the --field-name-limit option) */\ndl.field-list > dd,\ndl.option-list > dd,\ndl.docinfo > dd {\n  margin-left:  9em; /* ca. 14 chars in the test examples, fit all Docinfo fields */\n}\n/* start nested lists on new line */\ndd > dl:first-child,\ndd > ul:first-child,\ndd > ol:first-child {\n  clear: left;\n}\n/* start field-body on a new line after long field names */\ndl.field-list > dd > *:first-child,\ndl.option-list > dd > *:first-child\n{\n  display: inline-block;\n  width: 100%;\n  margin: 0;\n}\n\n/* Bibliographic Fields (docinfo) */\ndl.docinfo pre.address {\n  font: inherit;\n  margin: 0;\n}\ndl.docinfo > dd.authors > p { margin: 0; }\n\n/* Option Lists */\ndl.option-list > dt { font-weight: normal; }\nspan.option { white-space: nowrap; }\n\n/* Footnotes and Citations  */\n\n.footnote, .citation { margin: 1em 0; } /* default paragraph skip (Firefox) */\n/* hanging indent */\n.citation { padding-left: 2em; }\n.footnote { padding-left: 1.7em; }\n.footnote.superscript { padding-left: 1.0em; }\n.citation > .label { margin-left: -2em; }\n.footnote > .label { margin-left: -1.7em; }\n.footnote.superscript > .label { margin-left: -1.0em; }\n\n.footnote > .label + *,\n.citation > .label + * {\n  display: inline-block;\n  margin-top: 0;\n  vertical-align: top;\n}\n.footnote > .backrefs + *,\n.citation > .backrefs + * {\n  margin-top: 0;\n}\n.footnote > .label + p, .footnote > .backrefs + p,\n.citation > .label + p, .citation > .backrefs + p {\n  display: inline;\n  vertical-align: inherit;\n}\n\n.backrefs { user-select: none; }\n.backrefs > a { font-style: italic; }\n\n/* superscript footnotes */\na[role=\"doc-noteref\"].superscript,\n.footnote.superscript > .label,\n.footnote.superscript > .backrefs {\n  vertical-align: super;\n  font-size: smaller;\n  line-height: 1;\n}\na[role=\"doc-noteref\"].superscript > .fn-bracket,\n.footnote.superscript > .label > .fn-bracket {\n  /* hide brackets in display but leave for copy/paste */\n  display: inline-block;\n  width: 0;\n  overflow: hidden;\n}\n[role=\"doc-noteref\"].superscript + [role=\"doc-noteref\"].superscript {\n  padding-left: 0.15em; /* separate consecutive footnote references */\n  /* TODO: unfortunately, \"+\" also selects with text between the references. */\n}\n\n/* Alignment */\n.align-left   {\n  text-align: left;\n  margin-right: auto;\n}\n.align-center {\n  text-align: center;\n  margin-left: auto;\n  margin-right: auto;\n}\n.align-right  {\n  text-align: right;\n  margin-left: auto;\n}\n.align-top    { vertical-align: top; }\n.align-middle { vertical-align: middle; }\n.align-bottom { vertical-align: bottom; }\n\n/* reset inner alignment in figures and tables */\nfigure.align-left, figure.align-right,\ntable.align-left, table.align-center, table.align-right {\n  text-align: inherit;\n}\n\n/* Text Blocks */\n.topic { margin: 1em 2em; }\n.sidebar,\n.admonition,\n.system-message {\n  margin: 1em 2em;\n  border: thin solid;\n  padding: 0.5em 1em;\n}\ndiv.line-block { display: block; }\ndiv.line-block div.line-block, pre { margin-left: 2em; }\n\n/* Code line numbers: don't copy with drag-and-drop */\npre.code .ln { display: none; }\npre.code code:before {\n  content: attr(data-lineno);\n  font-size: small;\n  color: gray;\n}\n\n/* Tables */\ntable {\n  border-collapse: collapse;\n}\ntd, th {\n  border: thin solid silver;\n  padding: 0 1ex;\n}\n.borderless td, .borderless th {\n  border: 0;\n  padding: 0;\n  padding-right: 0.5em /* separate table cells */\n}\n\ntable > caption, figcaption {\n  text-align: left;\n  margin-top: 0.2em;\n  margin-bottom: 0.2em;\n}\ntable.captionbelow {\n  caption-side: bottom;\n}\n\n/* MathML (see \"math.css\" for --math-output=HTML) */\nmath .boldsymbol { font-weight: bold; }\nmath.boxed, math .boxed {padding: 0.25em; border: thin solid; }\n/* style table similar to AMS \"align\" or \"aligned\" environment: */\nmtable.cases > mtr > mtd { text-align: left; }\nmtable.ams-align > mtr > mtd { padding-left: 0; padding-right: 0; }\nmtable.ams-align > mtr > mtd:nth-child(2n) { text-align: left; }\nmtable.ams-align > mtr > mtd:nth-child(2n+1) { text-align: right; }\nmtable.ams-align > mtr > mtd:nth-child(2n+3) { padding-left: 2em; }\n.mathscr mi, mi.mathscr {\n  font-family: STIX, XITSMathJax_Script, rsfs10,\n               \"Asana Math\", Garamond, cursive;\n}\n\n/* Document Header and Footer */\nheader { border-bottom: 1px solid black; }\nfooter { border-top: 1px solid black; }\n\n/* Images are block-level by default in Docutils */\n/* New HTML5 block elements: set display for older browsers */\nimg, svg, header, footer, main, aside, nav, section, figure, video, details {\n  display: block;\n}\nsvg { width: auto; height: auto; }  /* enable scaling of SVG images */\n/* inline images */\n\np img, p svg, p video,\nh1 img, h2 img, h3 img, h4 img, h5 img, h6 img,\nh1 svg, h2 svg, h3 svg, h4 svg, h5 svg, h6 svg {\n  display: inline;\n}\n\n</style>\n<style type=\"text/css\">\n\n/* CSS31_ style sheet for the output of Docutils HTML writers.             */\n/* Rules for easy reading and pre-defined style variants.                  */\n/*                                                                         */\n/* :Author: Günter Milde, based on html4css1.css by David Goodger          */\n/* :Id: $Id: plain.css 10079 2025-04-10 12:01:48Z milde $                                                               */\n/* :Copyright: © 2015 Günter Milde.                                        */\n/* :License: Released under the terms of the `2-Clause BSD license`_,      */\n/*    in short:                                                            */\n/*                                                                         */\n/*    Copying and distribution of this file, with or without modification, */\n/*    are permitted in any medium without royalty provided the copyright   */\n/*    notice and this notice are preserved.                                */\n/*                                                                         */\n/*    This file is offered as-is, without any warranty.                    */\n/*                                                                         */\n/* .. _2-Clause BSD license: http://www.spdx.org/licenses/BSD-2-Clause     */\n/* .. _CSS3: https://www.w3.org/Style/CSS/                                 */\n\n\n/* Document Structure */\n/* ****************** */\n\n/* \"page layout\" */\nbody {\n  margin: 0;\n  background-color: #dbdbdb;\n  --field-indent: 9em; /* default indent of fields in field lists */\n}\nmain, footer, header {\n  line-height:1.6;\n  /* avoid long lines --> better reading */\n  /* optimum is 45…75 characters/line <http://webtypography.net/2.1.2> */\n  /* OTOH: lines should not be too short because of missing hyphenation, */\n  max-width: 50rem;\n  padding: 1px 2%; /* 1px on top avoids grey bar above title (mozilla) */\n  margin: auto;\n}\nmain {\n  counter-reset: table figure;\n  background-color: white;\n}\nfooter, header {\n  font-size: smaller;\n  padding: 0.5em 2%;\n  border: none;\n}\n\n/* Table of Contents */\nul.auto-toc > li > p {\n  padding-left: 1em;\n  text-indent: -1em;\n}\nnav.contents ul {\n  padding-left: 1em;\n}\nmain > nav.contents ul ul ul ul:not(.auto-toc) {\n  list-style-type: '\\2B29\\ ';\n}\nmain > nav.contents ul ul ul ul ul:not(.auto-toc) {\n  list-style-type: '\\2B1D\\ ';\n}\n\n/* Transitions */\nhr.docutils {\n  width: 80%;\n  margin-top: 1em;\n  margin-bottom: 1em;\n  clear: both;\n}\n\n/* Paragraphs */\n\n/* vertical space (parskip) */\np, ol, ul, dl, li,\n.footnote, .citation,\ndiv > math,\ntable {\n  margin-top: 0.5em;\n  margin-bottom: 0.5em;\n}\n\nh1, h2, h3, h4, h5, h6,\ndd, details > p:last-child {\n  margin-bottom: 0.5em;\n}\n\n/* Lists */\n/* ===== */\n\n/* Definition Lists */\n/* Indent lists nested in definition lists */\ndd > ul:only-child, dd > ol:only-child { padding-left: 1em; }\n\n/* Description Lists */\n/* styled like in most dictionaries, encyclopedias etc. */\ndl.description {\n  display: flow-root;\n}\ndl.description > dt {\n  font-weight: bold;\n  clear: left;\n  float: left;\n  margin: 0;\n  padding: 0;\n  padding-right: 0.3em;\n}\ndl.description > dd:after {\n  display: table;\n  content: \"\";\n  clear: left; /* clearfix for empty descriptions */\n}\n\n/* Field Lists */\n\ndl.field-list > dd,\ndl.docinfo > dd {\n  margin-left: var(--field-indent); /* adapted in media queries or HTML */\n}\n\n/* example for custom field-name width */\ndl.field-list.narrow > dd {\n  --field-indent: 5em;\n}\n/* run-in: start field-body on same line after long field names */\ndl.field-list.run-in > dd p {\n  display: block;\n}\n\n/* Bibliographic Fields */\n\n/* generally, bibliographic fields use dl.docinfo */\n/* but dedication and abstract are placed into divs */\ndiv.abstract p.topic-title {\n  text-align: center;\n}\ndiv.dedication {\n  margin: 2em 5em;\n  text-align: center;\n  font-style: italic;\n}\ndiv.dedication p.topic-title {\n  font-style: normal;\n}\n\n/* disclosures */\ndetails { padding-left: 1em; }\nsummary { margin-left: -1em; }\n\n/* Text Blocks */\n/* =========== */\n\n/* Literal Blocks */\npre.literal-block, pre.doctest-block,\npre.math, pre.code {\n  font-family: monospace;\n}\n\n/* Block Quotes and Topics */\nbockquote { margin: 1em 2em; }\nblockquote p.attribution {\n  text-align: right;\n  margin-left: 20%;\n}\n\n/* Tables */\n/* ====== */\n\n/* th { vertical-align: bottom; } */\n\ntable tr { text-align: left; }\n\n/* \"booktabs\" style (no vertical lines) */\ntable.booktabs {\n  border: 0;\n  border-top: 2px solid;\n  border-bottom: 2px solid;\n  border-collapse: collapse;\n}\ntable.booktabs * {\n  border: 0;\n}\ntable.booktabs th {\n  border-bottom: thin solid;\n}\n\n/* numbered tables (counter defined in div.document) */\ntable.numbered > caption:before {\n  counter-increment: table;\n  content: \"Table \" counter(table) \": \";\n  font-weight: bold;\n}\n\n/* Explicit Markup Blocks */\n/* ====================== */\n\n/* Footnotes and Citations */\n/* ----------------------- */\n\n/* line on the left */\n.footnote-list {\n  border-left: solid thin;\n  padding-left: 0.25em;\n}\n\n/* Directives */\n/* ---------- */\n\n/* Body Elements */\n/* ~~~~~~~~~~~~~ */\n\n/* Images and Figures */\n\n/* let content flow to the side of aligned images and figures */\nfigure.align-left,\nimg.align-left,\nsvg.align-left,\nvideo.align-left,\ndiv.align-left,\nobject.align-left {\n  clear: left;\n  float: left;\n  margin-right: 1em;\n}\nfigure.align-right,\nimg.align-right,\nsvg.align-right,\nvideo.align-right,\ndiv.align-right,\nobject.align-right {\n  clear: right;\n  float: right;\n  margin-left: 1em;\n}\n/* Stop floating sidebars, images and figures */\nh1, h2, h3, h4, footer, header { clear: both; }\n\n/* Numbered figures */\nfigure.numbered > figcaption > p:before {\n  counter-increment: figure;\n  content: \"Figure \" counter(figure) \": \";\n  font-weight: bold;\n}\n\n/* Admonitions and System Messages */\n.caution p.admonition-title,\n.attention p.admonition-title,\n.danger p.admonition-title,\n.error p.admonition-title,\n.warning p.admonition-title,\ndiv.error {\n  color: red;\n}\n\n/* Sidebar */\n/* Move right. In a layout with fixed margins, */\n/* it can be moved into the margin.            */\naside.sidebar {\n  width: 30%;\n  max-width: 26em;\n  float: right;\n  clear: right;\n  margin-left: 1em;\n  margin-right: -1%;\n  background-color: #fffffa;\n}\n\n\n/* Code */\npre.code { padding: 0.7ex }\npre.code, code { background-color: #eeeeee }\n/* basic highlighting: for a complete scheme, see */\n/* https://docutils.sourceforge.io/sandbox/stylesheets/ */\npre.code .comment, code .comment { color: #5C6576 }\npre.code .keyword, code .keyword { color: #3B0D06; font-weight: bold }\npre.code .literal.string, code .literal.string { color: #0C5404 }\npre.code .name.builtin, code .name.builtin { color: #352B84 }\npre.code .deleted, code .deleted { background-color: #DEB0A1}\npre.code .inserted, code .inserted { background-color: #A3D289}\n\n\n/* Epigraph           */\n/* Highlights         */\n/* Pull-Quote         */\n/* Compound Paragraph */\n/* Container          */\n\n/* Inline Markup */\n/* ============= */\n\nsup, sub { line-height: 0.8; } /* do not add leading for lines with sup/sub */\n\n/* Inline Literals                                          */\n/* possible values: normal, nowrap, pre, pre-wrap, pre-line */\n/*   span.docutils.literal { white-space: pre-wrap; }       */\n\n/* Hyperlink References */\na { text-decoration: none; }\n\n/* External Targets       */\n/*   span.target.external */\n/* Internal Targets       */\n/*   span.target.internal */\n/* Footnote References    */\n/*   a[role=\"doc-noteref\"] */\n/* Citation References    */\n/*   a.citation-reference */\n\n</style>\n</head>\n<body>\n<main>\n\n\n<ol class=\"lowerroman simple\">\n<li><p>r</p></li>\n<li><p>s</p></li>\n</ol>\n<div role=\"list\" class=\"citation-list\">\n<div class=\"citation\" id=\"cit\" role=\"doc-biblioentry\">\n<span class=\"label\"><span class=\"fn-bracket\">[</span>CIT<span class=\"fn-bracket\">]</span></span>\n<p>citation</p>\n</div>\n</div>\n<aside class=\"system-message\">\n<p class=\"system-message-title\">System Message: ERROR/3 (<span class=\"docutils literal\">fuzz-019.rst</span>, line 5)</p>\n<p>Error in &quot;contents&quot; directive:\nno content permitted.</p>\n<pre class=\"literal-block\">.. contents::\n .. default-role:: literal\n\n |unclosed</pre>\n</aside>\n</main>\n</body>\n</html>\n",
+  "parts": {
+   "body": "<ol class=\"lowerroman simple\">\n<li><p>r</p></li>\n<li><p>s</p></li>\n</ol>\n<div role=\"list\" class=\"citation-list\">\n<div class=\"citation\" id=\"cit\" role=\"doc-biblioentry\">\n<span class=\"label\"><span class=\"fn-bracket\">[</span>CIT<span class=\"fn-bracket\">]</span></span>\n<p>citation</p>\n</div>\n</div>\n<aside class=\"system-message\">\n<p class=\"system-message-title\">System Message: ERROR/3 (<span class=\"docutils literal\">fuzz-019.rst</span>, line 5)</p>\n<p>Error in &quot;contents&quot; directive:\nno content permitted.</p>\n<pre class=\"literal-block\">.. contents::\n .. default-role:: literal\n\n |unclosed</pre>\n</aside>\n",
+   "body_pre_docinfo": "",
+   "body_prefix": "</head>\n<body>\n<main>\n",
+   "body_suffix": "</main>\n</body>\n</html>\n",
+   "docinfo": "",
+   "encoding": "utf-8",
+   "errors": "xmlcharrefreplace",
+   "footer": "",
+   "fragment": "<ol class=\"lowerroman simple\">\n<li><p>r</p></li>\n<li><p>s</p></li>\n</ol>\n<div role=\"list\" class=\"citation-list\">\n<div class=\"citation\" id=\"cit\" role=\"doc-biblioentry\">\n<span class=\"label\"><span class=\"fn-bracket\">[</span>CIT<span class=\"fn-bracket\">]</span></span>\n<p>citation</p>\n</div>\n</div>\n<aside class=\"system-message\">\n<p class=\"system-message-title\">System Message: ERROR/3 (<span class=\"docutils literal\">fuzz-019.rst</span>, line 5)</p>\n<p>Error in &quot;contents&quot; directive:\nno content permitted.</p>\n<pre class=\"literal-block\">.. contents::\n .. default-role:: literal\n\n |unclosed</pre>\n</aside>\n",
+   "head": "<meta charset=\"utf-8\" />\n<meta name=\"generator\" content=\"Docutils 0.22.4: https://docutils.sourceforge.io/\" />\n<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\" />\n<title>fuzz-019.rst</title>\n",
+   "head_prefix": "<!DOCTYPE html>\n<html xmlns=\"http://www.w3.org/1999/xhtml\" xml:lang=\"en\" lang=\"en\">\n<head>\n",
+   "header": "",
+   "html_body": "<main>\n<ol class=\"lowerroman simple\">\n<li><p>r</p></li>\n<li><p>s</p></li>\n</ol>\n<div role=\"list\" class=\"citation-list\">\n<div class=\"citation\" id=\"cit\" role=\"doc-biblioentry\">\n<span class=\"label\"><span class=\"fn-bracket\">[</span>CIT<span class=\"fn-bracket\">]</span></span>\n<p>citation</p>\n</div>\n</div>\n<aside class=\"system-message\">\n<p class=\"system-message-title\">System Message: ERROR/3 (<span class=\"docutils literal\">fuzz-019.rst</span>, line 5)</p>\n<p>Error in &quot;contents&quot; directive:\nno content permitted.</p>\n<pre class=\"literal-block\">.. contents::\n .. default-role:: literal\n\n |unclosed</pre>\n</aside>\n</main>\n",
+   "html_head": "<meta charset=\"%s\" />\n<meta name=\"generator\" content=\"Docutils 0.22.4: https://docutils.sourceforge.io/\" />\n<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\" />\n<title>fuzz-019.rst</title>\n",
+   "html_prolog": "<!DOCTYPE html>\n",
+   "html_subtitle": "",
+   "html_title": "",
+   "meta": "<meta charset=\"utf-8\" />\n<meta name=\"generator\" content=\"Docutils 0.22.4: https://docutils.sourceforge.io/\" />\n<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\" />\n",
+   "stylesheet": "<style type=\"text/css\">\n\n/* Minimal style sheet for the HTML output of Docutils.                    */\n/*                                                                         */\n/* :Author: Günter Milde, based on html4css1.css by David Goodger          */\n/* :Id: $Id: minimal.css 10018 2025-03-06 16:19:15Z milde $                                                               */\n/* :Copyright: © 2015, 2021 Günter Milde.                                  */\n/* :License: Released under the terms of the `2-Clause BSD license`_,      */\n/*    in short:                                                            */\n/*                                                                         */\n/*    Copying and distribution of this file, with or without modification, */\n/*    are permitted in any medium without royalty provided the copyright   */\n/*    notice and this notice are preserved.                                */\n/*                                                                         */\n/*    This file is offered as-is, without any warranty.                    */\n/*                                                                         */\n/* .. _2-Clause BSD license: http://www.spdx.org/licenses/BSD-2-Clause     */\n\n/* This CSS3 stylesheet defines rules for Docutils elements without        */\n/* HTML equivalent. It is required to make the document semantics visible. */\n/*                                                                         */\n/* .. _validates: http://jigsaw.w3.org/css-validator/validator$link        */\n\n/* titles */\np.topic-title,\np.admonition-title,\np.system-message-title {\n  font-weight: bold;\n}\np.sidebar-title,\np.rubric {\n  font-weight: bold;\n  font-size: larger;\n}\np.rubric {\n  color: maroon;\n}\np.subtitle,\np.section-subtitle,\np.sidebar-subtitle {\n  font-weight: bold;\n  margin-top: -0.5em;\n}\nh1 + p.subtitle {\n  font-size: 1.6em;\n}\na.toc-backref {\n  color: inherit;\n  text-decoration: none;\n}\n\n/* Warnings, Errors */\n.system-messages h2,\n.system-message-title,\npre.problematic,\nspan.problematic {\n  color: red;\n}\n\n/* Inline Literals */\n.docutils.literal {\n  font-family: monospace;\n  white-space: pre-wrap;\n}\n/* do not wrap at hyphens and similar: */\n.literal > span.pre { white-space: nowrap; }\n\n/* keep line-breaks (\\n) visible */\n.pre-wrap { white-space: pre-wrap; }\n\n/* Lists */\n\n/* compact and simple lists: no margin between items */\n.simple  li, .simple  ul, .simple  ol, .simple  > li p,\n.compact li, .compact ul, .compact ol, .compact > li p,\ndl.simple  > dd, dl.compact > dd, dl.docinfo > dd {\n  margin-top: 0;\n  margin-bottom: 0;\n}\n/* Nested Paragraphs */\np:first-child { margin-top: 0; }\np:last-child { margin-bottom: 0; }\ndetails > p:last-child { margin-bottom: 1em; }\n\n/* Table of Contents */\n.contents ul.auto-toc { /* section numbers present */\n  list-style-type: none;\n}\n\n/* Enumerated Lists */\nol.arabic     { list-style: decimal }\nol.loweralpha { list-style: lower-alpha }\nol.upperalpha { list-style: upper-alpha }\nol.lowerroman { list-style: lower-roman }\nol.upperroman { list-style: upper-roman }\n\n/* Definition Lists and Derivatives */\ndt .classifier { font-style: italic }\ndt .classifier:before {\n  font-style: normal;\n  margin: 0.5em;\n  content: \":\";\n}\n/* Field Lists and similar */\n/* bold field name, content starts on the same line */\ndl.field-list,\ndl.option-list,\ndl.docinfo {\n  display: flow-root;\n}\ndl.field-list > dt,\ndl.option-list > dt,\ndl.docinfo > dt {\n  font-weight: bold;\n  clear: left;\n  float: left;\n  margin: 0;\n  padding: 0;\n  padding-right: 0.25em;\n}\n/* Offset for field content (corresponds to the --field-name-limit option) */\ndl.field-list > dd,\ndl.option-list > dd,\ndl.docinfo > dd {\n  margin-left:  9em; /* ca. 14 chars in the test examples, fit all Docinfo fields */\n}\n/* start nested lists on new line */\ndd > dl:first-child,\ndd > ul:first-child,\ndd > ol:first-child {\n  clear: left;\n}\n/* start field-body on a new line after long field names */\ndl.field-list > dd > *:first-child,\ndl.option-list > dd > *:first-child\n{\n  display: inline-block;\n  width: 100%;\n  margin: 0;\n}\n\n/* Bibliographic Fields (docinfo) */\ndl.docinfo pre.address {\n  font: inherit;\n  margin: 0;\n}\ndl.docinfo > dd.authors > p { margin: 0; }\n\n/* Option Lists */\ndl.option-list > dt { font-weight: normal; }\nspan.option { white-space: nowrap; }\n\n/* Footnotes and Citations  */\n\n.footnote, .citation { margin: 1em 0; } /* default paragraph skip (Firefox) */\n/* hanging indent */\n.citation { padding-left: 2em; }\n.footnote { padding-left: 1.7em; }\n.footnote.superscript { padding-left: 1.0em; }\n.citation > .label { margin-left: -2em; }\n.footnote > .label { margin-left: -1.7em; }\n.footnote.superscript > .label { margin-left: -1.0em; }\n\n.footnote > .label + *,\n.citation > .label + * {\n  display: inline-block;\n  margin-top: 0;\n  vertical-align: top;\n}\n.footnote > .backrefs + *,\n.citation > .backrefs + * {\n  margin-top: 0;\n}\n.footnote > .label + p, .footnote > .backrefs + p,\n.citation > .label + p, .citation > .backrefs + p {\n  display: inline;\n  vertical-align: inherit;\n}\n\n.backrefs { user-select: none; }\n.backrefs > a { font-style: italic; }\n\n/* superscript footnotes */\na[role=\"doc-noteref\"].superscript,\n.footnote.superscript > .label,\n.footnote.superscript > .backrefs {\n  vertical-align: super;\n  font-size: smaller;\n  line-height: 1;\n}\na[role=\"doc-noteref\"].superscript > .fn-bracket,\n.footnote.superscript > .label > .fn-bracket {\n  /* hide brackets in display but leave for copy/paste */\n  display: inline-block;\n  width: 0;\n  overflow: hidden;\n}\n[role=\"doc-noteref\"].superscript + [role=\"doc-noteref\"].superscript {\n  padding-left: 0.15em; /* separate consecutive footnote references */\n  /* TODO: unfortunately, \"+\" also selects with text between the references. */\n}\n\n/* Alignment */\n.align-left   {\n  text-align: left;\n  margin-right: auto;\n}\n.align-center {\n  text-align: center;\n  margin-left: auto;\n  margin-right: auto;\n}\n.align-right  {\n  text-align: right;\n  margin-left: auto;\n}\n.align-top    { vertical-align: top; }\n.align-middle { vertical-align: middle; }\n.align-bottom { vertical-align: bottom; }\n\n/* reset inner alignment in figures and tables */\nfigure.align-left, figure.align-right,\ntable.align-left, table.align-center, table.align-right {\n  text-align: inherit;\n}\n\n/* Text Blocks */\n.topic { margin: 1em 2em; }\n.sidebar,\n.admonition,\n.system-message {\n  margin: 1em 2em;\n  border: thin solid;\n  padding: 0.5em 1em;\n}\ndiv.line-block { display: block; }\ndiv.line-block div.line-block, pre { margin-left: 2em; }\n\n/* Code line numbers: don't copy with drag-and-drop */\npre.code .ln { display: none; }\npre.code code:before {\n  content: attr(data-lineno);\n  font-size: small;\n  color: gray;\n}\n\n/* Tables */\ntable {\n  border-collapse: collapse;\n}\ntd, th {\n  border: thin solid silver;\n  padding: 0 1ex;\n}\n.borderless td, .borderless th {\n  border: 0;\n  padding: 0;\n  padding-right: 0.5em /* separate table cells */\n}\n\ntable > caption, figcaption {\n  text-align: left;\n  margin-top: 0.2em;\n  margin-bottom: 0.2em;\n}\ntable.captionbelow {\n  caption-side: bottom;\n}\n\n/* MathML (see \"math.css\" for --math-output=HTML) */\nmath .boldsymbol { font-weight: bold; }\nmath.boxed, math .boxed {padding: 0.25em; border: thin solid; }\n/* style table similar to AMS \"align\" or \"aligned\" environment: */\nmtable.cases > mtr > mtd { text-align: left; }\nmtable.ams-align > mtr > mtd { padding-left: 0; padding-right: 0; }\nmtable.ams-align > mtr > mtd:nth-child(2n) { text-align: left; }\nmtable.ams-align > mtr > mtd:nth-child(2n+1) { text-align: right; }\nmtable.ams-align > mtr > mtd:nth-child(2n+3) { padding-left: 2em; }\n.mathscr mi, mi.mathscr {\n  font-family: STIX, XITSMathJax_Script, rsfs10,\n               \"Asana Math\", Garamond, cursive;\n}\n\n/* Document Header and Footer */\nheader { border-bottom: 1px solid black; }\nfooter { border-top: 1px solid black; }\n\n/* Images are block-level by default in Docutils */\n/* New HTML5 block elements: set display for older browsers */\nimg, svg, header, footer, main, aside, nav, section, figure, video, details {\n  display: block;\n}\nsvg { width: auto; height: auto; }  /* enable scaling of SVG images */\n/* inline images */\n\np img, p svg, p video,\nh1 img, h2 img, h3 img, h4 img, h5 img, h6 img,\nh1 svg, h2 svg, h3 svg, h4 svg, h5 svg, h6 svg {\n  display: inline;\n}\n\n</style>\n<style type=\"text/css\">\n\n/* CSS31_ style sheet for the output of Docutils HTML writers.             */\n/* Rules for easy reading and pre-defined style variants.                  */\n/*                                                                         */\n/* :Author: Günter Milde, based on html4css1.css by David Goodger          */\n/* :Id: $Id: plain.css 10079 2025-04-10 12:01:48Z milde $                                                               */\n/* :Copyright: © 2015 Günter Milde.                                        */\n/* :License: Released under the terms of the `2-Clause BSD license`_,      */\n/*    in short:                                                            */\n/*                                                                         */\n/*    Copying and distribution of this file, with or without modification, */\n/*    are permitted in any medium without royalty provided the copyright   */\n/*    notice and this notice are preserved.                                */\n/*                                                                         */\n/*    This file is offered as-is, without any warranty.                    */\n/*                                                                         */\n/* .. _2-Clause BSD license: http://www.spdx.org/licenses/BSD-2-Clause     */\n/* .. _CSS3: https://www.w3.org/Style/CSS/                                 */\n\n\n/* Document Structure */\n/* ****************** */\n\n/* \"page layout\" */\nbody {\n  margin: 0;\n  background-color: #dbdbdb;\n  --field-indent: 9em; /* default indent of fields in field lists */\n}\nmain, footer, header {\n  line-height:1.6;\n  /* avoid long lines --> better reading */\n  /* optimum is 45…75 characters/line <http://webtypography.net/2.1.2> */\n  /* OTOH: lines should not be too short because of missing hyphenation, */\n  max-width: 50rem;\n  padding: 1px 2%; /* 1px on top avoids grey bar above title (mozilla) */\n  margin: auto;\n}\nmain {\n  counter-reset: table figure;\n  background-color: white;\n}\nfooter, header {\n  font-size: smaller;\n  padding: 0.5em 2%;\n  border: none;\n}\n\n/* Table of Contents */\nul.auto-toc > li > p {\n  padding-left: 1em;\n  text-indent: -1em;\n}\nnav.contents ul {\n  padding-left: 1em;\n}\nmain > nav.contents ul ul ul ul:not(.auto-toc) {\n  list-style-type: '\\2B29\\ ';\n}\nmain > nav.contents ul ul ul ul ul:not(.auto-toc) {\n  list-style-type: '\\2B1D\\ ';\n}\n\n/* Transitions */\nhr.docutils {\n  width: 80%;\n  margin-top: 1em;\n  margin-bottom: 1em;\n  clear: both;\n}\n\n/* Paragraphs */\n\n/* vertical space (parskip) */\np, ol, ul, dl, li,\n.footnote, .citation,\ndiv > math,\ntable {\n  margin-top: 0.5em;\n  margin-bottom: 0.5em;\n}\n\nh1, h2, h3, h4, h5, h6,\ndd, details > p:last-child {\n  margin-bottom: 0.5em;\n}\n\n/* Lists */\n/* ===== */\n\n/* Definition Lists */\n/* Indent lists nested in definition lists */\ndd > ul:only-child, dd > ol:only-child { padding-left: 1em; }\n\n/* Description Lists */\n/* styled like in most dictionaries, encyclopedias etc. */\ndl.description {\n  display: flow-root;\n}\ndl.description > dt {\n  font-weight: bold;\n  clear: left;\n  float: left;\n  margin: 0;\n  padding: 0;\n  padding-right: 0.3em;\n}\ndl.description > dd:after {\n  display: table;\n  content: \"\";\n  clear: left; /* clearfix for empty descriptions */\n}\n\n/* Field Lists */\n\ndl.field-list > dd,\ndl.docinfo > dd {\n  margin-left: var(--field-indent); /* adapted in media queries or HTML */\n}\n\n/* example for custom field-name width */\ndl.field-list.narrow > dd {\n  --field-indent: 5em;\n}\n/* run-in: start field-body on same line after long field names */\ndl.field-list.run-in > dd p {\n  display: block;\n}\n\n/* Bibliographic Fields */\n\n/* generally, bibliographic fields use dl.docinfo */\n/* but dedication and abstract are placed into divs */\ndiv.abstract p.topic-title {\n  text-align: center;\n}\ndiv.dedication {\n  margin: 2em 5em;\n  text-align: center;\n  font-style: italic;\n}\ndiv.dedication p.topic-title {\n  font-style: normal;\n}\n\n/* disclosures */\ndetails { padding-left: 1em; }\nsummary { margin-left: -1em; }\n\n/* Text Blocks */\n/* =========== */\n\n/* Literal Blocks */\npre.literal-block, pre.doctest-block,\npre.math, pre.code {\n  font-family: monospace;\n}\n\n/* Block Quotes and Topics */\nbockquote { margin: 1em 2em; }\nblockquote p.attribution {\n  text-align: right;\n  margin-left: 20%;\n}\n\n/* Tables */\n/* ====== */\n\n/* th { vertical-align: bottom; } */\n\ntable tr { text-align: left; }\n\n/* \"booktabs\" style (no vertical lines) */\ntable.booktabs {\n  border: 0;\n  border-top: 2px solid;\n  border-bottom: 2px solid;\n  border-collapse: collapse;\n}\ntable.booktabs * {\n  border: 0;\n}\ntable.booktabs th {\n  border-bottom: thin solid;\n}\n\n/* numbered tables (counter defined in div.document) */\ntable.numbered > caption:before {\n  counter-increment: table;\n  content: \"Table \" counter(table) \": \";\n  font-weight: bold;\n}\n\n/* Explicit Markup Blocks */\n/* ====================== */\n\n/* Footnotes and Citations */\n/* ----------------------- */\n\n/* line on the left */\n.footnote-list {\n  border-left: solid thin;\n  padding-left: 0.25em;\n}\n\n/* Directives */\n/* ---------- */\n\n/* Body Elements */\n/* ~~~~~~~~~~~~~ */\n\n/* Images and Figures */\n\n/* let content flow to the side of aligned images and figures */\nfigure.align-left,\nimg.align-left,\nsvg.align-left,\nvideo.align-left,\ndiv.align-left,\nobject.align-left {\n  clear: left;\n  float: left;\n  margin-right: 1em;\n}\nfigure.align-right,\nimg.align-right,\nsvg.align-right,\nvideo.align-right,\ndiv.align-right,\nobject.align-right {\n  clear: right;\n  float: right;\n  margin-left: 1em;\n}\n/* Stop floating sidebars, images and figures */\nh1, h2, h3, h4, footer, header { clear: both; }\n\n/* Numbered figures */\nfigure.numbered > figcaption > p:before {\n  counter-increment: figure;\n  content: \"Figure \" counter(figure) \": \";\n  font-weight: bold;\n}\n\n/* Admonitions and System Messages */\n.caution p.admonition-title,\n.attention p.admonition-title,\n.danger p.admonition-title,\n.error p.admonition-title,\n.warning p.admonition-title,\ndiv.error {\n  color: red;\n}\n\n/* Sidebar */\n/* Move right. In a layout with fixed margins, */\n/* it can be moved into the margin.            */\naside.sidebar {\n  width: 30%;\n  max-width: 26em;\n  float: right;\n  clear: right;\n  margin-left: 1em;\n  margin-right: -1%;\n  background-color: #fffffa;\n}\n\n\n/* Code */\npre.code { padding: 0.7ex }\npre.code, code { background-color: #eeeeee }\n/* basic highlighting: for a complete scheme, see */\n/* https://docutils.sourceforge.io/sandbox/stylesheets/ */\npre.code .comment, code .comment { color: #5C6576 }\npre.code .keyword, code .keyword { color: #3B0D06; font-weight: bold }\npre.code .literal.string, code .literal.string { color: #0C5404 }\npre.code .name.builtin, code .name.builtin { color: #352B84 }\npre.code .deleted, code .deleted { background-color: #DEB0A1}\npre.code .inserted, code .inserted { background-color: #A3D289}\n\n\n/* Epigraph           */\n/* Highlights         */\n/* Pull-Quote         */\n/* Compound Paragraph */\n/* Container          */\n\n/* Inline Markup */\n/* ============= */\n\nsup, sub { line-height: 0.8; } /* do not add leading for lines with sup/sub */\n\n/* Inline Literals                                          */\n/* possible values: normal, nowrap, pre, pre-wrap, pre-line */\n/*   span.docutils.literal { white-space: pre-wrap; }       */\n\n/* Hyperlink References */\na { text-decoration: none; }\n\n/* External Targets       */\n/*   span.target.external */\n/* Internal Targets       */\n/*   span.target.internal */\n/* Footnote References    */\n/*   a[role=\"doc-noteref\"] */\n/* Citation References    */\n/*   a.citation-reference */\n\n</style>\n",
+   "subtitle": "",
+   "title": "",
+   "version": "0.22.4",
+   "whole": "<!DOCTYPE html>\n<html xmlns=\"http://www.w3.org/1999/xhtml\" xml:lang=\"en\" lang=\"en\">\n<head>\n<meta charset=\"utf-8\" />\n<meta name=\"generator\" content=\"Docutils 0.22.4: https://docutils.sourceforge.io/\" />\n<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\" />\n<title>fuzz-019.rst</title>\n<style type=\"text/css\">\n\n/* Minimal style sheet for the HTML output of Docutils.                    */\n/*                                                                         */\n/* :Author: Günter Milde, based on html4css1.css by David Goodger          */\n/* :Id: $Id: minimal.css 10018 2025-03-06 16:19:15Z milde $                                                               */\n/* :Copyright: © 2015, 2021 Günter Milde.                                  */\n/* :License: Released under the terms of the `2-Clause BSD license`_,      */\n/*    in short:                                                            */\n/*                                                                         */\n/*    Copying and distribution of this file, with or without modification, */\n/*    are permitted in any medium without royalty provided the copyright   */\n/*    notice and this notice are preserved.                                */\n/*                                                                         */\n/*    This file is offered as-is, without any warranty.                    */\n/*                                                                         */\n/* .. _2-Clause BSD license: http://www.spdx.org/licenses/BSD-2-Clause     */\n\n/* This CSS3 stylesheet defines rules for Docutils elements without        */\n/* HTML equivalent. It is required to make the document semantics visible. */\n/*                                                                         */\n/* .. _validates: http://jigsaw.w3.org/css-validator/validator$link        */\n\n/* titles */\np.topic-title,\np.admonition-title,\np.system-message-title {\n  font-weight: bold;\n}\np.sidebar-title,\np.rubric {\n  font-weight: bold;\n  font-size: larger;\n}\np.rubric {\n  color: maroon;\n}\np.subtitle,\np.section-subtitle,\np.sidebar-subtitle {\n  font-weight: bold;\n  margin-top: -0.5em;\n}\nh1 + p.subtitle {\n  font-size: 1.6em;\n}\na.toc-backref {\n  color: inherit;\n  text-decoration: none;\n}\n\n/* Warnings, Errors */\n.system-messages h2,\n.system-message-title,\npre.problematic,\nspan.problematic {\n  color: red;\n}\n\n/* Inline Literals */\n.docutils.literal {\n  font-family: monospace;\n  white-space: pre-wrap;\n}\n/* do not wrap at hyphens and similar: */\n.literal > span.pre { white-space: nowrap; }\n\n/* keep line-breaks (\\n) visible */\n.pre-wrap { white-space: pre-wrap; }\n\n/* Lists */\n\n/* compact and simple lists: no margin between items */\n.simple  li, .simple  ul, .simple  ol, .simple  > li p,\n.compact li, .compact ul, .compact ol, .compact > li p,\ndl.simple  > dd, dl.compact > dd, dl.docinfo > dd {\n  margin-top: 0;\n  margin-bottom: 0;\n}\n/* Nested Paragraphs */\np:first-child { margin-top: 0; }\np:last-child { margin-bottom: 0; }\ndetails > p:last-child { margin-bottom: 1em; }\n\n/* Table of Contents */\n.contents ul.auto-toc { /* section numbers present */\n  list-style-type: none;\n}\n\n/* Enumerated Lists */\nol.arabic     { list-style: decimal }\nol.loweralpha { list-style: lower-alpha }\nol.upperalpha { list-style: upper-alpha }\nol.lowerroman { list-style: lower-roman }\nol.upperroman { list-style: upper-roman }\n\n/* Definition Lists and Derivatives */\ndt .classifier { font-style: italic }\ndt .classifier:before {\n  font-style: normal;\n  margin: 0.5em;\n  content: \":\";\n}\n/* Field Lists and similar */\n/* bold field name, content starts on the same line */\ndl.field-list,\ndl.option-list,\ndl.docinfo {\n  display: flow-root;\n}\ndl.field-list > dt,\ndl.option-list > dt,\ndl.docinfo > dt {\n  font-weight: bold;\n  clear: left;\n  float: left;\n  margin: 0;\n  padding: 0;\n  padding-right: 0.25em;\n}\n/* Offset for field content (corresponds to the --field-name-limit option) */\ndl.field-list > dd,\ndl.option-list > dd,\ndl.docinfo > dd {\n  margin-left:  9em; /* ca. 14 chars in the test examples, fit all Docinfo fields */\n}\n/* start nested lists on new line */\ndd > dl:first-child,\ndd > ul:first-child,\ndd > ol:first-child {\n  clear: left;\n}\n/* start field-body on a new line after long field names */\ndl.field-list > dd > *:first-child,\ndl.option-list > dd > *:first-child\n{\n  display: inline-block;\n  width: 100%;\n  margin: 0;\n}\n\n/* Bibliographic Fields (docinfo) */\ndl.docinfo pre.address {\n  font: inherit;\n  margin: 0;\n}\ndl.docinfo > dd.authors > p { margin: 0; }\n\n/* Option Lists */\ndl.option-list > dt { font-weight: normal; }\nspan.option { white-space: nowrap; }\n\n/* Footnotes and Citations  */\n\n.footnote, .citation { margin: 1em 0; } /* default paragraph skip (Firefox) */\n/* hanging indent */\n.citation { padding-left: 2em; }\n.footnote { padding-left: 1.7em; }\n.footnote.superscript { padding-left: 1.0em; }\n.citation > .label { margin-left: -2em; }\n.footnote > .label { margin-left: -1.7em; }\n.footnote.superscript > .label { margin-left: -1.0em; }\n\n.footnote > .label + *,\n.citation > .label + * {\n  display: inline-block;\n  margin-top: 0;\n  vertical-align: top;\n}\n.footnote > .backrefs + *,\n.citation > .backrefs + * {\n  margin-top: 0;\n}\n.footnote > .label + p, .footnote > .backrefs + p,\n.citation > .label + p, .citation > .backrefs + p {\n  display: inline;\n  vertical-align: inherit;\n}\n\n.backrefs { user-select: none; }\n.backrefs > a { font-style: italic; }\n\n/* superscript footnotes */\na[role=\"doc-noteref\"].superscript,\n.footnote.superscript > .label,\n.footnote.superscript > .backrefs {\n  vertical-align: super;\n  font-size: smaller;\n  line-height: 1;\n}\na[role=\"doc-noteref\"].superscript > .fn-bracket,\n.footnote.superscript > .label > .fn-bracket {\n  /* hide brackets in display but leave for copy/paste */\n  display: inline-block;\n  width: 0;\n  overflow: hidden;\n}\n[role=\"doc-noteref\"].superscript + [role=\"doc-noteref\"].superscript {\n  padding-left: 0.15em; /* separate consecutive footnote references */\n  /* TODO: unfortunately, \"+\" also selects with text between the references. */\n}\n\n/* Alignment */\n.align-left   {\n  text-align: left;\n  margin-right: auto;\n}\n.align-center {\n  text-align: center;\n  margin-left: auto;\n  margin-right: auto;\n}\n.align-right  {\n  text-align: right;\n  margin-left: auto;\n}\n.align-top    { vertical-align: top; }\n.align-middle { vertical-align: middle; }\n.align-bottom { vertical-align: bottom; }\n\n/* reset inner alignment in figures and tables */\nfigure.align-left, figure.align-right,\ntable.align-left, table.align-center, table.align-right {\n  text-align: inherit;\n}\n\n/* Text Blocks */\n.topic { margin: 1em 2em; }\n.sidebar,\n.admonition,\n.system-message {\n  margin: 1em 2em;\n  border: thin solid;\n  padding: 0.5em 1em;\n}\ndiv.line-block { display: block; }\ndiv.line-block div.line-block, pre { margin-left: 2em; }\n\n/* Code line numbers: don't copy with drag-and-drop */\npre.code .ln { display: none; }\npre.code code:before {\n  content: attr(data-lineno);\n  font-size: small;\n  color: gray;\n}\n\n/* Tables */\ntable {\n  border-collapse: collapse;\n}\ntd, th {\n  border: thin solid silver;\n  padding: 0 1ex;\n}\n.borderless td, .borderless th {\n  border: 0;\n  padding: 0;\n  padding-right: 0.5em /* separate table cells */\n}\n\ntable > caption, figcaption {\n  text-align: left;\n  margin-top: 0.2em;\n  margin-bottom: 0.2em;\n}\ntable.captionbelow {\n  caption-side: bottom;\n}\n\n/* MathML (see \"math.css\" for --math-output=HTML) */\nmath .boldsymbol { font-weight: bold; }\nmath.boxed, math .boxed {padding: 0.25em; border: thin solid; }\n/* style table similar to AMS \"align\" or \"aligned\" environment: */\nmtable.cases > mtr > mtd { text-align: left; }\nmtable.ams-align > mtr > mtd { padding-left: 0; padding-right: 0; }\nmtable.ams-align > mtr > mtd:nth-child(2n) { text-align: left; }\nmtable.ams-align > mtr > mtd:nth-child(2n+1) { text-align: right; }\nmtable.ams-align > mtr > mtd:nth-child(2n+3) { padding-left: 2em; }\n.mathscr mi, mi.mathscr {\n  font-family: STIX, XITSMathJax_Script, rsfs10,\n               \"Asana Math\", Garamond, cursive;\n}\n\n/* Document Header and Footer */\nheader { border-bottom: 1px solid black; }\nfooter { border-top: 1px solid black; }\n\n/* Images are block-level by default in Docutils */\n/* New HTML5 block elements: set display for older browsers */\nimg, svg, header, footer, main, aside, nav, section, figure, video, details {\n  display: block;\n}\nsvg { width: auto; height: auto; }  /* enable scaling of SVG images */\n/* inline images */\n\np img, p svg, p video,\nh1 img, h2 img, h3 img, h4 img, h5 img, h6 img,\nh1 svg, h2 svg, h3 svg, h4 svg, h5 svg, h6 svg {\n  display: inline;\n}\n\n</style>\n<style type=\"text/css\">\n\n/* CSS31_ style sheet for the output of Docutils HTML writers.             */\n/* Rules for easy reading and pre-defined style variants.                  */\n/*                                                                         */\n/* :Author: Günter Milde, based on html4css1.css by David Goodger          */\n/* :Id: $Id: plain.css 10079 2025-04-10 12:01:48Z milde $                                                               */\n/* :Copyright: © 2015 Günter Milde.                                        */\n/* :License: Released under the terms of the `2-Clause BSD license`_,      */\n/*    in short:                                                            */\n/*                                                                         */\n/*    Copying and distribution of this file, with or without modification, */\n/*    are permitted in any medium without royalty provided the copyright   */\n/*    notice and this notice are preserved.                                */\n/*                                                                         */\n/*    This file is offered as-is, without any warranty.                    */\n/*                                                                         */\n/* .. _2-Clause BSD license: http://www.spdx.org/licenses/BSD-2-Clause     */\n/* .. _CSS3: https://www.w3.org/Style/CSS/                                 */\n\n\n/* Document Structure */\n/* ****************** */\n\n/* \"page layout\" */\nbody {\n  margin: 0;\n  background-color: #dbdbdb;\n  --field-indent: 9em; /* default indent of fields in field lists */\n}\nmain, footer, header {\n  line-height:1.6;\n  /* avoid long lines --> better reading */\n  /* optimum is 45…75 characters/line <http://webtypography.net/2.1.2> */\n  /* OTOH: lines should not be too short because of missing hyphenation, */\n  max-width: 50rem;\n  padding: 1px 2%; /* 1px on top avoids grey bar above title (mozilla) */\n  margin: auto;\n}\nmain {\n  counter-reset: table figure;\n  background-color: white;\n}\nfooter, header {\n  font-size: smaller;\n  padding: 0.5em 2%;\n  border: none;\n}\n\n/* Table of Contents */\nul.auto-toc > li > p {\n  padding-left: 1em;\n  text-indent: -1em;\n}\nnav.contents ul {\n  padding-left: 1em;\n}\nmain > nav.contents ul ul ul ul:not(.auto-toc) {\n  list-style-type: '\\2B29\\ ';\n}\nmain > nav.contents ul ul ul ul ul:not(.auto-toc) {\n  list-style-type: '\\2B1D\\ ';\n}\n\n/* Transitions */\nhr.docutils {\n  width: 80%;\n  margin-top: 1em;\n  margin-bottom: 1em;\n  clear: both;\n}\n\n/* Paragraphs */\n\n/* vertical space (parskip) */\np, ol, ul, dl, li,\n.footnote, .citation,\ndiv > math,\ntable {\n  margin-top: 0.5em;\n  margin-bottom: 0.5em;\n}\n\nh1, h2, h3, h4, h5, h6,\ndd, details > p:last-child {\n  margin-bottom: 0.5em;\n}\n\n/* Lists */\n/* ===== */\n\n/* Definition Lists */\n/* Indent lists nested in definition lists */\ndd > ul:only-child, dd > ol:only-child { padding-left: 1em; }\n\n/* Description Lists */\n/* styled like in most dictionaries, encyclopedias etc. */\ndl.description {\n  display: flow-root;\n}\ndl.description > dt {\n  font-weight: bold;\n  clear: left;\n  float: left;\n  margin: 0;\n  padding: 0;\n  padding-right: 0.3em;\n}\ndl.description > dd:after {\n  display: table;\n  content: \"\";\n  clear: left; /* clearfix for empty descriptions */\n}\n\n/* Field Lists */\n\ndl.field-list > dd,\ndl.docinfo > dd {\n  margin-left: var(--field-indent); /* adapted in media queries or HTML */\n}\n\n/* example for custom field-name width */\ndl.field-list.narrow > dd {\n  --field-indent: 5em;\n}\n/* run-in: start field-body on same line after long field names */\ndl.field-list.run-in > dd p {\n  display: block;\n}\n\n/* Bibliographic Fields */\n\n/* generally, bibliographic fields use dl.docinfo */\n/* but dedication and abstract are placed into divs */\ndiv.abstract p.topic-title {\n  text-align: center;\n}\ndiv.dedication {\n  margin: 2em 5em;\n  text-align: center;\n  font-style: italic;\n}\ndiv.dedication p.topic-title {\n  font-style: normal;\n}\n\n/* disclosures */\ndetails { padding-left: 1em; }\nsummary { margin-left: -1em; }\n\n/* Text Blocks */\n/* =========== */\n\n/* Literal Blocks */\npre.literal-block, pre.doctest-block,\npre.math, pre.code {\n  font-family: monospace;\n}\n\n/* Block Quotes and Topics */\nbockquote { margin: 1em 2em; }\nblockquote p.attribution {\n  text-align: right;\n  margin-left: 20%;\n}\n\n/* Tables */\n/* ====== */\n\n/* th { vertical-align: bottom; } */\n\ntable tr { text-align: left; }\n\n/* \"booktabs\" style (no vertical lines) */\ntable.booktabs {\n  border: 0;\n  border-top: 2px solid;\n  border-bottom: 2px solid;\n  border-collapse: collapse;\n}\ntable.booktabs * {\n  border: 0;\n}\ntable.booktabs th {\n  border-bottom: thin solid;\n}\n\n/* numbered tables (counter defined in div.document) */\ntable.numbered > caption:before {\n  counter-increment: table;\n  content: \"Table \" counter(table) \": \";\n  font-weight: bold;\n}\n\n/* Explicit Markup Blocks */\n/* ====================== */\n\n/* Footnotes and Citations */\n/* ----------------------- */\n\n/* line on the left */\n.footnote-list {\n  border-left: solid thin;\n  padding-left: 0.25em;\n}\n\n/* Directives */\n/* ---------- */\n\n/* Body Elements */\n/* ~~~~~~~~~~~~~ */\n\n/* Images and Figures */\n\n/* let content flow to the side of aligned images and figures */\nfigure.align-left,\nimg.align-left,\nsvg.align-left,\nvideo.align-left,\ndiv.align-left,\nobject.align-left {\n  clear: left;\n  float: left;\n  margin-right: 1em;\n}\nfigure.align-right,\nimg.align-right,\nsvg.align-right,\nvideo.align-right,\ndiv.align-right,\nobject.align-right {\n  clear: right;\n  float: right;\n  margin-left: 1em;\n}\n/* Stop floating sidebars, images and figures */\nh1, h2, h3, h4, footer, header { clear: both; }\n\n/* Numbered figures */\nfigure.numbered > figcaption > p:before {\n  counter-increment: figure;\n  content: \"Figure \" counter(figure) \": \";\n  font-weight: bold;\n}\n\n/* Admonitions and System Messages */\n.caution p.admonition-title,\n.attention p.admonition-title,\n.danger p.admonition-title,\n.error p.admonition-title,\n.warning p.admonition-title,\ndiv.error {\n  color: red;\n}\n\n/* Sidebar */\n/* Move right. In a layout with fixed margins, */\n/* it can be moved into the margin.            */\naside.sidebar {\n  width: 30%;\n  max-width: 26em;\n  float: right;\n  clear: right;\n  margin-left: 1em;\n  margin-right: -1%;\n  background-color: #fffffa;\n}\n\n\n/* Code */\npre.code { padding: 0.7ex }\npre.code, code { background-color: #eeeeee }\n/* basic highlighting: for a complete scheme, see */\n/* https://docutils.sourceforge.io/sandbox/stylesheets/ */\npre.code .comment, code .comment { color: #5C6576 }\npre.code .keyword, code .keyword { color: #3B0D06; font-weight: bold }\npre.code .literal.string, code .literal.string { color: #0C5404 }\npre.code .name.builtin, code .name.builtin { color: #352B84 }\npre.code .deleted, code .deleted { background-color: #DEB0A1}\npre.code .inserted, code .inserted { background-color: #A3D289}\n\n\n/* Epigraph           */\n/* Highlights         */\n/* Pull-Quote         */\n/* Compound Paragraph */\n/* Container          */\n\n/* Inline Markup */\n/* ============= */\n\nsup, sub { line-height: 0.8; } /* do not add leading for lines with sup/sub */\n\n/* Inline Literals                                          */\n/* possible values: normal, nowrap, pre, pre-wrap, pre-line */\n/*   span.docutils.literal { white-space: pre-wrap; }       */\n\n/* Hyperlink References */\na { text-decoration: none; }\n\n/* External Targets       */\n/*   span.target.external */\n/* Internal Targets       */\n/*   span.target.internal */\n/* Footnote References    */\n/*   a[role=\"doc-noteref\"] */\n/* Citation References    */\n/*   a.citation-reference */\n\n</style>\n</head>\n<body>\n<main>\n\n\n<ol class=\"lowerroman simple\">\n<li><p>r</p></li>\n<li><p>s</p></li>\n</ol>\n<div role=\"list\" class=\"citation-list\">\n<div class=\"citation\" id=\"cit\" role=\"doc-biblioentry\">\n<span class=\"label\"><span class=\"fn-bracket\">[</span>CIT<span class=\"fn-bracket\">]</span></span>\n<p>citation</p>\n</div>\n</div>\n<aside class=\"system-message\">\n<p class=\"system-message-title\">System Message: ERROR/3 (<span class=\"docutils literal\">fuzz-019.rst</span>, line 5)</p>\n<p>Error in &quot;contents&quot; directive:\nno content permitted.</p>\n<pre class=\"literal-block\">.. contents::\n .. default-role:: literal\n\n |unclosed</pre>\n</aside>\n</main>\n</body>\n</html>\n"
+  },
+  "pformat": "<document source=\"fuzz-019.rst\">\n    <enumerated_list enumtype=\"lowerroman\" prefix=\"(\" suffix=\")\">\n        <list_item>\n            <paragraph>\n                r\n        <list_item>\n            <paragraph>\n                s\n    <citation ids=\"cit\" names=\"cit\">\n        <label>\n            CIT\n        <paragraph>\n            citation\n    <system_message level=\"3\" line=\"5\" source=\"fuzz-019.rst\" type=\"ERROR\">\n        <paragraph>\n            Error in \"contents\" directive:\n            no content permitted.\n        <literal_block xml:space=\"preserve\">\n            .. contents::\n             .. default-role:: literal\n            \n             |unclosed\n"
+ },
+ "format": "docodin-doctree/1",
+ "input": {
+  "overrides": {
+   "halt_level": 5,
+   "report_level": 1
+  },
+  "source_path": "fuzz-019.rst",
+  "writer": "html5"
+ },
+ "registry": {
+  "autofootnote_refs": [],
+  "autofootnote_start": 1,
+  "autofootnotes": [],
+  "citation_refs": [],
+  "citations": [
+   8
+  ],
+  "current_line": null,
+  "current_source": null,
+  "decoration": null,
+  "footnote_refs": [],
+  "footnotes": [],
+  "id_counter": [],
+  "ids": [
+   [
+    "cit",
+    8
+   ]
+  ],
+  "indirect_targets": [],
+  "nameids": [
+   [
+    "cit",
+    "cit"
+   ]
+  ],
+  "nametypes": [
+   [
+    "cit",
+    true
+   ]
+  ],
+  "parse_messages": [
+   13
+  ],
+  "refids": [],
+  "refnames": [],
+  "substitution_defs": [],
+  "substitution_names": [],
+  "symbol_footnote_refs": [],
+  "symbol_footnote_start": 0,
+  "symbol_footnotes": [],
+  "transform_messages": []
+ },
+ "reporter": {
+  "debug": false,
+  "halt_level": 5,
+  "max_level": 3,
+  "observers": [],
+  "report_level": 1,
+  "source": "fuzz-019.rst",
+  "source_lines": {
+   "input_offset": 0,
+   "line_offset": 9,
+   "runs": [
+    [
+     "fuzz-019.rst",
+     0,
+     8
+    ]
+   ]
+  },
+  "written": [
+   {
+    "level": 3,
+    "node": 13,
+    "text": "fuzz-019.rst:5: (ERROR/3) Error in \"contents\" directive:\nno content permitted.\n\n.. contents::\n .. default-role:: literal\n\n |unclosed\n"
+   }
+  ]
+ },
+ "settings": {
+  "_config_files": [],
+  "_destination": null,
+  "_disable_config": true,
+  "_source": "fuzz-019.rst",
+  "attribution": "dash",
+  "auto_id_prefix": "%",
+  "character_level_inline_markup": false,
+  "cloak_email_addresses": null,
+  "compact_field_lists": true,
+  "compact_lists": true,
+  "config": null,
+  "datestamp": null,
+  "debug": null,
+  "docinfo_xform": true,
+  "doctitle_xform": true,
+  "dump_internals": null,
+  "dump_pseudo_xml": null,
+  "dump_settings": null,
+  "dump_transforms": null,
+  "embed_images": null,
+  "embed_stylesheet": true,
+  "error_encoding": "utf-8",
+  "error_encoding_error_handler": "backslashreplace",
+  "exit_status_level": 5,
+  "expose_internals": null,
+  "file_insertion_enabled": true,
+  "footnote_backlinks": true,
+  "footnote_references": "brackets",
+  "generator": null,
+  "halt_level": 5,
+  "id_prefix": "",
+  "image_loading": null,
+  "initial_header_level": "2",
+  "input_encoding": "utf-8",
+  "input_encoding_error_handler": "strict",
+  "language_code": "en",
+  "line_length_limit": 10000,
+  "math_output": "MathML",
+  "output": null,
+  "output_encoding": "utf-8",
+  "output_encoding_error_handler": "xmlcharrefreplace",
+  "output_path": null,
+  "pep_base_url": "https://peps.python.org/",
+  "pep_file_url_template": "pep-%04d",
+  "pep_references": null,
+  "raw_enabled": true,
+  "report_level": 1,
+  "rfc_base_url": "https://tools.ietf.org/html/",
+  "rfc_references": null,
+  "root_prefix": "",
+  "section_self_link": false,
+  "sectnum_xform": true,
+  "sectsubtitle_xform": false,
+  "smart_quotes": false,
+  "smartquotes_locales": null,
+  "source_link": null,
+  "source_url": null,
+  "strict_visitor": null,
+  "strip_classes": null,
+  "strip_comments": null,
+  "strip_elements_with_classes": null,
+  "stylesheet": null,
+  "stylesheet_dirs": [
+   ".",
+   "<docutils>/writers/html5_polyglot"
+  ],
+  "stylesheet_path": [
+   "minimal.css",
+   "plain.css"
+  ],
+  "syntax_highlight": "long",
+  "tab_width": 8,
+  "table_style": "",
+  "title": null,
+  "toc_backlinks": "entry",
+  "traceback": true,
+  "trim_footnote_reference_space": null,
+  "validate": null,
+  "xml_declaration": false
+ },
+ "stage": "output",
+ "transformer": {
+  "queue": [],
+  "serialno": 21
+ },
+ "tree": {
+  "attributes": {
+   "source": "fuzz-019.rst"
+  },
+  "children": [
+   {
+    "attributes": {
+     "enumtype": "lowerroman",
+     "prefix": "(",
+     "suffix": ")"
+    },
+    "children": [
+     {
+      "children": [
+       {
+        "children": [
+         {
+          "tag": "#text",
+          "text": "r"
+         }
+        ],
+        "line": 1,
+        "rawsource": "r",
+        "source": "fuzz-019.rst",
+        "tag": "paragraph"
+       }
+      ],
+      "document": true,
+      "line": 1,
+      "rawsource": "r",
+      "source": "fuzz-019.rst",
+      "tag": "list_item"
+     },
+     {
+      "children": [
+       {
+        "children": [
+         {
+          "tag": "#text",
+          "text": "s"
+         }
+        ],
+        "line": 2,
+        "rawsource": "s",
+        "source": "fuzz-019.rst",
+        "tag": "paragraph"
+       }
+      ],
+      "document": true,
+      "line": 2,
+      "rawsource": "s\n",
+      "source": "fuzz-019.rst",
+      "tag": "list_item"
+     }
+    ],
+    "document": true,
+    "line": 1,
+    "source": "fuzz-019.rst",
+    "tag": "enumerated_list"
+   },
+   {
+    "attributes": {
+     "ids": [
+      "cit"
+     ],
+     "names": [
+      "cit"
+     ]
+    },
+    "children": [
+     {
+      "children": [
+       {
+        "tag": "#text",
+        "text": "CIT"
+       }
+      ],
+      "tag": "label"
+     },
+     {
+      "children": [
+       {
+        "tag": "#text",
+        "text": "citation"
+       }
+      ],
+      "line": 4,
+      "rawsource": "citation",
+      "source": "fuzz-019.rst",
+      "tag": "paragraph"
+     }
+    ],
+    "document": true,
+    "line": 4,
+    "rawsource": "citation",
+    "source": "fuzz-019.rst",
+    "tag": "citation"
+   },
+   {
+    "attributes": {
+     "level": 3,
+     "line": 5,
+     "source": "fuzz-019.rst",
+     "type": "ERROR"
+    },
+    "children": [
+     {
+      "children": [
+       {
+        "tag": "#text",
+        "text": "Error in \"contents\" directive:\nno content permitted."
+       }
+      ],
+      "tag": "paragraph"
+     },
+     {
+      "attributes": {
+       "xml:space": "preserve"
+      },
+      "children": [
+       {
+        "tag": "#text",
+        "text": ".. contents::\n .. default-role:: literal\n\n |unclosed"
+       }
+      ],
+      "rawsource": ".. contents::\n .. default-role:: literal\n\n |unclosed",
+      "tag": "literal_block"
+     }
+    ],
+    "document": true,
+    "line": 8,
+    "source": "fuzz-019.rst",
+    "tag": "system_message"
+   }
+  ],
+  "document": true,
+  "tag": "document"
+ }
+}

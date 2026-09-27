@@ -1,0 +1,279 @@
+{
+ "detached": [],
+ "expected": {
+  "pformat": "<document source=\"fuzz-020.rst\">\n    <topic>\n        <title>\n            T\n        <block_quote>\n            <paragraph>\n                body\n        <paragraph>\n            Short\n            --\n    <footnote ids=\"footnote-1\" names=\"1\">\n        <label>\n            1\n        <paragraph>\n            footnote\n"
+ },
+ "format": "docodin-doctree/1",
+ "input": {
+  "overrides": {
+   "halt_level": 5,
+   "report_level": 2
+  },
+  "source_path": "fuzz-020.rst",
+  "writer": "latex"
+ },
+ "registry": {
+  "autofootnote_refs": [],
+  "autofootnote_start": 1,
+  "autofootnotes": [],
+  "citation_refs": [],
+  "citations": [],
+  "current_line": null,
+  "current_source": null,
+  "decoration": null,
+  "footnote_refs": [],
+  "footnotes": [
+   9
+  ],
+  "id_counter": [
+   [
+    "footnote-",
+    1
+   ]
+  ],
+  "ids": [
+   [
+    "footnote-1",
+    9
+   ]
+  ],
+  "indirect_targets": [],
+  "nameids": [
+   [
+    "1",
+    "footnote-1"
+   ]
+  ],
+  "nametypes": [
+   [
+    "1",
+    true
+   ]
+  ],
+  "parse_messages": [],
+  "refids": [],
+  "refnames": [],
+  "substitution_defs": [],
+  "substitution_names": [],
+  "symbol_footnote_refs": [],
+  "symbol_footnote_start": 0,
+  "symbol_footnotes": [],
+  "transform_messages": []
+ },
+ "reporter": {
+  "debug": false,
+  "halt_level": 5,
+  "max_level": -1,
+  "observers": [],
+  "report_level": 2,
+  "source": "fuzz-020.rst",
+  "source_lines": {
+   "input_offset": 0,
+   "line_offset": 9,
+   "runs": [
+    [
+     "fuzz-020.rst",
+     0,
+     8
+    ]
+   ]
+  },
+  "written": []
+ },
+ "settings": {
+  "_config_files": [],
+  "_destination": null,
+  "_disable_config": true,
+  "_source": "fuzz-020.rst",
+  "attribution": "dash",
+  "auto_id_prefix": "%",
+  "character_level_inline_markup": false,
+  "compound_enumerators": false,
+  "config": null,
+  "datestamp": null,
+  "debug": null,
+  "docinfo_xform": true,
+  "doctitle_xform": true,
+  "documentclass": "article",
+  "documentoptions": "a4paper",
+  "docutils_footnotes": true,
+  "dump_internals": null,
+  "dump_pseudo_xml": null,
+  "dump_settings": null,
+  "dump_transforms": null,
+  "embed_stylesheet": false,
+  "error_encoding": "utf-8",
+  "error_encoding_error_handler": "backslashreplace",
+  "exit_status_level": 5,
+  "expose_internals": null,
+  "file_insertion_enabled": true,
+  "font_encoding": "T1",
+  "footnote_backlinks": true,
+  "footnote_references": "superscript",
+  "generator": null,
+  "graphicx_option": "",
+  "halt_level": 5,
+  "hyperlink_color": "blue",
+  "hyperref_options": "",
+  "id_prefix": "",
+  "input_encoding": "utf-8",
+  "input_encoding_error_handler": "strict",
+  "language_code": "en",
+  "latex_preamble": "% PDF Standard Fonts\n\\usepackage{mathptmx} % Times\n\\usepackage[scaled=.90]{helvet}\n\\usepackage{courier}",
+  "legacy_class_functions": false,
+  "legacy_column_widths": null,
+  "line_length_limit": 10000,
+  "literal_block_env": "",
+  "output": null,
+  "output_encoding": "utf-8",
+  "output_encoding_error_handler": "strict",
+  "output_path": null,
+  "pep_base_url": "https://peps.python.org/",
+  "pep_file_url_template": "pep-%04d",
+  "pep_references": null,
+  "raw_enabled": true,
+  "reference_label": "",
+  "report_level": 2,
+  "rfc_base_url": "https://tools.ietf.org/html/",
+  "rfc_references": null,
+  "root_prefix": "",
+  "section_enumerator_separator": "-",
+  "section_prefix_for_enumerators": null,
+  "sectnum_xform": true,
+  "sectsubtitle_xform": false,
+  "smart_quotes": false,
+  "smartquotes_locales": null,
+  "source_link": null,
+  "source_url": null,
+  "strict_visitor": null,
+  "strip_classes": null,
+  "strip_comments": null,
+  "strip_elements_with_classes": null,
+  "stylesheet": "",
+  "stylesheet_dirs": [
+   "."
+  ],
+  "stylesheet_path": null,
+  "syntax_highlight": "long",
+  "tab_width": 8,
+  "table_style": [
+   "standard"
+  ],
+  "template": "default.tex",
+  "title": null,
+  "toc_backlinks": "entry",
+  "traceback": true,
+  "trim_footnote_reference_space": null,
+  "use_bibtex": "",
+  "use_latex_abstract": false,
+  "use_latex_citations": null,
+  "use_latex_docinfo": false,
+  "use_latex_toc": true,
+  "use_part_section": false,
+  "use_verbatim_when_possible": null,
+  "validate": null
+ },
+ "stage": "transformed",
+ "transformer": {
+  "queue": [],
+  "serialno": 22
+ },
+ "tree": {
+  "attributes": {
+   "source": "fuzz-020.rst"
+  },
+  "children": [
+   {
+    "children": [
+     {
+      "children": [
+       {
+        "tag": "#text",
+        "text": "T"
+       }
+      ],
+      "rawsource": "T",
+      "tag": "title"
+     },
+     {
+      "children": [
+       {
+        "children": [
+         {
+          "tag": "#text",
+          "text": "body"
+         }
+        ],
+        "line": 3,
+        "rawsource": "body",
+        "source": "fuzz-020.rst",
+        "tag": "paragraph"
+       }
+      ],
+      "line": 3,
+      "rawsource": "body\n",
+      "source": "fuzz-020.rst",
+      "tag": "block_quote"
+     },
+     {
+      "children": [
+       {
+        "tag": "#text",
+        "text": "Short\n--"
+       }
+      ],
+      "line": 5,
+      "rawsource": "Short\n--",
+      "source": "fuzz-020.rst",
+      "tag": "paragraph"
+     }
+    ],
+    "document": true,
+    "line": 1,
+    "rawsource": "  body\n\nShort\n--",
+    "source": "fuzz-020.rst",
+    "tag": "topic"
+   },
+   {
+    "attributes": {
+     "ids": [
+      "footnote-1"
+     ],
+     "names": [
+      "1"
+     ]
+    },
+    "children": [
+     {
+      "children": [
+       {
+        "tag": "#text",
+        "text": "1"
+       }
+      ],
+      "tag": "label"
+     },
+     {
+      "children": [
+       {
+        "tag": "#text",
+        "text": "footnote"
+       }
+      ],
+      "line": 8,
+      "rawsource": "footnote",
+      "source": "fuzz-020.rst",
+      "tag": "paragraph"
+     }
+    ],
+    "document": true,
+    "line": 8,
+    "rawsource": "footnote",
+    "source": "fuzz-020.rst",
+    "tag": "footnote"
+   }
+  ],
+  "document": true,
+  "tag": "document"
+ }
+}

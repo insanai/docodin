@@ -1,0 +1,290 @@
+{
+ "detached": [
+  {
+   "node": {
+    "attributes": {
+     "ids": [
+      "header-and-footer"
+     ],
+     "names": [
+      "header and footer"
+     ]
+    },
+    "document": true,
+    "line": 3,
+    "source": "test/functional/input/odt_header_footer.rst",
+    "tag": "section"
+   },
+   "parent": 0
+  }
+ ],
+ "expected": {
+  "output": "<document ids=\"header-and-footer\" names=\"header\\ and\\ footer\" source=\"test/functional/input/odt_header_footer.rst\" title=\"Header and Footer\">\n    <title>\n        Header and Footer\n    <decoration>\n        <header>\n            <paragraph>\n                head in the clouds\n        <footer>\n            <paragraph>\n                feets getting wet\n    <paragraph>\n        ... only \n        <emphasis>\n            boldness\n         can deliver from fear. And if the risk is not taken, the\n        meaning of life is somehow violated, and the whole future is condemned to\n        hopeless staleness.\n    <block_quote>\n        <paragraph>\n            -- (Carl Jung, Symbols of Transformation)\n",
+  "parts": {
+   "encoding": "utf-8",
+   "errors": "strict",
+   "version": "0.22.4",
+   "whole": "<document ids=\"header-and-footer\" names=\"header\\ and\\ footer\" source=\"test/functional/input/odt_header_footer.rst\" title=\"Header and Footer\">\n    <title>\n        Header and Footer\n    <decoration>\n        <header>\n            <paragraph>\n                head in the clouds\n        <footer>\n            <paragraph>\n                feets getting wet\n    <paragraph>\n        ... only \n        <emphasis>\n            boldness\n         can deliver from fear. And if the risk is not taken, the\n        meaning of life is somehow violated, and the whole future is condemned to\n        hopeless staleness.\n    <block_quote>\n        <paragraph>\n            -- (Carl Jung, Symbols of Transformation)\n"
+  },
+  "pformat": "<document ids=\"header-and-footer\" names=\"header\\ and\\ footer\" source=\"test/functional/input/odt_header_footer.rst\" title=\"Header and Footer\">\n    <title>\n        Header and Footer\n    <decoration>\n        <header>\n            <paragraph>\n                head in the clouds\n        <footer>\n            <paragraph>\n                feets getting wet\n    <paragraph>\n        ... only \n        <emphasis>\n            boldness\n         can deliver from fear. And if the risk is not taken, the\n        meaning of life is somehow violated, and the whole future is condemned to\n        hopeless staleness.\n    <block_quote>\n        <paragraph>\n            -- (Carl Jung, Symbols of Transformation)\n"
+ },
+ "format": "docodin-doctree/1",
+ "input": {
+  "overrides": {},
+  "source_path": "test/functional/input/odt_header_footer.rst",
+  "writer": "pseudoxml"
+ },
+ "registry": {
+  "autofootnote_refs": [],
+  "autofootnote_start": 1,
+  "autofootnotes": [],
+  "citation_refs": [],
+  "citations": [],
+  "current_line": null,
+  "current_source": null,
+  "decoration": 3,
+  "footnote_refs": [],
+  "footnotes": [],
+  "id_counter": [],
+  "ids": [
+   [
+    "header-and-footer",
+    18
+   ]
+  ],
+  "indirect_targets": [],
+  "nameids": [
+   [
+    "header and footer",
+    "header-and-footer"
+   ]
+  ],
+  "nametypes": [
+   [
+    "header and footer",
+    false
+   ]
+  ],
+  "parse_messages": [],
+  "refids": [],
+  "refnames": [],
+  "substitution_defs": [],
+  "substitution_names": [],
+  "symbol_footnote_refs": [],
+  "symbol_footnote_start": 0,
+  "symbol_footnotes": [],
+  "transform_messages": []
+ },
+ "reporter": {
+  "debug": false,
+  "halt_level": 4,
+  "max_level": -1,
+  "observers": [],
+  "report_level": 2,
+  "source": "test/functional/input/odt_header_footer.rst",
+  "source_lines": {
+   "input_offset": 0,
+   "line_offset": 13,
+   "runs": [
+    [
+     "test/functional/input/odt_header_footer.rst",
+     0,
+     13
+    ]
+   ]
+  },
+  "written": []
+ },
+ "settings": {
+  "_config_files": [],
+  "_destination": null,
+  "_disable_config": true,
+  "_source": "test/functional/input/odt_header_footer.rst",
+  "auto_id_prefix": "%",
+  "character_level_inline_markup": false,
+  "config": null,
+  "datestamp": null,
+  "debug": null,
+  "detailed": null,
+  "docinfo_xform": true,
+  "doctitle_xform": true,
+  "dump_internals": null,
+  "dump_pseudo_xml": null,
+  "dump_settings": null,
+  "dump_transforms": null,
+  "error_encoding": "utf-8",
+  "error_encoding_error_handler": "backslashreplace",
+  "exit_status_level": 5,
+  "expose_internals": null,
+  "file_insertion_enabled": true,
+  "footnote_backlinks": true,
+  "generator": null,
+  "halt_level": 4,
+  "id_prefix": "",
+  "input_encoding": "utf-8",
+  "input_encoding_error_handler": "strict",
+  "language_code": "en",
+  "line_length_limit": 10000,
+  "output": null,
+  "output_encoding": "utf-8",
+  "output_encoding_error_handler": "strict",
+  "output_path": null,
+  "pep_base_url": "https://peps.python.org/",
+  "pep_file_url_template": "pep-%04d",
+  "pep_references": null,
+  "raw_enabled": true,
+  "report_level": 2,
+  "rfc_base_url": "https://tools.ietf.org/html/",
+  "rfc_references": null,
+  "root_prefix": "",
+  "sectnum_xform": true,
+  "sectsubtitle_xform": false,
+  "smart_quotes": false,
+  "smartquotes_locales": null,
+  "source_link": null,
+  "source_url": null,
+  "strict_visitor": null,
+  "strip_classes": null,
+  "strip_comments": null,
+  "strip_elements_with_classes": null,
+  "syntax_highlight": "long",
+  "tab_width": 8,
+  "title": null,
+  "toc_backlinks": "entry",
+  "traceback": true,
+  "trim_footnote_reference_space": null,
+  "validate": null
+ },
+ "stage": "output",
+ "transformer": {
+  "queue": [],
+  "serialno": 20
+ },
+ "tree": {
+  "attributes": {
+   "ids": [
+    "header-and-footer"
+   ],
+   "names": [
+    "header and footer"
+   ],
+   "source": "test/functional/input/odt_header_footer.rst",
+   "title": "Header and Footer"
+  },
+  "children": [
+   {
+    "children": [
+     {
+      "tag": "#text",
+      "text": "Header and Footer"
+     }
+    ],
+    "document": true,
+    "line": 3,
+    "rawsource": "Header and Footer",
+    "source": "test/functional/input/odt_header_footer.rst",
+    "tag": "title"
+   },
+   {
+    "children": [
+     {
+      "children": [
+       {
+        "children": [
+         {
+          "tag": "#text",
+          "text": "head in the clouds"
+         }
+        ],
+        "document": true,
+        "line": 5,
+        "rawsource": "head in the clouds",
+        "source": "test/functional/input/odt_header_footer.rst",
+        "tag": "paragraph"
+       }
+      ],
+      "document": true,
+      "line": 6,
+      "source": "test/functional/input/odt_header_footer.rst",
+      "tag": "header"
+     },
+     {
+      "children": [
+       {
+        "children": [
+         {
+          "tag": "#text",
+          "text": "feets getting wet"
+         }
+        ],
+        "document": true,
+        "line": 7,
+        "rawsource": "feets getting wet",
+        "source": "test/functional/input/odt_header_footer.rst",
+        "tag": "paragraph"
+       }
+      ],
+      "document": true,
+      "line": 8,
+      "source": "test/functional/input/odt_header_footer.rst",
+      "tag": "footer"
+     }
+    ],
+    "document": true,
+    "line": 6,
+    "source": "test/functional/input/odt_header_footer.rst",
+    "tag": "decoration"
+   },
+   {
+    "children": [
+     {
+      "tag": "#text",
+      "text": "... only "
+     },
+     {
+      "children": [
+       {
+        "tag": "#text",
+        "text": "boldness"
+       }
+      ],
+      "rawsource": "*boldness*",
+      "tag": "emphasis"
+     },
+     {
+      "tag": "#text",
+      "text": " can deliver from fear. And if the risk is not taken, the\nmeaning of life is somehow violated, and the whole future is condemned to\nhopeless staleness."
+     }
+    ],
+    "document": true,
+    "line": 9,
+    "rawsource": "... only *boldness* can deliver from fear. And if the risk is not taken, the\nmeaning of life is somehow violated, and the whole future is condemned to\nhopeless staleness.",
+    "source": "test/functional/input/odt_header_footer.rst",
+    "tag": "paragraph"
+   },
+   {
+    "children": [
+     {
+      "children": [
+       {
+        "tag": "#text",
+        "text": "-- (Carl Jung, Symbols of Transformation)"
+       }
+      ],
+      "line": 13,
+      "rawsource": "-- (Carl Jung, Symbols of Transformation)",
+      "source": "test/functional/input/odt_header_footer.rst",
+      "tag": "paragraph"
+     }
+    ],
+    "document": true,
+    "line": 13,
+    "rawsource": "-- (Carl Jung, Symbols of Transformation)",
+    "source": "test/functional/input/odt_header_footer.rst",
+    "tag": "block_quote"
+   }
+  ],
+  "document": true,
+  "tag": "document"
+ }
+}

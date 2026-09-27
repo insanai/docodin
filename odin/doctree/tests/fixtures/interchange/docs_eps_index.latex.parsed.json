@@ -1,0 +1,1061 @@
+{
+ "detached": [],
+ "expected": {
+  "pformat": "<document source=\"docs/eps/index.rst\">\n    <decoration>\n        <header>\n            <paragraph>\n                <reference anonymous=\"1\" name=\"Docutils\">\n                    Docutils\n                 | \n                <reference anonymous=\"1\" name=\"Overview\">\n                    Overview\n                 | \n                <reference anonymous=\"1\" name=\"About\">\n                    About\n                 | \n                <reference anonymous=\"1\" name=\"Users\">\n                    Users\n                 | \n                <reference anonymous=\"1\" name=\"Reference\">\n                    Reference\n                 | \n                <reference anonymous=\"1\" name=\"Developers\">\n                    Developers\n            <target anonymous=\"1\" ids=\"target-1\" refuri=\"https://docutils.sourceforge.io\">\n            <target anonymous=\"1\" ids=\"target-2\" refuri=\"../index.html\">\n            <target anonymous=\"1\" ids=\"target-3\" refuri=\"../index.html#project-fundamentals\">\n            <target anonymous=\"1\" ids=\"target-4\" refuri=\"../index.html#user\">\n            <target anonymous=\"1\" ids=\"target-5\" refuri=\"../index.html#ref\">\n            <target anonymous=\"1\" ids=\"target-6\" refuri=\"../index.html#howto\">\n    <comment xml:space=\"preserve\">\n        Minimal menu bar for inclusion in documentation sources\n        in ``docutils/docs/*/`` sub-diretories.\n        \n        Attention: this is not a standalone document.\n    <section ids=\"docutils-enhancement-proposals\" names=\"docutils\\ enhancement\\ proposals\">\n        <title>\n            Docutils Enhancement Proposals\n        <paragraph>\n            A framework for proposing major new features, collecting community input\n            on an issue, and documenting the design decisions that have gone into\n            Docutils and the reStructuredText format.\n        <paragraph>\n            For details see \n            <reference name=\"Docutils EP Purpose and Guidelines\" refname=\"docutils ep purpose and guidelines\">\n                Docutils EP Purpose and Guidelines\n            .\n            The \n            <reference name=\"template file\" refuri=\"ep-template.rst\">\n                template file\n            <target ids=\"template-file\" names=\"template\\ file\" refuri=\"ep-template.rst\">\n             can be used as\n            starting point for new enhancement proposals.\n        <section ids=\"index\" names=\"index\">\n            <title>\n                Index\n            <table>\n                <tgroup cols=\"3\">\n                    <colspec colwidth=\"3\">\n                    <colspec colwidth=\"57\">\n                    <colspec colwidth=\"11\">\n                    <thead>\n                        <row>\n                            <entry>\n                                <system_message level=\"1\" line=\"20\" source=\"docs/eps/index.rst\" type=\"INFO\">\n                                    <paragraph>\n                                        Unexpected possible title overline or transition.\n                                        Treating it as ordinary text because it's so short.\n                                <paragraph>\n                                    #\n                            <entry>\n                                <paragraph>\n                                    Title\n                            <entry>\n                                <paragraph>\n                                    Status\n                    <tbody>\n                        <row>\n                            <entry>\n                                <paragraph>\n                                    001\n                            <entry>\n                                <paragraph>\n                                    <reference name=\"Docutils EP Purpose and Guidelines\" refuri=\"ep-001.html\">\n                                        Docutils EP Purpose and Guidelines\n                                    <target ids=\"docutils-ep-purpose-and-guidelines\" names=\"docutils\\ ep\\ purpose\\ and\\ guidelines\" refuri=\"ep-001.html\">\n                            <entry>\n                                <paragraph>\n                                    Draft\n                        <row>\n                            <entry>\n                                <paragraph>\n                                    010\n                            <entry>\n                                <paragraph>\n                                    <reference name=\"Public API and Backwards Compatibility Policy\" refuri=\"ep-010.html\">\n                                        Public API and Backwards Compatibility Policy\n                                    <target ids=\"public-api-and-backwards-compatibility-policy\" names=\"public\\ api\\ and\\ backwards\\ compatibility\\ policy\" refuri=\"ep-010.html\">\n                            <entry>\n                                <paragraph>\n                                    Draft\n"
+ },
+ "format": "docodin-doctree/1",
+ "input": {
+  "overrides": {},
+  "source_path": "docs/eps/index.rst",
+  "writer": "latex"
+ },
+ "registry": {
+  "autofootnote_refs": [],
+  "autofootnote_start": 1,
+  "autofootnotes": [],
+  "citation_refs": [],
+  "citations": [],
+  "current_line": null,
+  "current_source": null,
+  "decoration": 1,
+  "footnote_refs": [],
+  "footnotes": [],
+  "id_counter": [
+   [
+    "target-",
+    6
+   ]
+  ],
+  "ids": [
+   [
+    "target-1",
+    21
+   ],
+   [
+    "target-2",
+    22
+   ],
+   [
+    "target-3",
+    23
+   ],
+   [
+    "target-4",
+    24
+   ],
+   [
+    "target-5",
+    25
+   ],
+   [
+    "target-6",
+    26
+   ],
+   [
+    "docutils-enhancement-proposals",
+    29
+   ],
+   [
+    "template-file",
+    41
+   ],
+   [
+    "index",
+    43
+   ],
+   [
+    "docutils-ep-purpose-and-guidelines",
+    74
+   ],
+   [
+    "public-api-and-backwards-compatibility-policy",
+    86
+   ]
+  ],
+  "indirect_targets": [],
+  "nameids": [
+   [
+    "docutils enhancement proposals",
+    "docutils-enhancement-proposals"
+   ],
+   [
+    "template file",
+    "template-file"
+   ],
+   [
+    "index",
+    "index"
+   ],
+   [
+    "docutils ep purpose and guidelines",
+    "docutils-ep-purpose-and-guidelines"
+   ],
+   [
+    "public api and backwards compatibility policy",
+    "public-api-and-backwards-compatibility-policy"
+   ]
+  ],
+  "nametypes": [
+   [
+    "docutils enhancement proposals",
+    false
+   ],
+   [
+    "template file",
+    false
+   ],
+   [
+    "index",
+    false
+   ],
+   [
+    "docutils ep purpose and guidelines",
+    false
+   ],
+   [
+    "public api and backwards compatibility policy",
+    false
+   ]
+  ],
+  "parse_messages": [
+   54
+  ],
+  "refids": [],
+  "refnames": [
+   [
+    "docutils ep purpose and guidelines",
+    [
+     36
+    ]
+   ]
+  ],
+  "substitution_defs": [],
+  "substitution_names": [],
+  "symbol_footnote_refs": [],
+  "symbol_footnote_start": 0,
+  "symbol_footnotes": [],
+  "transform_messages": []
+ },
+ "reporter": {
+  "debug": false,
+  "halt_level": 4,
+  "max_level": 1,
+  "observers": [],
+  "report_level": 2,
+  "source": "docs/eps/index.rst",
+  "source_lines": {
+   "input_offset": 0,
+   "line_offset": 43,
+   "runs": [
+    [
+     "docs/eps/index.rst",
+     0,
+     2
+    ],
+    [
+     "internal padding before docs/header.rst",
+     -1,
+     1
+    ],
+    [
+     "docs/header.rst",
+     0,
+     16
+    ],
+    [
+     "internal padding after docs/header.rst",
+     16,
+     1
+    ],
+    [
+     "docs/eps/index.rst",
+     2,
+     23
+    ]
+   ]
+  },
+  "written": []
+ },
+ "settings": {
+  "_config_files": [],
+  "_destination": null,
+  "_disable_config": true,
+  "_source": "docs/eps/index.rst",
+  "attribution": "dash",
+  "auto_id_prefix": "%",
+  "character_level_inline_markup": false,
+  "compound_enumerators": false,
+  "config": null,
+  "datestamp": null,
+  "debug": null,
+  "docinfo_xform": true,
+  "doctitle_xform": true,
+  "documentclass": "article",
+  "documentoptions": "a4paper",
+  "docutils_footnotes": true,
+  "dump_internals": null,
+  "dump_pseudo_xml": null,
+  "dump_settings": null,
+  "dump_transforms": null,
+  "embed_stylesheet": false,
+  "error_encoding": "utf-8",
+  "error_encoding_error_handler": "backslashreplace",
+  "exit_status_level": 5,
+  "expose_internals": null,
+  "file_insertion_enabled": true,
+  "font_encoding": "T1",
+  "footnote_backlinks": true,
+  "footnote_references": "superscript",
+  "generator": null,
+  "graphicx_option": "",
+  "halt_level": 4,
+  "hyperlink_color": "blue",
+  "hyperref_options": "",
+  "id_prefix": "",
+  "input_encoding": "utf-8",
+  "input_encoding_error_handler": "strict",
+  "language_code": "en",
+  "latex_preamble": "% PDF Standard Fonts\n\\usepackage{mathptmx} % Times\n\\usepackage[scaled=.90]{helvet}\n\\usepackage{courier}",
+  "legacy_class_functions": false,
+  "legacy_column_widths": null,
+  "line_length_limit": 10000,
+  "literal_block_env": "",
+  "output": null,
+  "output_encoding": "utf-8",
+  "output_encoding_error_handler": "strict",
+  "output_path": null,
+  "pep_base_url": "https://peps.python.org/",
+  "pep_file_url_template": "pep-%04d",
+  "pep_references": null,
+  "raw_enabled": true,
+  "reference_label": "",
+  "report_level": 2,
+  "rfc_base_url": "https://tools.ietf.org/html/",
+  "rfc_references": null,
+  "root_prefix": "",
+  "section_enumerator_separator": "-",
+  "section_prefix_for_enumerators": null,
+  "sectnum_xform": true,
+  "sectsubtitle_xform": false,
+  "smart_quotes": false,
+  "smartquotes_locales": null,
+  "source_link": null,
+  "source_url": null,
+  "strict_visitor": null,
+  "strip_classes": null,
+  "strip_comments": null,
+  "strip_elements_with_classes": null,
+  "stylesheet": "",
+  "stylesheet_dirs": [
+   "."
+  ],
+  "stylesheet_path": null,
+  "syntax_highlight": "long",
+  "tab_width": 8,
+  "table_style": [
+   "standard"
+  ],
+  "template": "default.tex",
+  "title": null,
+  "toc_backlinks": "entry",
+  "traceback": true,
+  "trim_footnote_reference_space": null,
+  "use_bibtex": "",
+  "use_latex_abstract": false,
+  "use_latex_citations": null,
+  "use_latex_docinfo": false,
+  "use_latex_toc": true,
+  "use_part_section": false,
+  "use_verbatim_when_possible": null,
+  "validate": null
+ },
+ "stage": "parsed",
+ "transformer": {
+  "queue": [
+   [
+    "220-004",
+    "docutils.transforms.references.Substitutions",
+    null,
+    {}
+   ],
+   [
+    "260-005",
+    "docutils.transforms.references.PropagateTargets",
+    null,
+    {}
+   ],
+   [
+    "320-006",
+    "docutils.transforms.frontmatter.DocTitle",
+    null,
+    {}
+   ],
+   [
+    "340-008",
+    "docutils.transforms.frontmatter.DocInfo",
+    null,
+    {}
+   ],
+   [
+    "350-007",
+    "docutils.transforms.frontmatter.SectionSubTitle",
+    null,
+    {}
+   ],
+   [
+    "420-020",
+    "docutils.transforms.universal.StripClassesAndElements",
+    null,
+    {}
+   ],
+   [
+    "440-009",
+    "docutils.transforms.references.AnonymousHyperlinks",
+    null,
+    {}
+   ],
+   [
+    "460-010",
+    "docutils.transforms.references.IndirectHyperlinks",
+    null,
+    {}
+   ],
+   [
+    "620-011",
+    "docutils.transforms.references.Footnotes",
+    null,
+    {}
+   ],
+   [
+    "640-012",
+    "docutils.transforms.references.ExternalTargets",
+    null,
+    {}
+   ],
+   [
+    "660-013",
+    "docutils.transforms.references.InternalTargets",
+    null,
+    {}
+   ],
+   [
+    "740-003",
+    "docutils.transforms.universal.StripComments",
+    null,
+    {}
+   ],
+   [
+    "770-022",
+    "docutils.transforms.references.CitationReferences",
+    null,
+    {}
+   ],
+   [
+    "820-001",
+    "docutils.transforms.universal.Decorations",
+    null,
+    {}
+   ],
+   [
+    "830-015",
+    "docutils.transforms.misc.Transitions",
+    null,
+    {}
+   ],
+   [
+    "835-016",
+    "docutils.transforms.universal.Validate",
+    null,
+    {}
+   ],
+   [
+    "840-002",
+    "docutils.transforms.universal.ExposeInternals",
+    null,
+    {}
+   ],
+   [
+    "850-014",
+    "docutils.transforms.references.DanglingReferences",
+    null,
+    {}
+   ],
+   [
+    "855-017",
+    "docutils.transforms.universal.SmartQuotes",
+    null,
+    {}
+   ],
+   [
+    "860-018",
+    "docutils.transforms.universal.Messages",
+    null,
+    {}
+   ],
+   [
+    "870-019",
+    "docutils.transforms.universal.FilterMessages",
+    null,
+    {}
+   ],
+   [
+    "920-021",
+    "docutils.transforms.writer_aux.Admonitions",
+    null,
+    {}
+   ]
+  ],
+  "serialno": 22
+ },
+ "tree": {
+  "attributes": {
+   "source": "docs/eps/index.rst"
+  },
+  "children": [
+   {
+    "children": [
+     {
+      "children": [
+       {
+        "children": [
+         {
+          "attributes": {
+           "anonymous": true,
+           "name": "Docutils"
+          },
+          "children": [
+           {
+            "tag": "#text",
+            "text": "Docutils"
+           }
+          ],
+          "rawsource": "Docutils__",
+          "tag": "reference"
+         },
+         {
+          "tag": "#text",
+          "text": " | "
+         },
+         {
+          "attributes": {
+           "anonymous": true,
+           "name": "Overview"
+          },
+          "children": [
+           {
+            "tag": "#text",
+            "text": "Overview"
+           }
+          ],
+          "rawsource": "Overview__",
+          "tag": "reference"
+         },
+         {
+          "tag": "#text",
+          "text": " | "
+         },
+         {
+          "attributes": {
+           "anonymous": true,
+           "name": "About"
+          },
+          "children": [
+           {
+            "tag": "#text",
+            "text": "About"
+           }
+          ],
+          "rawsource": "About__",
+          "tag": "reference"
+         },
+         {
+          "tag": "#text",
+          "text": " | "
+         },
+         {
+          "attributes": {
+           "anonymous": true,
+           "name": "Users"
+          },
+          "children": [
+           {
+            "tag": "#text",
+            "text": "Users"
+           }
+          ],
+          "rawsource": "Users__",
+          "tag": "reference"
+         },
+         {
+          "tag": "#text",
+          "text": " | "
+         },
+         {
+          "attributes": {
+           "anonymous": true,
+           "name": "Reference"
+          },
+          "children": [
+           {
+            "tag": "#text",
+            "text": "Reference"
+           }
+          ],
+          "rawsource": "Reference__",
+          "tag": "reference"
+         },
+         {
+          "tag": "#text",
+          "text": " | "
+         },
+         {
+          "attributes": {
+           "anonymous": true,
+           "name": "Developers"
+          },
+          "children": [
+           {
+            "tag": "#text",
+            "text": "Developers"
+           }
+          ],
+          "rawsource": "Developers__",
+          "tag": "reference"
+         }
+        ],
+        "document": true,
+        "line": 7,
+        "rawsource": "Docutils__ | Overview__ | About__ | Users__ | Reference__ | Developers__",
+        "source": "docs/header.rst",
+        "tag": "paragraph"
+       },
+       {
+        "attributes": {
+         "anonymous": true,
+         "ids": [
+          "target-1"
+         ],
+         "refuri": "https://docutils.sourceforge.io"
+        },
+        "document": true,
+        "line": 12,
+        "rawsource": "__ https://docutils.sourceforge.io",
+        "source": "docs/header.rst",
+        "tag": "target"
+       },
+       {
+        "attributes": {
+         "anonymous": true,
+         "ids": [
+          "target-2"
+         ],
+         "refuri": "../index.html"
+        },
+        "document": true,
+        "line": 13,
+        "rawsource": "__ ../index.html",
+        "source": "docs/header.rst",
+        "tag": "target"
+       },
+       {
+        "attributes": {
+         "anonymous": true,
+         "ids": [
+          "target-3"
+         ],
+         "refuri": "../index.html#project-fundamentals"
+        },
+        "document": true,
+        "line": 14,
+        "rawsource": "__ ../index.html#project-fundamentals",
+        "source": "docs/header.rst",
+        "tag": "target"
+       },
+       {
+        "attributes": {
+         "anonymous": true,
+         "ids": [
+          "target-4"
+         ],
+         "refuri": "../index.html#user"
+        },
+        "document": true,
+        "line": 15,
+        "rawsource": "__ ../index.html#user",
+        "source": "docs/header.rst",
+        "tag": "target"
+       },
+       {
+        "attributes": {
+         "anonymous": true,
+         "ids": [
+          "target-5"
+         ],
+         "refuri": "../index.html#ref"
+        },
+        "document": true,
+        "line": 16,
+        "rawsource": "__ ../index.html#ref",
+        "source": "docs/header.rst",
+        "tag": "target"
+       },
+       {
+        "attributes": {
+         "anonymous": true,
+         "ids": [
+          "target-6"
+         ],
+         "refuri": "../index.html#howto"
+        },
+        "document": true,
+        "line": 17,
+        "rawsource": "__ ../index.html#howto",
+        "source": "docs/header.rst",
+        "tag": "target"
+       }
+      ],
+      "document": true,
+      "line": 15,
+      "source": "docs/header.rst",
+      "tag": "header"
+     }
+    ],
+    "document": true,
+    "line": 15,
+    "source": "docs/header.rst",
+    "tag": "decoration"
+   },
+   {
+    "attributes": {
+     "xml:space": "preserve"
+    },
+    "children": [
+     {
+      "tag": "#text",
+      "text": "Minimal menu bar for inclusion in documentation sources\nin ``docutils/docs/*/`` sub-diretories.\n\nAttention: this is not a standalone document."
+     }
+    ],
+    "document": true,
+    "line": 5,
+    "rawsource": "Minimal menu bar for inclusion in documentation sources\nin ``docutils/docs/*/`` sub-diretories.\n\nAttention: this is not a standalone document.",
+    "source": "docs/header.rst",
+    "tag": "comment"
+   },
+   {
+    "attributes": {
+     "ids": [
+      "docutils-enhancement-proposals"
+     ],
+     "names": [
+      "docutils enhancement proposals"
+     ]
+    },
+    "children": [
+     {
+      "children": [
+       {
+        "tag": "#text",
+        "text": "Docutils Enhancement Proposals"
+       }
+      ],
+      "document": true,
+      "line": 5,
+      "rawsource": "Docutils Enhancement Proposals",
+      "source": "docs/eps/index.rst",
+      "tag": "title"
+     },
+     {
+      "children": [
+       {
+        "tag": "#text",
+        "text": "A framework for proposing major new features, collecting community input\non an issue, and documenting the design decisions that have gone into\nDocutils and the reStructuredText format."
+       }
+      ],
+      "document": true,
+      "line": 7,
+      "rawsource": "A framework for proposing major new features, collecting community input\non an issue, and documenting the design decisions that have gone into\nDocutils and the reStructuredText format.",
+      "source": "docs/eps/index.rst",
+      "tag": "paragraph"
+     },
+     {
+      "children": [
+       {
+        "tag": "#text",
+        "text": "For details see "
+       },
+       {
+        "attributes": {
+         "name": "Docutils EP Purpose and Guidelines",
+         "refname": "docutils ep purpose and guidelines"
+        },
+        "children": [
+         {
+          "tag": "#text",
+          "text": "Docutils EP Purpose and Guidelines"
+         }
+        ],
+        "rawsource": "`Docutils EP Purpose and Guidelines`_",
+        "tag": "reference"
+       },
+       {
+        "tag": "#text",
+        "text": ".\nThe "
+       },
+       {
+        "attributes": {
+         "name": "template file",
+         "refuri": "ep-template.rst"
+        },
+        "children": [
+         {
+          "tag": "#text",
+          "text": "template file"
+         }
+        ],
+        "rawsource": "`template file <ep-template.rst>`_",
+        "tag": "reference"
+       },
+       {
+        "attributes": {
+         "ids": [
+          "template-file"
+         ],
+         "names": [
+          "template file"
+         ],
+         "refuri": "ep-template.rst"
+        },
+        "rawsource": " <ep-template.rst>",
+        "referenced": true,
+        "tag": "target"
+       },
+       {
+        "tag": "#text",
+        "text": " can be used as\nstarting point for new enhancement proposals."
+       }
+      ],
+      "document": true,
+      "line": 11,
+      "rawsource": "For details see `Docutils EP Purpose and Guidelines`_.\nThe `template file <ep-template.rst>`_ can be used as\nstarting point for new enhancement proposals.",
+      "source": "docs/eps/index.rst",
+      "tag": "paragraph"
+     },
+     {
+      "attributes": {
+       "ids": [
+        "index"
+       ],
+       "names": [
+        "index"
+       ]
+      },
+      "children": [
+       {
+        "children": [
+         {
+          "tag": "#text",
+          "text": "Index"
+         }
+        ],
+        "document": true,
+        "line": 16,
+        "rawsource": "Index",
+        "source": "docs/eps/index.rst",
+        "tag": "title"
+       },
+       {
+        "children": [
+         {
+          "attributes": {
+           "cols": 3
+          },
+          "children": [
+           {
+            "attributes": {
+             "colwidth": 3
+            },
+            "tag": "colspec"
+           },
+           {
+            "attributes": {
+             "colwidth": 57
+            },
+            "tag": "colspec"
+           },
+           {
+            "attributes": {
+             "colwidth": 11
+            },
+            "tag": "colspec"
+           },
+           {
+            "children": [
+             {
+              "children": [
+               {
+                "children": [
+                 {
+                  "attributes": {
+                   "level": 1,
+                   "line": 20,
+                   "source": "docs/eps/index.rst",
+                   "type": "INFO"
+                  },
+                  "children": [
+                   {
+                    "children": [
+                     {
+                      "tag": "#text",
+                      "text": "Unexpected possible title overline or transition.\nTreating it as ordinary text because it's so short."
+                     }
+                    ],
+                    "tag": "paragraph"
+                   }
+                  ],
+                  "tag": "system_message"
+                 },
+                 {
+                  "children": [
+                   {
+                    "tag": "#text",
+                    "text": "#"
+                   }
+                  ],
+                  "line": 19,
+                  "rawsource": "#",
+                  "source": "docs/eps/index.rst",
+                  "tag": "paragraph"
+                 }
+                ],
+                "tag": "entry"
+               },
+               {
+                "children": [
+                 {
+                  "children": [
+                   {
+                    "tag": "#text",
+                    "text": "Title"
+                   }
+                  ],
+                  "line": 19,
+                  "rawsource": "Title",
+                  "source": "docs/eps/index.rst",
+                  "tag": "paragraph"
+                 }
+                ],
+                "tag": "entry"
+               },
+               {
+                "children": [
+                 {
+                  "children": [
+                   {
+                    "tag": "#text",
+                    "text": "Status"
+                   }
+                  ],
+                  "line": 19,
+                  "rawsource": "Status",
+                  "source": "docs/eps/index.rst",
+                  "tag": "paragraph"
+                 }
+                ],
+                "tag": "entry"
+               }
+              ],
+              "tag": "row"
+             }
+            ],
+            "tag": "thead"
+           },
+           {
+            "children": [
+             {
+              "children": [
+               {
+                "children": [
+                 {
+                  "children": [
+                   {
+                    "tag": "#text",
+                    "text": "001"
+                   }
+                  ],
+                  "line": 21,
+                  "rawsource": "001",
+                  "source": "docs/eps/index.rst",
+                  "tag": "paragraph"
+                 }
+                ],
+                "tag": "entry"
+               },
+               {
+                "children": [
+                 {
+                  "children": [
+                   {
+                    "attributes": {
+                     "name": "Docutils EP Purpose and Guidelines",
+                     "refuri": "ep-001.html"
+                    },
+                    "children": [
+                     {
+                      "tag": "#text",
+                      "text": "Docutils EP Purpose and Guidelines"
+                     }
+                    ],
+                    "rawsource": "`Docutils EP Purpose and Guidelines <ep-001.html>`_",
+                    "tag": "reference"
+                   },
+                   {
+                    "attributes": {
+                     "ids": [
+                      "docutils-ep-purpose-and-guidelines"
+                     ],
+                     "names": [
+                      "docutils ep purpose and guidelines"
+                     ],
+                     "refuri": "ep-001.html"
+                    },
+                    "rawsource": " <ep-001.html>",
+                    "referenced": true,
+                    "tag": "target"
+                   }
+                  ],
+                  "line": 21,
+                  "rawsource": "`Docutils EP Purpose and Guidelines <ep-001.html>`_",
+                  "source": "docs/eps/index.rst",
+                  "tag": "paragraph"
+                 }
+                ],
+                "tag": "entry"
+               },
+               {
+                "children": [
+                 {
+                  "children": [
+                   {
+                    "tag": "#text",
+                    "text": "Draft"
+                   }
+                  ],
+                  "line": 21,
+                  "rawsource": "Draft",
+                  "source": "docs/eps/index.rst",
+                  "tag": "paragraph"
+                 }
+                ],
+                "tag": "entry"
+               }
+              ],
+              "tag": "row"
+             },
+             {
+              "children": [
+               {
+                "children": [
+                 {
+                  "children": [
+                   {
+                    "tag": "#text",
+                    "text": "010"
+                   }
+                  ],
+                  "line": 23,
+                  "rawsource": "010",
+                  "source": "docs/eps/index.rst",
+                  "tag": "paragraph"
+                 }
+                ],
+                "tag": "entry"
+               },
+               {
+                "children": [
+                 {
+                  "children": [
+                   {
+                    "attributes": {
+                     "name": "Public API and Backwards Compatibility Policy",
+                     "refuri": "ep-010.html"
+                    },
+                    "children": [
+                     {
+                      "tag": "#text",
+                      "text": "Public API and Backwards Compatibility Policy"
+                     }
+                    ],
+                    "rawsource": "`Public API and Backwards Compatibility Policy\n<ep-010.html>`_",
+                    "tag": "reference"
+                   },
+                   {
+                    "attributes": {
+                     "ids": [
+                      "public-api-and-backwards-compatibility-policy"
+                     ],
+                     "names": [
+                      "public api and backwards compatibility policy"
+                     ],
+                     "refuri": "ep-010.html"
+                    },
+                    "rawsource": "\n<ep-010.html>",
+                    "referenced": true,
+                    "tag": "target"
+                   }
+                  ],
+                  "line": 23,
+                  "rawsource": "`Public API and Backwards Compatibility Policy\n<ep-010.html>`_",
+                  "source": "docs/eps/index.rst",
+                  "tag": "paragraph"
+                 }
+                ],
+                "tag": "entry"
+               },
+               {
+                "children": [
+                 {
+                  "children": [
+                   {
+                    "tag": "#text",
+                    "text": "Draft"
+                   }
+                  ],
+                  "line": 23,
+                  "rawsource": "Draft",
+                  "source": "docs/eps/index.rst",
+                  "tag": "paragraph"
+                 }
+                ],
+                "tag": "entry"
+               }
+              ],
+              "tag": "row"
+             }
+            ],
+            "tag": "tbody"
+           }
+          ],
+          "tag": "tgroup"
+         }
+        ],
+        "document": true,
+        "source": "docs/eps/index.rst",
+        "tag": "table"
+       }
+      ],
+      "document": true,
+      "line": 16,
+      "source": "docs/eps/index.rst",
+      "tag": "section"
+     }
+    ],
+    "document": true,
+    "line": 5,
+    "source": "docs/eps/index.rst",
+    "tag": "section"
+   }
+  ],
+  "document": true,
+  "tag": "document"
+ }
+}

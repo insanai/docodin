@@ -1,0 +1,219 @@
+{
+ "detached": [
+  {
+   "node": {
+    "attributes": {
+     "ids": [
+      "custom-headers-and-footers"
+     ],
+     "names": [
+      "custom headers and footers"
+     ]
+    },
+    "document": true,
+    "line": 3,
+    "source": "test/functional/input/odt_custom_headfoot.rst",
+    "tag": "section"
+   },
+   "parent": 0
+  }
+ ],
+ "expected": {
+  "pformat": "<document ids=\"custom-headers-and-footers\" names=\"custom\\ headers\\ and\\ footers\" source=\"test/functional/input/odt_custom_headfoot.rst\" title=\"Custom Headers and Footers\">\n    <title>\n        Custom Headers and Footers\n    <paragraph>\n        Test for custom headers and footers and for page numbers, date,\n        time, etc.\n"
+ },
+ "format": "docodin-doctree/1",
+ "input": {
+  "overrides": {},
+  "source_path": "test/functional/input/odt_custom_headfoot.rst",
+  "writer": "html5"
+ },
+ "registry": {
+  "autofootnote_refs": [],
+  "autofootnote_start": 1,
+  "autofootnotes": [],
+  "citation_refs": [],
+  "citations": [],
+  "current_line": null,
+  "current_source": null,
+  "decoration": null,
+  "footnote_refs": [],
+  "footnotes": [],
+  "id_counter": [],
+  "ids": [
+   [
+    "custom-headers-and-footers",
+    5
+   ]
+  ],
+  "indirect_targets": [],
+  "nameids": [
+   [
+    "custom headers and footers",
+    "custom-headers-and-footers"
+   ]
+  ],
+  "nametypes": [
+   [
+    "custom headers and footers",
+    false
+   ]
+  ],
+  "parse_messages": [],
+  "refids": [],
+  "refnames": [],
+  "substitution_defs": [],
+  "substitution_names": [],
+  "symbol_footnote_refs": [],
+  "symbol_footnote_start": 0,
+  "symbol_footnotes": [],
+  "transform_messages": []
+ },
+ "reporter": {
+  "debug": false,
+  "halt_level": 4,
+  "max_level": -1,
+  "observers": [],
+  "report_level": 2,
+  "source": "test/functional/input/odt_custom_headfoot.rst",
+  "source_lines": {
+   "input_offset": 0,
+   "line_offset": 6,
+   "runs": [
+    [
+     "test/functional/input/odt_custom_headfoot.rst",
+     0,
+     6
+    ]
+   ]
+  },
+  "written": []
+ },
+ "settings": {
+  "_config_files": [],
+  "_destination": null,
+  "_disable_config": true,
+  "_source": "test/functional/input/odt_custom_headfoot.rst",
+  "attribution": "dash",
+  "auto_id_prefix": "%",
+  "character_level_inline_markup": false,
+  "cloak_email_addresses": null,
+  "compact_field_lists": true,
+  "compact_lists": true,
+  "config": null,
+  "datestamp": null,
+  "debug": null,
+  "docinfo_xform": true,
+  "doctitle_xform": true,
+  "dump_internals": null,
+  "dump_pseudo_xml": null,
+  "dump_settings": null,
+  "dump_transforms": null,
+  "embed_images": null,
+  "embed_stylesheet": true,
+  "error_encoding": "utf-8",
+  "error_encoding_error_handler": "backslashreplace",
+  "exit_status_level": 5,
+  "expose_internals": null,
+  "file_insertion_enabled": true,
+  "footnote_backlinks": true,
+  "footnote_references": "brackets",
+  "generator": null,
+  "halt_level": 4,
+  "id_prefix": "",
+  "image_loading": null,
+  "initial_header_level": "2",
+  "input_encoding": "utf-8",
+  "input_encoding_error_handler": "strict",
+  "language_code": "en",
+  "line_length_limit": 10000,
+  "math_output": "MathML",
+  "output": null,
+  "output_encoding": "utf-8",
+  "output_encoding_error_handler": "xmlcharrefreplace",
+  "output_path": null,
+  "pep_base_url": "https://peps.python.org/",
+  "pep_file_url_template": "pep-%04d",
+  "pep_references": null,
+  "raw_enabled": true,
+  "report_level": 2,
+  "rfc_base_url": "https://tools.ietf.org/html/",
+  "rfc_references": null,
+  "root_prefix": "",
+  "section_self_link": false,
+  "sectnum_xform": true,
+  "sectsubtitle_xform": false,
+  "smart_quotes": false,
+  "smartquotes_locales": null,
+  "source_link": null,
+  "source_url": null,
+  "strict_visitor": null,
+  "strip_classes": null,
+  "strip_comments": null,
+  "strip_elements_with_classes": null,
+  "stylesheet": null,
+  "stylesheet_dirs": [
+   ".",
+   "<docutils>/writers/html5_polyglot"
+  ],
+  "stylesheet_path": [
+   "minimal.css",
+   "plain.css"
+  ],
+  "syntax_highlight": "long",
+  "tab_width": 8,
+  "table_style": "",
+  "title": null,
+  "toc_backlinks": "entry",
+  "traceback": true,
+  "trim_footnote_reference_space": null,
+  "validate": null,
+  "xml_declaration": false
+ },
+ "stage": "transformed",
+ "transformer": {
+  "queue": [],
+  "serialno": 21
+ },
+ "tree": {
+  "attributes": {
+   "ids": [
+    "custom-headers-and-footers"
+   ],
+   "names": [
+    "custom headers and footers"
+   ],
+   "source": "test/functional/input/odt_custom_headfoot.rst",
+   "title": "Custom Headers and Footers"
+  },
+  "children": [
+   {
+    "children": [
+     {
+      "tag": "#text",
+      "text": "Custom Headers and Footers"
+     }
+    ],
+    "document": true,
+    "line": 3,
+    "rawsource": "Custom Headers and Footers",
+    "source": "test/functional/input/odt_custom_headfoot.rst",
+    "tag": "title"
+   },
+   {
+    "children": [
+     {
+      "tag": "#text",
+      "text": "Test for custom headers and footers and for page numbers, date,\ntime, etc."
+     }
+    ],
+    "document": true,
+    "line": 5,
+    "rawsource": "Test for custom headers and footers and for page numbers, date,\ntime, etc.",
+    "source": "test/functional/input/odt_custom_headfoot.rst",
+    "tag": "paragraph"
+   }
+  ],
+  "document": true,
+  "tag": "document"
+ }
+}

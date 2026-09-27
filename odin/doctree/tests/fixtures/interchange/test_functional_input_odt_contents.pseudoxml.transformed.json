@@ -1,0 +1,410 @@
+{
+ "detached": [
+  {
+   "node": {
+    "attributes": {
+     "ids": [
+      "table-of-contents"
+     ],
+     "names": [
+      "table of contents"
+     ]
+    },
+    "document": true,
+    "line": 3,
+    "source": "test/functional/input/odt_contents.rst",
+    "tag": "section"
+   },
+   "parent": 0
+  }
+ ],
+ "expected": {
+  "pformat": "<document ids=\"table-of-contents\" names=\"table\\ of\\ contents\" source=\"test/functional/input/odt_contents.rst\" title=\"Table of contents\">\n    <title>\n        Table of contents\n    <topic classes=\"contents\" ids=\"contents\" names=\"contents\">\n        <title>\n            Contents\n        <bullet_list>\n            <list_item>\n                <paragraph>\n                    <reference ids=\"toc-entry-1\" refid=\"in-short\">\n                        In short\n            <list_item>\n                <paragraph>\n                    <reference ids=\"toc-entry-2\" refid=\"end\">\n                        End\n    <section ids=\"in-short\" names=\"in\\ short\">\n        <title refid=\"toc-entry-1\">\n            In short\n        <paragraph>\n            Regression to test table of contents construction\n    <section ids=\"end\" names=\"end\">\n        <title refid=\"toc-entry-2\">\n            End\n        <paragraph>\n            this\n"
+ },
+ "format": "docodin-doctree/1",
+ "input": {
+  "overrides": {},
+  "source_path": "test/functional/input/odt_contents.rst",
+  "writer": "pseudoxml"
+ },
+ "registry": {
+  "autofootnote_refs": [],
+  "autofootnote_start": 1,
+  "autofootnotes": [],
+  "citation_refs": [],
+  "citations": [],
+  "current_line": null,
+  "current_source": null,
+  "decoration": null,
+  "footnote_refs": [],
+  "footnotes": [],
+  "id_counter": [
+   [
+    "toc-entry-",
+    2
+   ]
+  ],
+  "ids": [
+   [
+    "table-of-contents",
+    25
+   ],
+   [
+    "contents",
+    3
+   ],
+   [
+    "in-short",
+    15
+   ],
+   [
+    "end",
+    20
+   ],
+   [
+    "toc-entry-1",
+    9
+   ],
+   [
+    "toc-entry-2",
+    13
+   ]
+  ],
+  "indirect_targets": [],
+  "nameids": [
+   [
+    "table of contents",
+    "table-of-contents"
+   ],
+   [
+    "contents",
+    "contents"
+   ],
+   [
+    "in short",
+    "in-short"
+   ],
+   [
+    "end",
+    "end"
+   ]
+  ],
+  "nametypes": [
+   [
+    "table of contents",
+    false
+   ],
+   [
+    "contents",
+    false
+   ],
+   [
+    "in short",
+    false
+   ],
+   [
+    "end",
+    false
+   ]
+  ],
+  "parse_messages": [],
+  "refids": [],
+  "refnames": [],
+  "substitution_defs": [],
+  "substitution_names": [],
+  "symbol_footnote_refs": [],
+  "symbol_footnote_start": 0,
+  "symbol_footnotes": [],
+  "transform_messages": []
+ },
+ "reporter": {
+  "debug": false,
+  "halt_level": 4,
+  "max_level": -1,
+  "observers": [],
+  "report_level": 2,
+  "source": "test/functional/input/odt_contents.rst",
+  "source_lines": {
+   "input_offset": 0,
+   "line_offset": 15,
+   "runs": [
+    [
+     "test/functional/input/odt_contents.rst",
+     0,
+     15
+    ]
+   ]
+  },
+  "written": []
+ },
+ "settings": {
+  "_config_files": [],
+  "_destination": null,
+  "_disable_config": true,
+  "_source": "test/functional/input/odt_contents.rst",
+  "auto_id_prefix": "%",
+  "character_level_inline_markup": false,
+  "config": null,
+  "datestamp": null,
+  "debug": null,
+  "detailed": null,
+  "docinfo_xform": true,
+  "doctitle_xform": true,
+  "dump_internals": null,
+  "dump_pseudo_xml": null,
+  "dump_settings": null,
+  "dump_transforms": null,
+  "error_encoding": "utf-8",
+  "error_encoding_error_handler": "backslashreplace",
+  "exit_status_level": 5,
+  "expose_internals": null,
+  "file_insertion_enabled": true,
+  "footnote_backlinks": true,
+  "generator": null,
+  "halt_level": 4,
+  "id_prefix": "",
+  "input_encoding": "utf-8",
+  "input_encoding_error_handler": "strict",
+  "language_code": "en",
+  "line_length_limit": 10000,
+  "output": null,
+  "output_encoding": "utf-8",
+  "output_encoding_error_handler": "strict",
+  "output_path": null,
+  "pep_base_url": "https://peps.python.org/",
+  "pep_file_url_template": "pep-%04d",
+  "pep_references": null,
+  "raw_enabled": true,
+  "report_level": 2,
+  "rfc_base_url": "https://tools.ietf.org/html/",
+  "rfc_references": null,
+  "root_prefix": "",
+  "sectnum_xform": true,
+  "sectsubtitle_xform": false,
+  "smart_quotes": false,
+  "smartquotes_locales": null,
+  "source_link": null,
+  "source_url": null,
+  "strict_visitor": null,
+  "strip_classes": null,
+  "strip_comments": null,
+  "strip_elements_with_classes": null,
+  "syntax_highlight": "long",
+  "tab_width": 8,
+  "title": null,
+  "toc_backlinks": "entry",
+  "traceback": true,
+  "trim_footnote_reference_space": null,
+  "validate": null
+ },
+ "stage": "transformed",
+ "transformer": {
+  "queue": [],
+  "serialno": 21
+ },
+ "tree": {
+  "attributes": {
+   "ids": [
+    "table-of-contents"
+   ],
+   "names": [
+    "table of contents"
+   ],
+   "source": "test/functional/input/odt_contents.rst",
+   "title": "Table of contents"
+  },
+  "children": [
+   {
+    "children": [
+     {
+      "tag": "#text",
+      "text": "Table of contents"
+     }
+    ],
+    "document": true,
+    "line": 3,
+    "rawsource": "Table of contents",
+    "source": "test/functional/input/odt_contents.rst",
+    "tag": "title"
+   },
+   {
+    "attributes": {
+     "classes": [
+      "contents"
+     ],
+     "ids": [
+      "contents"
+     ],
+     "names": [
+      "contents"
+     ]
+    },
+    "children": [
+     {
+      "children": [
+       {
+        "tag": "#text",
+        "text": "Contents"
+       }
+      ],
+      "tag": "title"
+     },
+     {
+      "children": [
+       {
+        "children": [
+         {
+          "children": [
+           {
+            "attributes": {
+             "ids": [
+              "toc-entry-1"
+             ],
+             "refid": "in-short"
+            },
+            "children": [
+             {
+              "document": true,
+              "tag": "#text",
+              "text": "In short"
+             }
+            ],
+            "tag": "reference"
+           }
+          ],
+          "tag": "paragraph"
+         }
+        ],
+        "tag": "list_item"
+       },
+       {
+        "children": [
+         {
+          "children": [
+           {
+            "attributes": {
+             "ids": [
+              "toc-entry-2"
+             ],
+             "refid": "end"
+            },
+            "children": [
+             {
+              "document": true,
+              "tag": "#text",
+              "text": "End"
+             }
+            ],
+            "tag": "reference"
+           }
+          ],
+          "tag": "paragraph"
+         }
+        ],
+        "tag": "list_item"
+       }
+      ],
+      "document": true,
+      "tag": "bullet_list"
+     }
+    ],
+    "document": true,
+    "line": 5,
+    "source": "test/functional/input/odt_contents.rst",
+    "tag": "topic"
+   },
+   {
+    "attributes": {
+     "ids": [
+      "in-short"
+     ],
+     "names": [
+      "in short"
+     ]
+    },
+    "children": [
+     {
+      "attributes": {
+       "refid": "toc-entry-1"
+      },
+      "children": [
+       {
+        "tag": "#text",
+        "text": "In short"
+       }
+      ],
+      "document": true,
+      "line": 8,
+      "rawsource": "In short",
+      "source": "test/functional/input/odt_contents.rst",
+      "tag": "title"
+     },
+     {
+      "children": [
+       {
+        "tag": "#text",
+        "text": "Regression to test table of contents construction"
+       }
+      ],
+      "document": true,
+      "line": 10,
+      "rawsource": "Regression to test table of contents construction",
+      "source": "test/functional/input/odt_contents.rst",
+      "tag": "paragraph"
+     }
+    ],
+    "document": true,
+    "line": 8,
+    "source": "test/functional/input/odt_contents.rst",
+    "tag": "section"
+   },
+   {
+    "attributes": {
+     "ids": [
+      "end"
+     ],
+     "names": [
+      "end"
+     ]
+    },
+    "children": [
+     {
+      "attributes": {
+       "refid": "toc-entry-2"
+      },
+      "children": [
+       {
+        "tag": "#text",
+        "text": "End"
+       }
+      ],
+      "document": true,
+      "line": 13,
+      "rawsource": "End",
+      "source": "test/functional/input/odt_contents.rst",
+      "tag": "title"
+     },
+     {
+      "children": [
+       {
+        "tag": "#text",
+        "text": "this"
+       }
+      ],
+      "document": true,
+      "line": 15,
+      "rawsource": "this",
+      "source": "test/functional/input/odt_contents.rst",
+      "tag": "paragraph"
+     }
+    ],
+    "document": true,
+    "line": 13,
+    "source": "test/functional/input/odt_contents.rst",
+    "tag": "section"
+   }
+  ],
+  "document": true,
+  "tag": "document"
+ }
+}

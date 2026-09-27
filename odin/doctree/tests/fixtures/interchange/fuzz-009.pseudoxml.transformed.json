@@ -1,0 +1,959 @@
+{
+ "detached": [
+  {
+   "node": {
+    "attributes": {
+     "ids": [
+      "footnote-reference-1"
+     ],
+     "refname": "1"
+    },
+    "children": [
+     {
+      "tag": "#text",
+      "text": "1"
+     }
+    ],
+    "rawsource": "[1]_",
+    "tag": "footnote_reference"
+   },
+   "parent": 2
+  },
+  {
+   "node": {
+    "attributes": {
+     "auto": 1,
+     "ids": [
+      "footnote-reference-2"
+     ]
+    },
+    "rawsource": "[#]_",
+    "tag": "footnote_reference"
+   },
+   "parent": 2
+  },
+  {
+   "node": {
+    "attributes": {
+     "auto": "*",
+     "ids": [
+      "footnote-reference-3"
+     ]
+    },
+    "rawsource": "[*]_",
+    "tag": "footnote_reference"
+   },
+   "parent": 2
+  },
+  {
+   "node": {
+    "attributes": {
+     "ids": [
+      "citation-reference-1"
+     ],
+     "refname": "cit"
+    },
+    "children": [
+     {
+      "tag": "#text",
+      "text": "CIT"
+     }
+    ],
+    "rawsource": "[CIT]_",
+    "tag": "citation_reference"
+   },
+   "parent": 2
+  },
+  {
+   "node": {
+    "attributes": {
+     "name": "ref",
+     "refname": "ref"
+    },
+    "children": [
+     {
+      "tag": "#text",
+      "text": "ref"
+     }
+    ],
+    "rawsource": "`ref`_",
+    "tag": "reference"
+   },
+   "parent": 2
+  },
+  {
+   "node": {
+    "attributes": {
+     "name": "ref",
+     "refname": "ref"
+    },
+    "children": [
+     {
+      "tag": "#text",
+      "text": "ref"
+     }
+    ],
+    "rawsource": "ref_",
+    "tag": "reference"
+   },
+   "parent": 2
+  },
+  {
+   "node": {
+    "attributes": {
+     "level": 1,
+     "line": 1,
+     "source": "fuzz-009.rst",
+     "type": "INFO"
+    },
+    "children": [
+     {
+      "children": [
+       {
+        "tag": "#text",
+        "text": "No role entry for \"role\" in module \"docutils.parsers.rst.languages.en\".\nTrying \"role\" as canonical role name."
+       }
+      ],
+      "tag": "paragraph"
+     }
+    ],
+    "tag": "system_message"
+   },
+   "parent": 1
+  }
+ ],
+ "expected": {
+  "pformat": "<document source=\"fuzz-009.rst\">\n    <block_quote>\n        <paragraph>\n            Para \n            <emphasis>\n                em\n             \n            <strong>\n                strong\n             \n            <literal>\n                lit\n             \n            <title_reference>\n                interp\n             \n            <problematic ids=\"problematic-1\" refid=\"system-message-1\">\n                :role:`x`\n             \n            <problematic ids=\"problematic-6\" refid=\"system-message-6\">\n                `ref`_\n             \n            <problematic ids=\"problematic-7\" refid=\"system-message-7\">\n                ref_\n             \n            <problematic ids=\"problematic-3\" refid=\"system-message-3\">\n                anon__\n             \n            <problematic ids=\"footnote-reference-1\" refid=\"system-message-8\">\n                [1]_\n             \n            <problematic ids=\"problematic-4 footnote-reference-2\" refid=\"system-message-4\">\n                [#]_\n             \n            <problematic ids=\"problematic-5 footnote-reference-3\" refid=\"system-message-5\">\n                [*]_\n             \n            <problematic ids=\"citation-reference-1\" refid=\"system-message-9\">\n                [CIT]_\n             \n            <problematic ids=\"problematic-2\" refid=\"system-message-2\">\n                |sub|\n        <system_message backrefs=\"problematic-1\" ids=\"system-message-1\" level=\"3\" line=\"1\" source=\"fuzz-009.rst\" type=\"ERROR\">\n            <paragraph>\n                Unknown interpreted text role \"role\".\n    <section classes=\"system-messages\">\n        <title>\n            Docutils System Messages\n        <system_message backrefs=\"problematic-2\" ids=\"system-message-2\" level=\"3\" line=\"1\" source=\"fuzz-009.rst\" type=\"ERROR\">\n            <paragraph>\n                Undefined substitution referenced: \"sub\".\n        <system_message backrefs=\"problematic-3\" ids=\"system-message-3\" level=\"3\" line=\"2\" source=\"fuzz-009.rst\" type=\"ERROR\">\n            <paragraph>\n                Anonymous hyperlink mismatch: 1 references but 0 targets.\n                See \"backrefs\" attribute for IDs.\n        <system_message backrefs=\"problematic-4\" ids=\"system-message-4\" level=\"3\" line=\"1\" source=\"fuzz-009.rst\" type=\"ERROR\">\n            <paragraph>\n                Too many autonumbered footnote references: only 0 corresponding footnote available.\n        <system_message backrefs=\"problematic-5\" ids=\"system-message-5\" level=\"3\" line=\"1\" source=\"fuzz-009.rst\" type=\"ERROR\">\n            <paragraph>\n                Too many symbol footnote references: only 0 corresponding footnotes available.\n        <system_message backrefs=\"problematic-6\" ids=\"system-message-6\" level=\"3\" line=\"1\" source=\"fuzz-009.rst\" type=\"ERROR\">\n            <paragraph>\n                Unknown target name: \"ref\".\n        <system_message backrefs=\"problematic-7\" ids=\"system-message-7\" level=\"3\" line=\"1\" source=\"fuzz-009.rst\" type=\"ERROR\">\n            <paragraph>\n                Unknown target name: \"ref\".\n        <system_message backrefs=\"footnote-reference-1\" ids=\"system-message-8\" level=\"3\" line=\"1\" source=\"fuzz-009.rst\" type=\"ERROR\">\n            <paragraph>\n                Unknown target name: \"1\".\n        <system_message backrefs=\"citation-reference-1\" ids=\"system-message-9\" level=\"3\" line=\"1\" source=\"fuzz-009.rst\" type=\"ERROR\">\n            <paragraph>\n                Unknown target name: \"cit\".\n"
+ },
+ "format": "docodin-doctree/1",
+ "input": {
+  "overrides": {
+   "halt_level": 5,
+   "report_level": 2
+  },
+  "source_path": "fuzz-009.rst",
+  "writer": "pseudoxml"
+ },
+ "registry": {
+  "autofootnote_refs": [
+   74
+  ],
+  "autofootnote_start": 1,
+  "autofootnotes": [],
+  "citation_refs": [
+   [
+    "cit",
+    [
+     76
+    ]
+   ]
+  ],
+  "citations": [],
+  "current_line": null,
+  "current_source": null,
+  "decoration": null,
+  "footnote_refs": [
+   [
+    "1",
+    [
+     72
+    ]
+   ]
+  ],
+  "footnotes": [],
+  "id_counter": [
+   [
+    "system-message-",
+    9
+   ],
+   [
+    "problematic-",
+    7
+   ],
+   [
+    "footnote-reference-",
+    3
+   ],
+   [
+    "citation-reference-",
+    1
+   ]
+  ],
+  "ids": [
+   [
+    "system-message-1",
+    42
+   ],
+   [
+    "problematic-1",
+    16
+   ],
+   [
+    "footnote-reference-1",
+    72
+   ],
+   [
+    "footnote-reference-2",
+    74
+   ],
+   [
+    "footnote-reference-3",
+    75
+   ],
+   [
+    "citation-reference-1",
+    76
+   ],
+   [
+    "system-message-2",
+    48
+   ],
+   [
+    "problematic-2",
+    40
+   ],
+   [
+    "system-message-3",
+    51
+   ],
+   [
+    "problematic-3",
+    25
+   ],
+   [
+    "system-message-4",
+    54
+   ],
+   [
+    "problematic-4",
+    31
+   ],
+   [
+    "system-message-5",
+    57
+   ],
+   [
+    "problematic-5",
+    34
+   ],
+   [
+    "system-message-6",
+    60
+   ],
+   [
+    "problematic-6",
+    19
+   ],
+   [
+    "system-message-7",
+    63
+   ],
+   [
+    "problematic-7",
+    22
+   ],
+   [
+    "system-message-8",
+    66
+   ],
+   [
+    "system-message-9",
+    69
+   ]
+  ],
+  "indirect_targets": [],
+  "nameids": [],
+  "nametypes": [],
+  "parse_messages": [
+   82,
+   42
+  ],
+  "refids": [],
+  "refnames": [
+   [
+    "ref",
+    [
+     78,
+     80
+    ]
+   ],
+   [
+    "1",
+    [
+     72
+    ]
+   ],
+   [
+    "cit",
+    [
+     76
+    ]
+   ]
+  ],
+  "substitution_defs": [],
+  "substitution_names": [],
+  "symbol_footnote_refs": [
+   75
+  ],
+  "symbol_footnote_start": 0,
+  "symbol_footnotes": [],
+  "transform_messages": []
+ },
+ "reporter": {
+  "debug": false,
+  "halt_level": 5,
+  "max_level": 3,
+  "observers": [],
+  "report_level": 2,
+  "source": "fuzz-009.rst",
+  "source_lines": {
+   "input_offset": 0,
+   "line_offset": 1,
+   "runs": [
+    [
+     "fuzz-009.rst",
+     0,
+     1
+    ]
+   ]
+  },
+  "written": [
+   {
+    "level": 3,
+    "node": 42,
+    "text": "fuzz-009.rst:1: (ERROR/3) Unknown interpreted text role \"role\".\n"
+   },
+   {
+    "level": 3,
+    "node": 48,
+    "text": "fuzz-009.rst:1: (ERROR/3) Undefined substitution referenced: \"sub\".\n"
+   },
+   {
+    "level": 3,
+    "node": 51,
+    "text": "fuzz-009.rst:2: (ERROR/3) Anonymous hyperlink mismatch: 1 references but 0 targets.\nSee \"backrefs\" attribute for IDs.\n"
+   },
+   {
+    "level": 3,
+    "node": 54,
+    "text": "fuzz-009.rst:1: (ERROR/3) Too many autonumbered footnote references: only 0 corresponding footnote available.\n"
+   },
+   {
+    "level": 3,
+    "node": 57,
+    "text": "fuzz-009.rst:1: (ERROR/3) Too many symbol footnote references: only 0 corresponding footnotes available.\n"
+   },
+   {
+    "level": 3,
+    "node": 60,
+    "text": "fuzz-009.rst:1: (ERROR/3) Unknown target name: \"ref\".\n"
+   },
+   {
+    "level": 3,
+    "node": 63,
+    "text": "fuzz-009.rst:1: (ERROR/3) Unknown target name: \"ref\".\n"
+   },
+   {
+    "level": 3,
+    "node": 66,
+    "text": "fuzz-009.rst:1: (ERROR/3) Unknown target name: \"1\".\n"
+   },
+   {
+    "level": 3,
+    "node": 69,
+    "text": "fuzz-009.rst:1: (ERROR/3) Unknown target name: \"cit\".\n"
+   }
+  ]
+ },
+ "settings": {
+  "_config_files": [],
+  "_destination": null,
+  "_disable_config": true,
+  "_source": "fuzz-009.rst",
+  "auto_id_prefix": "%",
+  "character_level_inline_markup": false,
+  "config": null,
+  "datestamp": null,
+  "debug": null,
+  "detailed": null,
+  "docinfo_xform": true,
+  "doctitle_xform": true,
+  "dump_internals": null,
+  "dump_pseudo_xml": null,
+  "dump_settings": null,
+  "dump_transforms": null,
+  "error_encoding": "utf-8",
+  "error_encoding_error_handler": "backslashreplace",
+  "exit_status_level": 5,
+  "expose_internals": null,
+  "file_insertion_enabled": true,
+  "footnote_backlinks": true,
+  "generator": null,
+  "halt_level": 5,
+  "id_prefix": "",
+  "input_encoding": "utf-8",
+  "input_encoding_error_handler": "strict",
+  "language_code": "en",
+  "line_length_limit": 10000,
+  "output": null,
+  "output_encoding": "utf-8",
+  "output_encoding_error_handler": "strict",
+  "output_path": null,
+  "pep_base_url": "https://peps.python.org/",
+  "pep_file_url_template": "pep-%04d",
+  "pep_references": null,
+  "raw_enabled": true,
+  "report_level": 2,
+  "rfc_base_url": "https://tools.ietf.org/html/",
+  "rfc_references": null,
+  "root_prefix": "",
+  "sectnum_xform": true,
+  "sectsubtitle_xform": false,
+  "smart_quotes": false,
+  "smartquotes_locales": null,
+  "source_link": null,
+  "source_url": null,
+  "strict_visitor": null,
+  "strip_classes": null,
+  "strip_comments": null,
+  "strip_elements_with_classes": null,
+  "syntax_highlight": "long",
+  "tab_width": 8,
+  "title": null,
+  "toc_backlinks": "entry",
+  "traceback": true,
+  "trim_footnote_reference_space": null,
+  "validate": null
+ },
+ "stage": "transformed",
+ "transformer": {
+  "queue": [],
+  "serialno": 20
+ },
+ "tree": {
+  "attributes": {
+   "source": "fuzz-009.rst"
+  },
+  "children": [
+   {
+    "children": [
+     {
+      "children": [
+       {
+        "tag": "#text",
+        "text": "Para "
+       },
+       {
+        "children": [
+         {
+          "tag": "#text",
+          "text": "em"
+         }
+        ],
+        "rawsource": "*em*",
+        "tag": "emphasis"
+       },
+       {
+        "tag": "#text",
+        "text": " "
+       },
+       {
+        "children": [
+         {
+          "tag": "#text",
+          "text": "strong"
+         }
+        ],
+        "rawsource": "**strong**",
+        "tag": "strong"
+       },
+       {
+        "tag": "#text",
+        "text": " "
+       },
+       {
+        "children": [
+         {
+          "tag": "#text",
+          "text": "lit"
+         }
+        ],
+        "rawsource": "``lit``",
+        "tag": "literal"
+       },
+       {
+        "tag": "#text",
+        "text": " "
+       },
+       {
+        "children": [
+         {
+          "tag": "#text",
+          "text": "interp"
+         }
+        ],
+        "rawsource": "`interp`",
+        "tag": "title_reference"
+       },
+       {
+        "tag": "#text",
+        "text": " "
+       },
+       {
+        "attributes": {
+         "ids": [
+          "problematic-1"
+         ],
+         "refid": "system-message-1"
+        },
+        "children": [
+         {
+          "tag": "#text",
+          "text": ":role:`x`"
+         }
+        ],
+        "rawsource": ":role:`x`",
+        "tag": "problematic"
+       },
+       {
+        "tag": "#text",
+        "text": " "
+       },
+       {
+        "attributes": {
+         "ids": [
+          "problematic-6"
+         ],
+         "refid": "system-message-6"
+        },
+        "children": [
+         {
+          "tag": "#text",
+          "text": "`ref`_"
+         }
+        ],
+        "document": true,
+        "rawsource": "`ref`_",
+        "tag": "problematic"
+       },
+       {
+        "tag": "#text",
+        "text": " "
+       },
+       {
+        "attributes": {
+         "ids": [
+          "problematic-7"
+         ],
+         "refid": "system-message-7"
+        },
+        "children": [
+         {
+          "tag": "#text",
+          "text": "ref_"
+         }
+        ],
+        "document": true,
+        "rawsource": "ref_",
+        "tag": "problematic"
+       },
+       {
+        "tag": "#text",
+        "text": " "
+       },
+       {
+        "attributes": {
+         "ids": [
+          "problematic-3"
+         ],
+         "refid": "system-message-3"
+        },
+        "children": [
+         {
+          "tag": "#text",
+          "text": "anon__"
+         }
+        ],
+        "document": true,
+        "rawsource": "anon__",
+        "tag": "problematic"
+       },
+       {
+        "tag": "#text",
+        "text": " "
+       },
+       {
+        "attributes": {
+         "ids": [
+          "footnote-reference-1"
+         ],
+         "refid": "system-message-8"
+        },
+        "children": [
+         {
+          "tag": "#text",
+          "text": "[1]_"
+         }
+        ],
+        "document": true,
+        "rawsource": "[1]_",
+        "tag": "problematic"
+       },
+       {
+        "tag": "#text",
+        "text": " "
+       },
+       {
+        "attributes": {
+         "ids": [
+          "problematic-4",
+          "footnote-reference-2"
+         ],
+         "refid": "system-message-4"
+        },
+        "children": [
+         {
+          "tag": "#text",
+          "text": "[#]_"
+         }
+        ],
+        "document": true,
+        "rawsource": "[#]_",
+        "tag": "problematic"
+       },
+       {
+        "tag": "#text",
+        "text": " "
+       },
+       {
+        "attributes": {
+         "ids": [
+          "problematic-5",
+          "footnote-reference-3"
+         ],
+         "refid": "system-message-5"
+        },
+        "children": [
+         {
+          "tag": "#text",
+          "text": "[*]_"
+         }
+        ],
+        "document": true,
+        "rawsource": "[*]_",
+        "tag": "problematic"
+       },
+       {
+        "tag": "#text",
+        "text": " "
+       },
+       {
+        "attributes": {
+         "ids": [
+          "citation-reference-1"
+         ],
+         "refid": "system-message-9"
+        },
+        "children": [
+         {
+          "tag": "#text",
+          "text": "[CIT]_"
+         }
+        ],
+        "document": true,
+        "rawsource": "[CIT]_",
+        "tag": "problematic"
+       },
+       {
+        "tag": "#text",
+        "text": " "
+       },
+       {
+        "attributes": {
+         "ids": [
+          "problematic-2"
+         ],
+         "refid": "system-message-2"
+        },
+        "children": [
+         {
+          "tag": "#text",
+          "text": "|sub|"
+         }
+        ],
+        "document": true,
+        "rawsource": "|sub|",
+        "tag": "problematic"
+       }
+      ],
+      "line": 1,
+      "rawsource": "Para *em* **strong** ``lit`` `interp` :role:`x` `ref`_ ref_ anon__ [1]_ [#]_ [*]_ [CIT]_ |sub|",
+      "source": "fuzz-009.rst",
+      "tag": "paragraph"
+     },
+     {
+      "attributes": {
+       "backrefs": [
+        "problematic-1"
+       ],
+       "ids": [
+        "system-message-1"
+       ],
+       "level": 3,
+       "line": 1,
+       "source": "fuzz-009.rst",
+       "type": "ERROR"
+      },
+      "children": [
+       {
+        "children": [
+         {
+          "tag": "#text",
+          "text": "Unknown interpreted text role \"role\"."
+         }
+        ],
+        "tag": "paragraph"
+       }
+      ],
+      "tag": "system_message"
+     }
+    ],
+    "document": true,
+    "line": 1,
+    "rawsource": "Para *em* **strong** ``lit`` `interp` :role:`x` `ref`_ ref_ anon__ [1]_ [#]_ [*]_ [CIT]_ |sub|",
+    "source": "fuzz-009.rst",
+    "tag": "block_quote"
+   },
+   {
+    "attributes": {
+     "classes": [
+      "system-messages"
+     ]
+    },
+    "children": [
+     {
+      "children": [
+       {
+        "tag": "#text",
+        "text": "Docutils System Messages"
+       }
+      ],
+      "tag": "title"
+     },
+     {
+      "attributes": {
+       "backrefs": [
+        "problematic-2"
+       ],
+       "ids": [
+        "system-message-2"
+       ],
+       "level": 3,
+       "line": 1,
+       "source": "fuzz-009.rst",
+       "type": "ERROR"
+      },
+      "children": [
+       {
+        "children": [
+         {
+          "tag": "#text",
+          "text": "Undefined substitution referenced: \"sub\"."
+         }
+        ],
+        "tag": "paragraph"
+       }
+      ],
+      "tag": "system_message"
+     },
+     {
+      "attributes": {
+       "backrefs": [
+        "problematic-3"
+       ],
+       "ids": [
+        "system-message-3"
+       ],
+       "level": 3,
+       "line": 2,
+       "source": "fuzz-009.rst",
+       "type": "ERROR"
+      },
+      "children": [
+       {
+        "children": [
+         {
+          "tag": "#text",
+          "text": "Anonymous hyperlink mismatch: 1 references but 0 targets.\nSee \"backrefs\" attribute for IDs."
+         }
+        ],
+        "tag": "paragraph"
+       }
+      ],
+      "tag": "system_message"
+     },
+     {
+      "attributes": {
+       "backrefs": [
+        "problematic-4"
+       ],
+       "ids": [
+        "system-message-4"
+       ],
+       "level": 3,
+       "line": 1,
+       "source": "fuzz-009.rst",
+       "type": "ERROR"
+      },
+      "children": [
+       {
+        "children": [
+         {
+          "tag": "#text",
+          "text": "Too many autonumbered footnote references: only 0 corresponding footnote available."
+         }
+        ],
+        "tag": "paragraph"
+       }
+      ],
+      "tag": "system_message"
+     },
+     {
+      "attributes": {
+       "backrefs": [
+        "problematic-5"
+       ],
+       "ids": [
+        "system-message-5"
+       ],
+       "level": 3,
+       "line": 1,
+       "source": "fuzz-009.rst",
+       "type": "ERROR"
+      },
+      "children": [
+       {
+        "children": [
+         {
+          "tag": "#text",
+          "text": "Too many symbol footnote references: only 0 corresponding footnotes available."
+         }
+        ],
+        "tag": "paragraph"
+       }
+      ],
+      "tag": "system_message"
+     },
+     {
+      "attributes": {
+       "backrefs": [
+        "problematic-6"
+       ],
+       "ids": [
+        "system-message-6"
+       ],
+       "level": 3,
+       "line": 1,
+       "source": "fuzz-009.rst",
+       "type": "ERROR"
+      },
+      "children": [
+       {
+        "children": [
+         {
+          "tag": "#text",
+          "text": "Unknown target name: \"ref\"."
+         }
+        ],
+        "tag": "paragraph"
+       }
+      ],
+      "tag": "system_message"
+     },
+     {
+      "attributes": {
+       "backrefs": [
+        "problematic-7"
+       ],
+       "ids": [
+        "system-message-7"
+       ],
+       "level": 3,
+       "line": 1,
+       "source": "fuzz-009.rst",
+       "type": "ERROR"
+      },
+      "children": [
+       {
+        "children": [
+         {
+          "tag": "#text",
+          "text": "Unknown target name: \"ref\"."
+         }
+        ],
+        "tag": "paragraph"
+       }
+      ],
+      "tag": "system_message"
+     },
+     {
+      "attributes": {
+       "backrefs": [
+        "footnote-reference-1"
+       ],
+       "ids": [
+        "system-message-8"
+       ],
+       "level": 3,
+       "line": 1,
+       "source": "fuzz-009.rst",
+       "type": "ERROR"
+      },
+      "children": [
+       {
+        "children": [
+         {
+          "tag": "#text",
+          "text": "Unknown target name: \"1\"."
+         }
+        ],
+        "tag": "paragraph"
+       }
+      ],
+      "tag": "system_message"
+     },
+     {
+      "attributes": {
+       "backrefs": [
+        "citation-reference-1"
+       ],
+       "ids": [
+        "system-message-9"
+       ],
+       "level": 3,
+       "line": 1,
+       "source": "fuzz-009.rst",
+       "type": "ERROR"
+      },
+      "children": [
+       {
+        "children": [
+         {
+          "tag": "#text",
+          "text": "Unknown target name: \"cit\"."
+         }
+        ],
+        "tag": "paragraph"
+       }
+      ],
+      "tag": "system_message"
+     }
+    ],
+    "document": true,
+    "tag": "section"
+   }
+  ],
+  "document": true,
+  "tag": "document"
+ }
+}

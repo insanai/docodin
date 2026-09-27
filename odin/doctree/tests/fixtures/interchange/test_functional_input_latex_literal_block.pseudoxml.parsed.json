@@ -1,0 +1,1313 @@
+{
+ "detached": [],
+ "expected": {
+  "pformat": "<document source=\"test/functional/input/latex_literal_block.rst\">\n    <paragraph>\n        In LaTeX, literal blocks can be customized with the \"literal-block-env\"\n        setting. This test file exists to check if the LaTeX writer output compiles\n        and looks as expected.\n    <paragraph>\n        Start with a plain literal block:\n    <literal_block xml:space=\"preserve\">\n        $\\sin^2(x)$ and $\\cos^2(x)$ equals one:\n        \n        \\[\n           \\sin^2(x) + \\cos^2(x) = 1 % for all x\n        \\]\n    <paragraph>\n        A latex \"code-block\" (set with \"literal-block-env\", if syntax\n        highlight is \"none\"):\n    <system_message level=\"2\" line=\"16\" source=\"test/functional/input/latex_literal_block.rst\" type=\"WARNING\">\n        <paragraph>\n            Cannot analyze code. Pygments package not found.\n        <literal_block xml:space=\"preserve\">\n            .. code:: latex\n            \n              $\\sin^2(x)$ and $\\cos^2(x)$ equals one:\n            \n              \\[\n                 \\sin^2(x) + \\cos^2(x) = 1 % for all x\n              \\]\n    <paragraph>\n        A literal block in a table:\n    <table>\n        <tgroup cols=\"3\">\n            <colspec colwidth=\"4\">\n            <colspec colwidth=\"11\">\n            <colspec colwidth=\"4\">\n            <tbody>\n                <row>\n                    <entry>\n                        <paragraph>\n                            test\n                    <entry>\n                        <literal_block xml:space=\"preserve\">\n                            \\sin^2 x\n                    <entry>\n                        <paragraph>\n                            test\n    <paragraph>\n        A literal block in a table with auto-width columns:\n    <table classes=\"colwidths-auto\">\n        <tgroup cols=\"3\">\n            <colspec colwidth=\"4\">\n            <colspec colwidth=\"11\">\n            <colspec colwidth=\"4\">\n            <tbody>\n                <row>\n                    <entry>\n                        <paragraph>\n                            test\n                    <entry>\n                        <literal_block xml:space=\"preserve\">\n                            \\sin^2 x\n                    <entry>\n                        <paragraph>\n                            test\n    <note>\n        <paragraph>\n            A literal block in an admonition:\n        <literal_block xml:space=\"preserve\">\n            \\sin^2 x\n    <sidebar>\n        <title>\n            Literal Block in a Sidebar\n        <literal_block xml:space=\"preserve\">\n            \\sin^2 x\n    <paragraph>\n        Parsed literal block with inline markup and leading whitespace:\n    <literal_block xml:space=\"preserve\">\n           \n        <emphasis>\n            emphasis\n        , \n        <strong>\n            strong emphasis\n        , \n        <literal>\n            inline literals\n        ,\n        standalone hyperlinks (\n        <reference refuri=\"http://www.python.org\">\n            http://www.python.org\n        ),\n        <reference name=\"internal\" refname=\"internal\">\n            internal\n         and \n        <reference name=\"external\" refname=\"external\">\n            external\n         hyperlinks,\n        <target ids=\"internal\" names=\"internal\">\n            internal\n         hyperlink targets,\n        images via substitution references (\n        <substitution_reference refname=\"example\">\n            example\n        ),\n        footnote references \n        <footnote_reference auto=\"*\" ids=\"footnote-reference-1\">\n        ,\n        citation references (\n        <citation_reference ids=\"citation-reference-1\" refname=\"cit2002\">\n            CIT2002\n        ), and more.\n        \n           Here are some explicit interpreted text roles:\n        a PEP reference (\n        <reference refuri=\"https://peps.python.org/pep-0287\">\n            PEP 287\n        ),\n        an RFC reference (\n        <reference refuri=\"https://tools.ietf.org/html/rfc2822.html\">\n            RFC 2822\n        ),\n        an abbreviation (\n        <abbreviation>\n            abb.\n        ), an acronym (\n        <acronym>\n            reST\n        ),\n        code (\n        <literal classes=\"code\">\n            print \"hello world\"\n        ),\n        maths \n        <math>\n            \\sin^2(x)\n        ,\n        <subscript>\n            subscript\n         and \n        <superscript>\n            superscript\n        ,\n        <inline classes=\"custom\">\n            custom\n         \n        <inline classes=\"custom-role\">\n            roles\n        , and explicit roles for\n        <title_reference>\n            Docutils\n        ' \n        <emphasis>\n            standard\n         \n        <strong>\n            inline\n         \n        <literal>\n            markup\n        .\n    <footnote auto=\"*\" ids=\"footnote-1\">\n        <paragraph>\n            This footnote is referenced in a \n            <title_reference>\n                parsed literal\n             block.\n        <paragraph>\n            It contains a literal block:\n        <literal_block xml:space=\"preserve\">\n            \\sin^2 x\n    <citation ids=\"cit2002\" names=\"cit2002\">\n        <label>\n            CIT2002\n        <paragraph>\n            Sample Citation, 2017.\n    <target ids=\"external\" names=\"external\" refuri=\"http://www.python.org/\">\n    <substitution_definition names=\"EXAMPLE\">\n        <image alt=\"EXAMPLE\" uri=\"../../../docs/user/rst/images/biohazard.png\">\n"
+ },
+ "format": "docodin-doctree/1",
+ "input": {
+  "overrides": {},
+  "source_path": "test/functional/input/latex_literal_block.rst",
+  "writer": "pseudoxml"
+ },
+ "registry": {
+  "autofootnote_refs": [],
+  "autofootnote_start": 1,
+  "autofootnotes": [],
+  "citation_refs": [
+   [
+    "cit2002",
+    [
+     90
+    ]
+   ]
+  ],
+  "citations": [
+   145
+  ],
+  "current_line": null,
+  "current_source": null,
+  "decoration": null,
+  "footnote_refs": [],
+  "footnotes": [],
+  "id_counter": [
+   [
+    "footnote-reference-",
+    1
+   ],
+   [
+    "citation-reference-",
+    1
+   ],
+   [
+    "footnote-",
+    1
+   ]
+  ],
+  "ids": [
+   [
+    "internal",
+    82
+   ],
+   [
+    "footnote-reference-1",
+    88
+   ],
+   [
+    "citation-reference-1",
+    90
+   ],
+   [
+    "footnote-1",
+    135
+   ],
+   [
+    "cit2002",
+    145
+   ],
+   [
+    "external",
+    150
+   ]
+  ],
+  "indirect_targets": [],
+  "nameids": [
+   [
+    "internal",
+    "internal"
+   ],
+   [
+    "cit2002",
+    "cit2002"
+   ],
+   [
+    "external",
+    "external"
+   ]
+  ],
+  "nametypes": [
+   [
+    "internal",
+    true
+   ],
+   [
+    "cit2002",
+    true
+   ],
+   [
+    "external",
+    true
+   ]
+  ],
+  "parse_messages": [
+   9
+  ],
+  "refids": [],
+  "refnames": [
+   [
+    "internal",
+    [
+     76
+    ]
+   ],
+   [
+    "external",
+    [
+     79
+    ]
+   ],
+   [
+    "cit2002",
+    [
+     90
+    ]
+   ]
+  ],
+  "substitution_defs": [
+   [
+    "EXAMPLE",
+    151
+   ]
+  ],
+  "substitution_names": [
+   [
+    "example",
+    "EXAMPLE"
+   ]
+  ],
+  "symbol_footnote_refs": [
+   88
+  ],
+  "symbol_footnote_start": 0,
+  "symbol_footnotes": [
+   135
+  ],
+  "transform_messages": []
+ },
+ "reporter": {
+  "debug": false,
+  "halt_level": 4,
+  "max_level": 2,
+  "observers": [],
+  "report_level": 2,
+  "source": "test/functional/input/latex_literal_block.rst",
+  "source_lines": {
+   "input_offset": 0,
+   "line_offset": 89,
+   "runs": [
+    [
+     "test/functional/input/latex_literal_block.rst",
+     0,
+     88
+    ]
+   ]
+  },
+  "written": [
+   {
+    "level": 2,
+    "node": 9,
+    "text": "test/functional/input/latex_literal_block.rst:16: (WARNING/2) Cannot analyze code. Pygments package not found.\n"
+   }
+  ]
+ },
+ "settings": {
+  "_config_files": [],
+  "_destination": null,
+  "_disable_config": true,
+  "_source": "test/functional/input/latex_literal_block.rst",
+  "auto_id_prefix": "%",
+  "character_level_inline_markup": false,
+  "config": null,
+  "datestamp": null,
+  "debug": null,
+  "detailed": null,
+  "docinfo_xform": true,
+  "doctitle_xform": true,
+  "dump_internals": null,
+  "dump_pseudo_xml": null,
+  "dump_settings": null,
+  "dump_transforms": null,
+  "error_encoding": "utf-8",
+  "error_encoding_error_handler": "backslashreplace",
+  "exit_status_level": 5,
+  "expose_internals": null,
+  "file_insertion_enabled": true,
+  "footnote_backlinks": true,
+  "generator": null,
+  "halt_level": 4,
+  "id_prefix": "",
+  "input_encoding": "utf-8",
+  "input_encoding_error_handler": "strict",
+  "language_code": "en",
+  "line_length_limit": 10000,
+  "output": null,
+  "output_encoding": "utf-8",
+  "output_encoding_error_handler": "strict",
+  "output_path": null,
+  "pep_base_url": "https://peps.python.org/",
+  "pep_file_url_template": "pep-%04d",
+  "pep_references": null,
+  "raw_enabled": true,
+  "report_level": 2,
+  "rfc_base_url": "https://tools.ietf.org/html/",
+  "rfc_references": null,
+  "root_prefix": "",
+  "sectnum_xform": true,
+  "sectsubtitle_xform": false,
+  "smart_quotes": false,
+  "smartquotes_locales": null,
+  "source_link": null,
+  "source_url": null,
+  "strict_visitor": null,
+  "strip_classes": null,
+  "strip_comments": null,
+  "strip_elements_with_classes": null,
+  "syntax_highlight": "long",
+  "tab_width": 8,
+  "title": null,
+  "toc_backlinks": "entry",
+  "traceback": true,
+  "trim_footnote_reference_space": null,
+  "validate": null
+ },
+ "stage": "parsed",
+ "transformer": {
+  "queue": [
+   [
+    "220-004",
+    "docutils.transforms.references.Substitutions",
+    null,
+    {}
+   ],
+   [
+    "260-005",
+    "docutils.transforms.references.PropagateTargets",
+    null,
+    {}
+   ],
+   [
+    "320-006",
+    "docutils.transforms.frontmatter.DocTitle",
+    null,
+    {}
+   ],
+   [
+    "340-008",
+    "docutils.transforms.frontmatter.DocInfo",
+    null,
+    {}
+   ],
+   [
+    "350-007",
+    "docutils.transforms.frontmatter.SectionSubTitle",
+    null,
+    {}
+   ],
+   [
+    "420-020",
+    "docutils.transforms.universal.StripClassesAndElements",
+    null,
+    {}
+   ],
+   [
+    "440-009",
+    "docutils.transforms.references.AnonymousHyperlinks",
+    null,
+    {}
+   ],
+   [
+    "460-010",
+    "docutils.transforms.references.IndirectHyperlinks",
+    null,
+    {}
+   ],
+   [
+    "620-011",
+    "docutils.transforms.references.Footnotes",
+    null,
+    {}
+   ],
+   [
+    "640-012",
+    "docutils.transforms.references.ExternalTargets",
+    null,
+    {}
+   ],
+   [
+    "660-013",
+    "docutils.transforms.references.InternalTargets",
+    null,
+    {}
+   ],
+   [
+    "740-003",
+    "docutils.transforms.universal.StripComments",
+    null,
+    {}
+   ],
+   [
+    "820-001",
+    "docutils.transforms.universal.Decorations",
+    null,
+    {}
+   ],
+   [
+    "830-015",
+    "docutils.transforms.misc.Transitions",
+    null,
+    {}
+   ],
+   [
+    "835-016",
+    "docutils.transforms.universal.Validate",
+    null,
+    {}
+   ],
+   [
+    "840-002",
+    "docutils.transforms.universal.ExposeInternals",
+    null,
+    {}
+   ],
+   [
+    "850-014",
+    "docutils.transforms.references.DanglingReferences",
+    null,
+    {}
+   ],
+   [
+    "855-017",
+    "docutils.transforms.universal.SmartQuotes",
+    null,
+    {}
+   ],
+   [
+    "860-018",
+    "docutils.transforms.universal.Messages",
+    null,
+    {}
+   ],
+   [
+    "870-019",
+    "docutils.transforms.universal.FilterMessages",
+    null,
+    {}
+   ]
+  ],
+  "serialno": 20
+ },
+ "tree": {
+  "attributes": {
+   "source": "test/functional/input/latex_literal_block.rst"
+  },
+  "children": [
+   {
+    "children": [
+     {
+      "tag": "#text",
+      "text": "In LaTeX, literal blocks can be customized with the \"literal-block-env\"\nsetting. This test file exists to check if the LaTeX writer output compiles\nand looks as expected."
+     }
+    ],
+    "document": true,
+    "line": 1,
+    "rawsource": "In LaTeX, literal blocks can be customized with the \"literal-block-env\"\nsetting. This test file exists to check if the LaTeX writer output compiles\nand looks as expected.",
+    "source": "test/functional/input/latex_literal_block.rst",
+    "tag": "paragraph"
+   },
+   {
+    "children": [
+     {
+      "tag": "#text",
+      "text": "Start with a plain literal block:"
+     }
+    ],
+    "document": true,
+    "line": 5,
+    "rawsource": "Start with a plain literal block::",
+    "source": "test/functional/input/latex_literal_block.rst",
+    "tag": "paragraph"
+   },
+   {
+    "attributes": {
+     "xml:space": "preserve"
+    },
+    "children": [
+     {
+      "tag": "#text",
+      "text": "$\\sin^2(x)$ and $\\cos^2(x)$ equals one:\n\n\\[\n   \\sin^2(x) + \\cos^2(x) = 1 % for all x\n\\]"
+     }
+    ],
+    "document": true,
+    "line": 7,
+    "rawsource": "$\\sin^2(x)$ and $\\cos^2(x)$ equals one:\n\n\\[\n   \\sin^2(x) + \\cos^2(x) = 1 % for all x\n\\]",
+    "source": "test/functional/input/latex_literal_block.rst",
+    "tag": "literal_block"
+   },
+   {
+    "children": [
+     {
+      "tag": "#text",
+      "text": "A latex \"code-block\" (set with \"literal-block-env\", if syntax\nhighlight is \"none\"):"
+     }
+    ],
+    "document": true,
+    "line": 13,
+    "rawsource": "A latex \"code-block\" (set with \"literal-block-env\", if syntax\nhighlight is \"none\"):",
+    "source": "test/functional/input/latex_literal_block.rst",
+    "tag": "paragraph"
+   },
+   {
+    "attributes": {
+     "level": 2,
+     "line": 16,
+     "source": "test/functional/input/latex_literal_block.rst",
+     "type": "WARNING"
+    },
+    "children": [
+     {
+      "children": [
+       {
+        "tag": "#text",
+        "text": "Cannot analyze code. Pygments package not found."
+       }
+      ],
+      "tag": "paragraph"
+     },
+     {
+      "attributes": {
+       "xml:space": "preserve"
+      },
+      "children": [
+       {
+        "tag": "#text",
+        "text": ".. code:: latex\n\n  $\\sin^2(x)$ and $\\cos^2(x)$ equals one:\n\n  \\[\n     \\sin^2(x) + \\cos^2(x) = 1 % for all x\n  \\]\n"
+       }
+      ],
+      "rawsource": ".. code:: latex\n\n  $\\sin^2(x)$ and $\\cos^2(x)$ equals one:\n\n  \\[\n     \\sin^2(x) + \\cos^2(x) = 1 % for all x\n  \\]\n",
+      "tag": "literal_block"
+     }
+    ],
+    "document": true,
+    "line": 23,
+    "source": "test/functional/input/latex_literal_block.rst",
+    "tag": "system_message"
+   },
+   {
+    "children": [
+     {
+      "tag": "#text",
+      "text": "A literal block in a table:"
+     }
+    ],
+    "document": true,
+    "line": 24,
+    "rawsource": "A literal block in a table:",
+    "source": "test/functional/input/latex_literal_block.rst",
+    "tag": "paragraph"
+   },
+   {
+    "children": [
+     {
+      "attributes": {
+       "cols": 3
+      },
+      "children": [
+       {
+        "attributes": {
+         "colwidth": 4
+        },
+        "tag": "colspec"
+       },
+       {
+        "attributes": {
+         "colwidth": 11
+        },
+        "tag": "colspec"
+       },
+       {
+        "attributes": {
+         "colwidth": 4
+        },
+        "tag": "colspec"
+       },
+       {
+        "children": [
+         {
+          "children": [
+           {
+            "children": [
+             {
+              "children": [
+               {
+                "tag": "#text",
+                "text": "test"
+               }
+              ],
+              "line": 27,
+              "rawsource": "test",
+              "source": "test/functional/input/latex_literal_block.rst",
+              "tag": "paragraph"
+             }
+            ],
+            "tag": "entry"
+           },
+           {
+            "children": [
+             {
+              "attributes": {
+               "xml:space": "preserve"
+              },
+              "children": [
+               {
+                "tag": "#text",
+                "text": "\\sin^2 x"
+               }
+              ],
+              "line": 29,
+              "rawsource": "\\sin^2 x",
+              "source": "test/functional/input/latex_literal_block.rst",
+              "tag": "literal_block"
+             }
+            ],
+            "tag": "entry"
+           },
+           {
+            "children": [
+             {
+              "children": [
+               {
+                "tag": "#text",
+                "text": "test"
+               }
+              ],
+              "line": 27,
+              "rawsource": "test",
+              "source": "test/functional/input/latex_literal_block.rst",
+              "tag": "paragraph"
+             }
+            ],
+            "tag": "entry"
+           }
+          ],
+          "tag": "row"
+         }
+        ],
+        "tag": "tbody"
+       }
+      ],
+      "tag": "tgroup"
+     }
+    ],
+    "document": true,
+    "source": "test/functional/input/latex_literal_block.rst",
+    "tag": "table"
+   },
+   {
+    "children": [
+     {
+      "tag": "#text",
+      "text": "A literal block in a table with auto-width columns:"
+     }
+    ],
+    "document": true,
+    "line": 32,
+    "rawsource": "A literal block in a table with auto-width columns:",
+    "source": "test/functional/input/latex_literal_block.rst",
+    "tag": "paragraph"
+   },
+   {
+    "attributes": {
+     "classes": [
+      "colwidths-auto"
+     ]
+    },
+    "children": [
+     {
+      "attributes": {
+       "cols": 3
+      },
+      "children": [
+       {
+        "attributes": {
+         "colwidth": 4
+        },
+        "tag": "colspec"
+       },
+       {
+        "attributes": {
+         "colwidth": 11
+        },
+        "tag": "colspec"
+       },
+       {
+        "attributes": {
+         "colwidth": 4
+        },
+        "tag": "colspec"
+       },
+       {
+        "children": [
+         {
+          "children": [
+           {
+            "children": [
+             {
+              "children": [
+               {
+                "tag": "#text",
+                "text": "test"
+               }
+              ],
+              "line": 38,
+              "rawsource": "test",
+              "source": "test/functional/input/latex_literal_block.rst",
+              "tag": "paragraph"
+             }
+            ],
+            "tag": "entry"
+           },
+           {
+            "children": [
+             {
+              "attributes": {
+               "xml:space": "preserve"
+              },
+              "children": [
+               {
+                "tag": "#text",
+                "text": "\\sin^2 x"
+               }
+              ],
+              "line": 40,
+              "rawsource": "\\sin^2 x",
+              "source": "test/functional/input/latex_literal_block.rst",
+              "tag": "literal_block"
+             }
+            ],
+            "tag": "entry"
+           },
+           {
+            "children": [
+             {
+              "children": [
+               {
+                "tag": "#text",
+                "text": "test"
+               }
+              ],
+              "line": 38,
+              "rawsource": "test",
+              "source": "test/functional/input/latex_literal_block.rst",
+              "tag": "paragraph"
+             }
+            ],
+            "tag": "entry"
+           }
+          ],
+          "tag": "row"
+         }
+        ],
+        "tag": "tbody"
+       }
+      ],
+      "tag": "tgroup"
+     }
+    ],
+    "document": true,
+    "source": "test/functional/input/latex_literal_block.rst",
+    "tag": "table"
+   },
+   {
+    "children": [
+     {
+      "children": [
+       {
+        "tag": "#text",
+        "text": "A literal block in an admonition:"
+       }
+      ],
+      "line": 43,
+      "rawsource": "A literal block in an admonition::",
+      "source": "test/functional/input/latex_literal_block.rst",
+      "tag": "paragraph"
+     },
+     {
+      "attributes": {
+       "xml:space": "preserve"
+      },
+      "children": [
+       {
+        "tag": "#text",
+        "text": "\\sin^2 x"
+       }
+      ],
+      "line": 45,
+      "rawsource": "\\sin^2 x",
+      "source": "test/functional/input/latex_literal_block.rst",
+      "tag": "literal_block"
+     }
+    ],
+    "document": true,
+    "line": 43,
+    "rawsource": "A literal block in an admonition::\n\n\\sin^2 x",
+    "source": "test/functional/input/latex_literal_block.rst",
+    "tag": "note"
+   },
+   {
+    "children": [
+     {
+      "children": [
+       {
+        "tag": "#text",
+        "text": "Literal Block in a Sidebar"
+       }
+      ],
+      "rawsource": "Literal Block in a Sidebar",
+      "tag": "title"
+     },
+     {
+      "attributes": {
+       "xml:space": "preserve"
+      },
+      "children": [
+       {
+        "tag": "#text",
+        "text": "\\sin^2 x"
+       }
+      ],
+      "line": 51,
+      "rawsource": "\\sin^2 x",
+      "source": "test/functional/input/latex_literal_block.rst",
+      "tag": "literal_block"
+     }
+    ],
+    "document": true,
+    "line": 47,
+    "rawsource": "::\n\n \\sin^2 x",
+    "source": "test/functional/input/latex_literal_block.rst",
+    "tag": "sidebar"
+   },
+   {
+    "children": [
+     {
+      "tag": "#text",
+      "text": "Parsed literal block with inline markup and leading whitespace:"
+     }
+    ],
+    "document": true,
+    "line": 56,
+    "rawsource": "Parsed literal block with inline markup and leading whitespace:",
+    "source": "test/functional/input/latex_literal_block.rst",
+    "tag": "paragraph"
+   },
+   {
+    "attributes": {
+     "xml:space": "preserve"
+    },
+    "children": [
+     {
+      "tag": "#text",
+      "text": "   "
+     },
+     {
+      "children": [
+       {
+        "tag": "#text",
+        "text": "emphasis"
+       }
+      ],
+      "rawsource": "*emphasis*",
+      "tag": "emphasis"
+     },
+     {
+      "tag": "#text",
+      "text": ", "
+     },
+     {
+      "children": [
+       {
+        "tag": "#text",
+        "text": "strong emphasis"
+       }
+      ],
+      "rawsource": "**strong emphasis**",
+      "tag": "strong"
+     },
+     {
+      "tag": "#text",
+      "text": ", "
+     },
+     {
+      "children": [
+       {
+        "tag": "#text",
+        "text": "inline literals"
+       }
+      ],
+      "rawsource": "``inline literals``",
+      "tag": "literal"
+     },
+     {
+      "tag": "#text",
+      "text": ",\nstandalone hyperlinks ("
+     },
+     {
+      "attributes": {
+       "refuri": "http://www.python.org"
+      },
+      "children": [
+       {
+        "tag": "#text",
+        "text": "http://www.python.org"
+       }
+      ],
+      "rawsource": "http://www.python.org",
+      "tag": "reference"
+     },
+     {
+      "tag": "#text",
+      "text": "),\n"
+     },
+     {
+      "attributes": {
+       "name": "internal",
+       "refname": "internal"
+      },
+      "children": [
+       {
+        "tag": "#text",
+        "text": "internal"
+       }
+      ],
+      "rawsource": "internal_",
+      "tag": "reference"
+     },
+     {
+      "tag": "#text",
+      "text": " and "
+     },
+     {
+      "attributes": {
+       "name": "external",
+       "refname": "external"
+      },
+      "children": [
+       {
+        "tag": "#text",
+        "text": "external"
+       }
+      ],
+      "rawsource": "external_",
+      "tag": "reference"
+     },
+     {
+      "tag": "#text",
+      "text": " hyperlinks,\n"
+     },
+     {
+      "attributes": {
+       "ids": [
+        "internal"
+       ],
+       "names": [
+        "internal"
+       ]
+      },
+      "children": [
+       {
+        "tag": "#text",
+        "text": "internal"
+       }
+      ],
+      "rawsource": "_`internal`",
+      "tag": "target"
+     },
+     {
+      "tag": "#text",
+      "text": " hyperlink targets,\nimages via substitution references ("
+     },
+     {
+      "attributes": {
+       "refname": "example"
+      },
+      "children": [
+       {
+        "tag": "#text",
+        "text": "example"
+       }
+      ],
+      "rawsource": "|example|",
+      "tag": "substitution_reference"
+     },
+     {
+      "tag": "#text",
+      "text": "),\nfootnote references "
+     },
+     {
+      "attributes": {
+       "auto": "*",
+       "ids": [
+        "footnote-reference-1"
+       ]
+      },
+      "rawsource": "[*]_",
+      "tag": "footnote_reference"
+     },
+     {
+      "tag": "#text",
+      "text": ",\ncitation references ("
+     },
+     {
+      "attributes": {
+       "ids": [
+        "citation-reference-1"
+       ],
+       "refname": "cit2002"
+      },
+      "children": [
+       {
+        "tag": "#text",
+        "text": "CIT2002"
+       }
+      ],
+      "rawsource": "[CIT2002]_",
+      "tag": "citation_reference"
+     },
+     {
+      "tag": "#text",
+      "text": "), and more.\n\n   Here are some explicit interpreted text roles:\na PEP reference ("
+     },
+     {
+      "attributes": {
+       "refuri": "https://peps.python.org/pep-0287"
+      },
+      "children": [
+       {
+        "tag": "#text",
+        "text": "PEP 287"
+       }
+      ],
+      "rawsource": ":PEP:`287`",
+      "tag": "reference"
+     },
+     {
+      "tag": "#text",
+      "text": "),\nan RFC reference ("
+     },
+     {
+      "attributes": {
+       "refuri": "https://tools.ietf.org/html/rfc2822.html"
+      },
+      "children": [
+       {
+        "tag": "#text",
+        "text": "RFC 2822"
+       }
+      ],
+      "rawsource": ":RFC:`2822`",
+      "tag": "reference"
+     },
+     {
+      "tag": "#text",
+      "text": "),\nan abbreviation ("
+     },
+     {
+      "children": [
+       {
+        "tag": "#text",
+        "text": "abb."
+       }
+      ],
+      "rawsource": ":ab:`abb.`",
+      "tag": "abbreviation"
+     },
+     {
+      "tag": "#text",
+      "text": "), an acronym ("
+     },
+     {
+      "children": [
+       {
+        "tag": "#text",
+        "text": "reST"
+       }
+      ],
+      "rawsource": ":ac:`reST`",
+      "tag": "acronym"
+     },
+     {
+      "tag": "#text",
+      "text": "),\ncode ("
+     },
+     {
+      "attributes": {
+       "classes": [
+        "code"
+       ]
+      },
+      "children": [
+       {
+        "tag": "#text",
+        "text": "print \"hello world\""
+       }
+      ],
+      "rawsource": ":code:`print \"hello world\"`",
+      "tag": "literal"
+     },
+     {
+      "tag": "#text",
+      "text": "),\nmaths "
+     },
+     {
+      "children": [
+       {
+        "tag": "#text",
+        "text": "\\sin^2(x)"
+       }
+      ],
+      "rawsource": ":math:`\\sin^2(x)`",
+      "tag": "math"
+     },
+     {
+      "tag": "#text",
+      "text": ",\n"
+     },
+     {
+      "children": [
+       {
+        "tag": "#text",
+        "text": "subscript"
+       }
+      ],
+      "rawsource": ":sub:`subscript`",
+      "tag": "subscript"
+     },
+     {
+      "tag": "#text",
+      "text": " and "
+     },
+     {
+      "children": [
+       {
+        "tag": "#text",
+        "text": "superscript"
+       }
+      ],
+      "rawsource": ":sup:`superscript`",
+      "tag": "superscript"
+     },
+     {
+      "tag": "#text",
+      "text": ",\n"
+     },
+     {
+      "attributes": {
+       "classes": [
+        "custom"
+       ]
+      },
+      "children": [
+       {
+        "tag": "#text",
+        "text": "custom"
+       }
+      ],
+      "rawsource": ":custom:`custom`",
+      "tag": "inline"
+     },
+     {
+      "tag": "#text",
+      "text": " "
+     },
+     {
+      "attributes": {
+       "classes": [
+        "custom-role"
+       ]
+      },
+      "children": [
+       {
+        "tag": "#text",
+        "text": "roles"
+       }
+      ],
+      "rawsource": ":custom-role:`roles`",
+      "tag": "inline"
+     },
+     {
+      "tag": "#text",
+      "text": ", and explicit roles for\n"
+     },
+     {
+      "children": [
+       {
+        "tag": "#text",
+        "text": "Docutils"
+       }
+      ],
+      "rawsource": ":title:`Docutils`",
+      "tag": "title_reference"
+     },
+     {
+      "tag": "#text",
+      "text": "' "
+     },
+     {
+      "children": [
+       {
+        "tag": "#text",
+        "text": "standard"
+       }
+      ],
+      "rawsource": ":emphasis:`standard`",
+      "tag": "emphasis"
+     },
+     {
+      "tag": "#text",
+      "text": " "
+     },
+     {
+      "children": [
+       {
+        "tag": "#text",
+        "text": "inline"
+       }
+      ],
+      "rawsource": ":strong:`inline`",
+      "tag": "strong"
+     },
+     {
+      "tag": "#text",
+      "text": " "
+     },
+     {
+      "children": [
+       {
+        "tag": "#text",
+        "text": "markup"
+       }
+      ],
+      "rawsource": ":literal:`markup`",
+      "tag": "literal"
+     },
+     {
+      "tag": "#text",
+      "text": "."
+     }
+    ],
+    "document": true,
+    "line": 60,
+    "rawsource": "   *emphasis*, **strong emphasis**, ``inline literals``,\nstandalone hyperlinks (http://www.python.org),\ninternal_ and external_ hyperlinks,\n_`internal` hyperlink targets,\nimages via substitution references (|example|),\nfootnote references [*]_,\ncitation references ([CIT2002]_), and more.\n\n   Here are some explicit interpreted text roles:\na PEP reference (:PEP:`287`),\nan RFC reference (:RFC:`2822`),\nan abbreviation (:ab:`abb.`), an acronym (:ac:`reST`),\ncode (:code:`print \"hello world\"`),\nmaths :math:`\\sin^2(x)`,\n:sub:`subscript` and :sup:`superscript`,\n:custom:`custom` :custom-role:`roles`, and explicit roles for\n:title:`Docutils`' :emphasis:`standard` :strong:`inline` :literal:`markup`.",
+    "source": "test/functional/input/latex_literal_block.rst",
+    "tag": "literal_block"
+   },
+   {
+    "attributes": {
+     "auto": "*",
+     "ids": [
+      "footnote-1"
+     ]
+    },
+    "children": [
+     {
+      "children": [
+       {
+        "tag": "#text",
+        "text": "This footnote is referenced in a "
+       },
+       {
+        "children": [
+         {
+          "tag": "#text",
+          "text": "parsed literal"
+         }
+        ],
+        "rawsource": "`parsed literal`",
+        "tag": "title_reference"
+       },
+       {
+        "tag": "#text",
+        "text": " block."
+       }
+      ],
+      "line": 78,
+      "rawsource": "This footnote is referenced in a `parsed literal` block.",
+      "source": "test/functional/input/latex_literal_block.rst",
+      "tag": "paragraph"
+     },
+     {
+      "children": [
+       {
+        "tag": "#text",
+        "text": "It contains a literal block:"
+       }
+      ],
+      "line": 80,
+      "rawsource": "It contains a literal block::",
+      "source": "test/functional/input/latex_literal_block.rst",
+      "tag": "paragraph"
+     },
+     {
+      "attributes": {
+       "xml:space": "preserve"
+      },
+      "children": [
+       {
+        "tag": "#text",
+        "text": "\\sin^2 x"
+       }
+      ],
+      "line": 82,
+      "rawsource": "\\sin^2 x",
+      "source": "test/functional/input/latex_literal_block.rst",
+      "tag": "literal_block"
+     }
+    ],
+    "document": true,
+    "line": 78,
+    "rawsource": "This footnote is referenced in a `parsed literal` block.\n\nIt contains a literal block::\n\n  \\sin^2 x\n",
+    "source": "test/functional/input/latex_literal_block.rst",
+    "tag": "footnote"
+   },
+   {
+    "attributes": {
+     "ids": [
+      "cit2002"
+     ],
+     "names": [
+      "cit2002"
+     ]
+    },
+    "children": [
+     {
+      "children": [
+       {
+        "tag": "#text",
+        "text": "CIT2002"
+       }
+      ],
+      "tag": "label"
+     },
+     {
+      "children": [
+       {
+        "tag": "#text",
+        "text": "Sample Citation, 2017."
+       }
+      ],
+      "line": 84,
+      "rawsource": "Sample Citation, 2017.",
+      "source": "test/functional/input/latex_literal_block.rst",
+      "tag": "paragraph"
+     }
+    ],
+    "document": true,
+    "line": 84,
+    "rawsource": "Sample Citation, 2017.\n",
+    "source": "test/functional/input/latex_literal_block.rst",
+    "tag": "citation"
+   },
+   {
+    "attributes": {
+     "ids": [
+      "external"
+     ],
+     "names": [
+      "external"
+     ],
+     "refuri": "http://www.python.org/"
+    },
+    "document": true,
+    "line": 86,
+    "rawsource": ".. _external: http://www.python.org/",
+    "source": "test/functional/input/latex_literal_block.rst",
+    "tag": "target"
+   },
+   {
+    "attributes": {
+     "names": [
+      "EXAMPLE"
+     ]
+    },
+    "children": [
+     {
+      "attributes": {
+       "alt": "EXAMPLE",
+       "uri": "../../../docs/user/rst/images/biohazard.png"
+      },
+      "line": 88,
+      "rawsource": "image:: ../../../docs/user/rst/images/biohazard.png",
+      "source": "test/functional/input/latex_literal_block.rst",
+      "tag": "image"
+     }
+    ],
+    "document": true,
+    "line": 88,
+    "rawsource": ".. |EXAMPLE| image:: ../../../docs/user/rst/images/biohazard.png",
+    "source": "test/functional/input/latex_literal_block.rst",
+    "tag": "substitution_definition"
+   }
+  ],
+  "document": true,
+  "tag": "document"
+ }
+}

@@ -1,0 +1,589 @@
+{
+ "detached": [],
+ "expected": {
+  "pformat": "<document source=\"test/functional/input/latex_babel.rst\">\n    <paragraph>\n        The \n        <reference name=\"babel\" refname=\"babel\">\n            babel\n         package introduces the concept of \"shorthands\": additional\n        characters that introduce a latex macro. Most common is the active double\n        quote (\"). Problematic is the tilde character (~) which is regularely used\n        for no-break spaces but redefined by some language definition files:\n    <paragraph>\n        English: 'an' \"active\"-quote, ^circumflex, and no-break spaces\n    <pending>\n        .. internal attributes:\n             .transform: docutils.transforms.misc.ClassAttribute\n             .details:\n               class: ['language-eu']\n               directive: 'class'\n    <paragraph>\n        Basque: 'an' \"active\"-quote, ^circumflex, and no-break spaces\n    <pending>\n        .. internal attributes:\n             .transform: docutils.transforms.misc.ClassAttribute\n             .details:\n               class: ['language-eo']\n               directive: 'class'\n    <paragraph>\n        Esperanto: 'an' \"active\"-quote, ^circumflex, and no-break spaces\n    <pending>\n        .. internal attributes:\n             .transform: docutils.transforms.misc.ClassAttribute\n             .details:\n               class: ['language-et']\n               directive: 'class'\n    <paragraph>\n        Estonian: 'an' \"active\"-quote, ^circumflex, and no-break spaces\n    <pending>\n        .. internal attributes:\n             .transform: docutils.transforms.misc.ClassAttribute\n             .details:\n               class: ['language-gl']\n               directive: 'class'\n    <paragraph>\n        Galician: 'an' \"active\"-quote, ^circumflex, and no-break spaces\n    <pending>\n        .. internal attributes:\n             .transform: docutils.transforms.misc.ClassAttribute\n             .details:\n               class: ['language-de']\n               directive: 'class'\n    <paragraph>\n        German: 'an' \"active\"-quote, ^circumflex, and no-break spaces\n    <paragraph>\n        Spanish: option clash with Galician!\n    <comment xml:space=\"preserve\">\n        .. class:: language-es\n        \n        Spanish: 'an' \"active\"-quote, ^circumflex, and no-break spaces\n    <target ids=\"babel\" names=\"babel\" refuri=\"http://www.ctan.org/packages/babel\">\n"
+ },
+ "format": "docodin-doctree/1",
+ "input": {
+  "overrides": {},
+  "source_path": "test/functional/input/latex_babel.rst",
+  "writer": "latex"
+ },
+ "registry": {
+  "autofootnote_refs": [],
+  "autofootnote_start": 1,
+  "autofootnotes": [],
+  "citation_refs": [],
+  "citations": [],
+  "current_line": null,
+  "current_source": null,
+  "decoration": null,
+  "footnote_refs": [],
+  "footnotes": [],
+  "id_counter": [],
+  "ids": [
+   [
+    "babel",
+    27
+   ]
+  ],
+  "indirect_targets": [],
+  "nameids": [
+   [
+    "babel",
+    "babel"
+   ]
+  ],
+  "nametypes": [
+   [
+    "babel",
+    true
+   ]
+  ],
+  "parse_messages": [],
+  "refids": [],
+  "refnames": [
+   [
+    "babel",
+    [
+     3
+    ]
+   ]
+  ],
+  "substitution_defs": [],
+  "substitution_names": [],
+  "symbol_footnote_refs": [],
+  "symbol_footnote_start": 0,
+  "symbol_footnotes": [],
+  "transform_messages": []
+ },
+ "reporter": {
+  "debug": false,
+  "halt_level": 4,
+  "max_level": -1,
+  "observers": [],
+  "report_level": 2,
+  "source": "test/functional/input/latex_babel.rst",
+  "source_lines": {
+   "input_offset": 0,
+   "line_offset": 37,
+   "runs": [
+    [
+     "test/functional/input/latex_babel.rst",
+     0,
+     36
+    ]
+   ]
+  },
+  "written": []
+ },
+ "settings": {
+  "_config_files": [],
+  "_destination": null,
+  "_disable_config": true,
+  "_source": "test/functional/input/latex_babel.rst",
+  "attribution": "dash",
+  "auto_id_prefix": "%",
+  "character_level_inline_markup": false,
+  "compound_enumerators": false,
+  "config": null,
+  "datestamp": null,
+  "debug": null,
+  "docinfo_xform": true,
+  "doctitle_xform": true,
+  "documentclass": "article",
+  "documentoptions": "a4paper",
+  "docutils_footnotes": true,
+  "dump_internals": null,
+  "dump_pseudo_xml": null,
+  "dump_settings": null,
+  "dump_transforms": null,
+  "embed_stylesheet": false,
+  "error_encoding": "utf-8",
+  "error_encoding_error_handler": "backslashreplace",
+  "exit_status_level": 5,
+  "expose_internals": null,
+  "file_insertion_enabled": true,
+  "font_encoding": "T1",
+  "footnote_backlinks": true,
+  "footnote_references": "superscript",
+  "generator": null,
+  "graphicx_option": "",
+  "halt_level": 4,
+  "hyperlink_color": "blue",
+  "hyperref_options": "",
+  "id_prefix": "",
+  "input_encoding": "utf-8",
+  "input_encoding_error_handler": "strict",
+  "language_code": "en",
+  "latex_preamble": "% PDF Standard Fonts\n\\usepackage{mathptmx} % Times\n\\usepackage[scaled=.90]{helvet}\n\\usepackage{courier}",
+  "legacy_class_functions": false,
+  "legacy_column_widths": null,
+  "line_length_limit": 10000,
+  "literal_block_env": "",
+  "output": null,
+  "output_encoding": "utf-8",
+  "output_encoding_error_handler": "strict",
+  "output_path": null,
+  "pep_base_url": "https://peps.python.org/",
+  "pep_file_url_template": "pep-%04d",
+  "pep_references": null,
+  "raw_enabled": true,
+  "reference_label": "",
+  "report_level": 2,
+  "rfc_base_url": "https://tools.ietf.org/html/",
+  "rfc_references": null,
+  "root_prefix": "",
+  "section_enumerator_separator": "-",
+  "section_prefix_for_enumerators": null,
+  "sectnum_xform": true,
+  "sectsubtitle_xform": false,
+  "smart_quotes": false,
+  "smartquotes_locales": null,
+  "source_link": null,
+  "source_url": null,
+  "strict_visitor": null,
+  "strip_classes": null,
+  "strip_comments": null,
+  "strip_elements_with_classes": null,
+  "stylesheet": "",
+  "stylesheet_dirs": [
+   "."
+  ],
+  "stylesheet_path": null,
+  "syntax_highlight": "long",
+  "tab_width": 8,
+  "table_style": [
+   "standard"
+  ],
+  "template": "default.tex",
+  "title": null,
+  "toc_backlinks": "entry",
+  "traceback": true,
+  "trim_footnote_reference_space": null,
+  "use_bibtex": "",
+  "use_latex_abstract": false,
+  "use_latex_citations": null,
+  "use_latex_docinfo": false,
+  "use_latex_toc": true,
+  "use_part_section": false,
+  "use_verbatim_when_possible": null,
+  "validate": null
+ },
+ "stage": "parsed",
+ "transformer": {
+  "queue": [
+   [
+    "210-001",
+    "docutils.transforms.misc.ClassAttribute",
+    8,
+    {}
+   ],
+   [
+    "210-002",
+    "docutils.transforms.misc.ClassAttribute",
+    11,
+    {}
+   ],
+   [
+    "210-003",
+    "docutils.transforms.misc.ClassAttribute",
+    14,
+    {}
+   ],
+   [
+    "210-004",
+    "docutils.transforms.misc.ClassAttribute",
+    17,
+    {}
+   ],
+   [
+    "210-005",
+    "docutils.transforms.misc.ClassAttribute",
+    20,
+    {}
+   ],
+   [
+    "220-009",
+    "docutils.transforms.references.Substitutions",
+    null,
+    {}
+   ],
+   [
+    "260-010",
+    "docutils.transforms.references.PropagateTargets",
+    null,
+    {}
+   ],
+   [
+    "320-011",
+    "docutils.transforms.frontmatter.DocTitle",
+    null,
+    {}
+   ],
+   [
+    "340-013",
+    "docutils.transforms.frontmatter.DocInfo",
+    null,
+    {}
+   ],
+   [
+    "350-012",
+    "docutils.transforms.frontmatter.SectionSubTitle",
+    null,
+    {}
+   ],
+   [
+    "420-025",
+    "docutils.transforms.universal.StripClassesAndElements",
+    null,
+    {}
+   ],
+   [
+    "440-014",
+    "docutils.transforms.references.AnonymousHyperlinks",
+    null,
+    {}
+   ],
+   [
+    "460-015",
+    "docutils.transforms.references.IndirectHyperlinks",
+    null,
+    {}
+   ],
+   [
+    "620-016",
+    "docutils.transforms.references.Footnotes",
+    null,
+    {}
+   ],
+   [
+    "640-017",
+    "docutils.transforms.references.ExternalTargets",
+    null,
+    {}
+   ],
+   [
+    "660-018",
+    "docutils.transforms.references.InternalTargets",
+    null,
+    {}
+   ],
+   [
+    "740-008",
+    "docutils.transforms.universal.StripComments",
+    null,
+    {}
+   ],
+   [
+    "770-027",
+    "docutils.transforms.references.CitationReferences",
+    null,
+    {}
+   ],
+   [
+    "820-006",
+    "docutils.transforms.universal.Decorations",
+    null,
+    {}
+   ],
+   [
+    "830-020",
+    "docutils.transforms.misc.Transitions",
+    null,
+    {}
+   ],
+   [
+    "835-021",
+    "docutils.transforms.universal.Validate",
+    null,
+    {}
+   ],
+   [
+    "840-007",
+    "docutils.transforms.universal.ExposeInternals",
+    null,
+    {}
+   ],
+   [
+    "850-019",
+    "docutils.transforms.references.DanglingReferences",
+    null,
+    {}
+   ],
+   [
+    "855-022",
+    "docutils.transforms.universal.SmartQuotes",
+    null,
+    {}
+   ],
+   [
+    "860-023",
+    "docutils.transforms.universal.Messages",
+    null,
+    {}
+   ],
+   [
+    "870-024",
+    "docutils.transforms.universal.FilterMessages",
+    null,
+    {}
+   ],
+   [
+    "920-026",
+    "docutils.transforms.writer_aux.Admonitions",
+    null,
+    {}
+   ]
+  ],
+  "serialno": 27
+ },
+ "tree": {
+  "attributes": {
+   "source": "test/functional/input/latex_babel.rst"
+  },
+  "children": [
+   {
+    "children": [
+     {
+      "tag": "#text",
+      "text": "The "
+     },
+     {
+      "attributes": {
+       "name": "babel",
+       "refname": "babel"
+      },
+      "children": [
+       {
+        "tag": "#text",
+        "text": "babel"
+       }
+      ],
+      "rawsource": "babel_",
+      "tag": "reference"
+     },
+     {
+      "tag": "#text",
+      "text": " package introduces the concept of \"shorthands\": additional\ncharacters that introduce a latex macro. Most common is the active double\nquote (\"). Problematic is the tilde character (~) which is regularely used\nfor no-break spaces but redefined by some language definition files:"
+     }
+    ],
+    "document": true,
+    "line": 1,
+    "rawsource": "The babel_ package introduces the concept of \"shorthands\": additional\ncharacters that introduce a latex macro. Most common is the active double\nquote (\"). Problematic is the tilde character (~) which is regularely used\nfor no-break spaces but redefined by some language definition files:",
+    "source": "test/functional/input/latex_babel.rst",
+    "tag": "paragraph"
+   },
+   {
+    "children": [
+     {
+      "tag": "#text",
+      "text": "English: 'an' \"active\"-quote, ^circumflex, and no-break spaces"
+     }
+    ],
+    "document": true,
+    "line": 6,
+    "rawsource": "English: 'an' \"active\"-quote, ^circumflex, and no-break spaces",
+    "source": "test/functional/input/latex_babel.rst",
+    "tag": "paragraph"
+   },
+   {
+    "document": true,
+    "line": 9,
+    "pending": {
+     "default_priority": 210,
+     "details": {
+      "class": [
+       "language-eu"
+      ],
+      "directive": "class"
+     },
+     "transform": "docutils.transforms.misc.ClassAttribute"
+    },
+    "rawsource": ".. class:: language-eu\n",
+    "source": "test/functional/input/latex_babel.rst",
+    "tag": "pending"
+   },
+   {
+    "children": [
+     {
+      "tag": "#text",
+      "text": "Basque: 'an' \"active\"-quote, ^circumflex, and no-break spaces"
+     }
+    ],
+    "document": true,
+    "line": 10,
+    "rawsource": "Basque: 'an' \"active\"-quote, ^circumflex, and no-break spaces",
+    "source": "test/functional/input/latex_babel.rst",
+    "tag": "paragraph"
+   },
+   {
+    "document": true,
+    "line": 13,
+    "pending": {
+     "default_priority": 210,
+     "details": {
+      "class": [
+       "language-eo"
+      ],
+      "directive": "class"
+     },
+     "transform": "docutils.transforms.misc.ClassAttribute"
+    },
+    "rawsource": ".. class:: language-eo\n",
+    "source": "test/functional/input/latex_babel.rst",
+    "tag": "pending"
+   },
+   {
+    "children": [
+     {
+      "tag": "#text",
+      "text": "Esperanto: 'an' \"active\"-quote, ^circumflex, and no-break spaces"
+     }
+    ],
+    "document": true,
+    "line": 14,
+    "rawsource": "Esperanto: 'an' \"active\"-quote, ^circumflex, and no-break spaces",
+    "source": "test/functional/input/latex_babel.rst",
+    "tag": "paragraph"
+   },
+   {
+    "document": true,
+    "line": 17,
+    "pending": {
+     "default_priority": 210,
+     "details": {
+      "class": [
+       "language-et"
+      ],
+      "directive": "class"
+     },
+     "transform": "docutils.transforms.misc.ClassAttribute"
+    },
+    "rawsource": ".. class:: language-et\n",
+    "source": "test/functional/input/latex_babel.rst",
+    "tag": "pending"
+   },
+   {
+    "children": [
+     {
+      "tag": "#text",
+      "text": "Estonian: 'an' \"active\"-quote, ^circumflex, and no-break spaces"
+     }
+    ],
+    "document": true,
+    "line": 18,
+    "rawsource": "Estonian: 'an' \"active\"-quote, ^circumflex, and no-break spaces",
+    "source": "test/functional/input/latex_babel.rst",
+    "tag": "paragraph"
+   },
+   {
+    "document": true,
+    "line": 21,
+    "pending": {
+     "default_priority": 210,
+     "details": {
+      "class": [
+       "language-gl"
+      ],
+      "directive": "class"
+     },
+     "transform": "docutils.transforms.misc.ClassAttribute"
+    },
+    "rawsource": ".. class:: language-gl\n",
+    "source": "test/functional/input/latex_babel.rst",
+    "tag": "pending"
+   },
+   {
+    "children": [
+     {
+      "tag": "#text",
+      "text": "Galician: 'an' \"active\"-quote, ^circumflex, and no-break spaces"
+     }
+    ],
+    "document": true,
+    "line": 22,
+    "rawsource": "Galician: 'an' \"active\"-quote, ^circumflex, and no-break spaces",
+    "source": "test/functional/input/latex_babel.rst",
+    "tag": "paragraph"
+   },
+   {
+    "document": true,
+    "line": 25,
+    "pending": {
+     "default_priority": 210,
+     "details": {
+      "class": [
+       "language-de"
+      ],
+      "directive": "class"
+     },
+     "transform": "docutils.transforms.misc.ClassAttribute"
+    },
+    "rawsource": ".. class:: language-de\n",
+    "source": "test/functional/input/latex_babel.rst",
+    "tag": "pending"
+   },
+   {
+    "children": [
+     {
+      "tag": "#text",
+      "text": "German: 'an' \"active\"-quote, ^circumflex, and no-break spaces"
+     }
+    ],
+    "document": true,
+    "line": 26,
+    "rawsource": "German: 'an' \"active\"-quote, ^circumflex, and no-break spaces",
+    "source": "test/functional/input/latex_babel.rst",
+    "tag": "paragraph"
+   },
+   {
+    "children": [
+     {
+      "tag": "#text",
+      "text": "Spanish: option clash with Galician!"
+     }
+    ],
+    "document": true,
+    "line": 28,
+    "rawsource": "Spanish: option clash with Galician!",
+    "source": "test/functional/input/latex_babel.rst",
+    "tag": "paragraph"
+   },
+   {
+    "attributes": {
+     "xml:space": "preserve"
+    },
+    "children": [
+     {
+      "tag": "#text",
+      "text": ".. class:: language-es\n\nSpanish: 'an' \"active\"-quote, ^circumflex, and no-break spaces"
+     }
+    ],
+    "document": true,
+    "line": 35,
+    "rawsource": ".. class:: language-es\n\nSpanish: 'an' \"active\"-quote, ^circumflex, and no-break spaces",
+    "source": "test/functional/input/latex_babel.rst",
+    "tag": "comment"
+   },
+   {
+    "attributes": {
+     "ids": [
+      "babel"
+     ],
+     "names": [
+      "babel"
+     ],
+     "refuri": "http://www.ctan.org/packages/babel"
+    },
+    "document": true,
+    "line": 36,
+    "rawsource": ".. _babel: http://www.ctan.org/packages/babel",
+    "source": "test/functional/input/latex_babel.rst",
+    "tag": "target"
+   }
+  ],
+  "document": true,
+  "tag": "document"
+ }
+}

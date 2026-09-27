@@ -1,0 +1,799 @@
+{
+ "detached": [],
+ "expected": {
+  "pformat": "<document source=\"fuzz-017.rst\">\n    <image alt=\"x\" uri=\"pic.png\">\n    <paragraph>\n        <problematic ids=\"problematic-1\" refid=\"system-message-1\">\n            :a:`b`:c:\n    <system_message backrefs=\"problematic-1\" ids=\"system-message-1\" level=\"2\" line=\"4\" source=\"fuzz-017.rst\" type=\"WARNING\">\n        <paragraph>\n            Multiple roles in interpreted text (both prefix and suffix present; only one allowed).\n    <paragraph>\n        <problematic ids=\"problematic-2\" refid=\"system-message-2\">\n            `\n        unclosed\n    <system_message backrefs=\"problematic-2\" ids=\"system-message-2\" level=\"2\" line=\"6\" source=\"fuzz-017.rst\" type=\"WARNING\">\n        <paragraph>\n            Inline interpreted text or phrase reference start-string without end-string.\n    <block_quote>\n        <enumerated_list enumtype=\"loweralpha\" prefix=\"\" suffix=\")\">\n            <list_item>\n                <paragraph>\n                    x\n            <list_item>\n                <paragraph>\n                    y\n    <topic classes=\"contents\" ids=\"contents\" names=\"contents\">\n        <title>\n            Contents\n        <pending>\n            .. internal attributes:\n                 .transform: docutils.transforms.parts.Contents\n                 .details:\n    <system_message level=\"2\" line=\"15\" source=\"fuzz-017.rst\" type=\"WARNING\">\n        <paragraph>\n            Cannot analyze code. Pygments package not found.\n        <literal_block xml:space=\"preserve\">\n            .. code:: python\n            \n               x = 1\n    <system_message level=\"2\" line=\"18\" source=\"fuzz-017.rst\" type=\"WARNING\">\n        <paragraph>\n            Explicit markup ends without a blank line; unexpected unindent.\n    <section ids=\"title\" names=\"title\">\n        <title>\n            Title\n        <footnote auto=\"1\" ids=\"footnote-1\">\n            <paragraph>\n                auto\n            <paragraph>\n                <problematic ids=\"problematic-3\" refid=\"system-message-3\">\n                    _`\n                target\n            <system_message backrefs=\"problematic-3\" ids=\"system-message-3\" level=\"2\" line=\"23\" source=\"fuzz-017.rst\" type=\"WARNING\">\n                <paragraph>\n                    Inline target start-string without end-string.\n"
+ },
+ "format": "docodin-doctree/1",
+ "input": {
+  "overrides": {
+   "halt_level": 5,
+   "report_level": 2
+  },
+  "source_path": "fuzz-017.rst",
+  "writer": "latex"
+ },
+ "registry": {
+  "autofootnote_refs": [],
+  "autofootnote_start": 1,
+  "autofootnotes": [
+   38
+  ],
+  "citation_refs": [],
+  "citations": [],
+  "current_line": null,
+  "current_source": null,
+  "decoration": null,
+  "footnote_refs": [],
+  "footnotes": [],
+  "id_counter": [
+   [
+    "system-message-",
+    3
+   ],
+   [
+    "problematic-",
+    3
+   ],
+   [
+    "footnote-",
+    1
+   ]
+  ],
+  "ids": [
+   [
+    "system-message-1",
+    5
+   ],
+   [
+    "problematic-1",
+    3
+   ],
+   [
+    "system-message-2",
+    12
+   ],
+   [
+    "problematic-2",
+    9
+   ],
+   [
+    "contents",
+    23
+   ],
+   [
+    "title",
+    35
+   ],
+   [
+    "footnote-1",
+    38
+   ],
+   [
+    "system-message-3",
+    45
+   ],
+   [
+    "problematic-3",
+    42
+   ]
+  ],
+  "indirect_targets": [],
+  "nameids": [
+   [
+    "contents",
+    "contents"
+   ],
+   [
+    "title",
+    "title"
+   ]
+  ],
+  "nametypes": [
+   [
+    "contents",
+    false
+   ],
+   [
+    "title",
+    false
+   ]
+  ],
+  "parse_messages": [
+   5,
+   12,
+   27,
+   32,
+   45
+  ],
+  "refids": [],
+  "refnames": [],
+  "substitution_defs": [],
+  "substitution_names": [],
+  "symbol_footnote_refs": [],
+  "symbol_footnote_start": 0,
+  "symbol_footnotes": [],
+  "transform_messages": []
+ },
+ "reporter": {
+  "debug": false,
+  "halt_level": 5,
+  "max_level": 2,
+  "observers": [],
+  "report_level": 2,
+  "source": "fuzz-017.rst",
+  "source_lines": {
+   "input_offset": 0,
+   "line_offset": 24,
+   "runs": [
+    [
+     "fuzz-017.rst",
+     0,
+     23
+    ]
+   ]
+  },
+  "written": [
+   {
+    "level": 2,
+    "node": 5,
+    "text": "fuzz-017.rst:4: (WARNING/2) Multiple roles in interpreted text (both prefix and suffix present; only one allowed).\n"
+   },
+   {
+    "level": 2,
+    "node": 12,
+    "text": "fuzz-017.rst:6: (WARNING/2) Inline interpreted text or phrase reference start-string without end-string.\n"
+   },
+   {
+    "level": 2,
+    "node": 27,
+    "text": "fuzz-017.rst:15: (WARNING/2) Cannot analyze code. Pygments package not found.\n"
+   },
+   {
+    "level": 2,
+    "node": 32,
+    "text": "fuzz-017.rst:18: (WARNING/2) Explicit markup ends without a blank line; unexpected unindent.\n"
+   },
+   {
+    "level": 2,
+    "node": 45,
+    "text": "fuzz-017.rst:23: (WARNING/2) Inline target start-string without end-string.\n"
+   }
+  ]
+ },
+ "settings": {
+  "_config_files": [],
+  "_destination": null,
+  "_disable_config": true,
+  "_source": "fuzz-017.rst",
+  "attribution": "dash",
+  "auto_id_prefix": "%",
+  "character_level_inline_markup": false,
+  "compound_enumerators": false,
+  "config": null,
+  "datestamp": null,
+  "debug": null,
+  "docinfo_xform": true,
+  "doctitle_xform": true,
+  "documentclass": "article",
+  "documentoptions": "a4paper",
+  "docutils_footnotes": true,
+  "dump_internals": null,
+  "dump_pseudo_xml": null,
+  "dump_settings": null,
+  "dump_transforms": null,
+  "embed_stylesheet": false,
+  "error_encoding": "utf-8",
+  "error_encoding_error_handler": "backslashreplace",
+  "exit_status_level": 5,
+  "expose_internals": null,
+  "file_insertion_enabled": true,
+  "font_encoding": "T1",
+  "footnote_backlinks": true,
+  "footnote_references": "superscript",
+  "generator": null,
+  "graphicx_option": "",
+  "halt_level": 5,
+  "hyperlink_color": "blue",
+  "hyperref_options": "",
+  "id_prefix": "",
+  "input_encoding": "utf-8",
+  "input_encoding_error_handler": "strict",
+  "language_code": "en",
+  "latex_preamble": "% PDF Standard Fonts\n\\usepackage{mathptmx} % Times\n\\usepackage[scaled=.90]{helvet}\n\\usepackage{courier}",
+  "legacy_class_functions": false,
+  "legacy_column_widths": null,
+  "line_length_limit": 10000,
+  "literal_block_env": "",
+  "output": null,
+  "output_encoding": "utf-8",
+  "output_encoding_error_handler": "strict",
+  "output_path": null,
+  "pep_base_url": "https://peps.python.org/",
+  "pep_file_url_template": "pep-%04d",
+  "pep_references": null,
+  "raw_enabled": true,
+  "reference_label": "",
+  "report_level": 2,
+  "rfc_base_url": "https://tools.ietf.org/html/",
+  "rfc_references": null,
+  "root_prefix": "",
+  "section_enumerator_separator": "-",
+  "section_prefix_for_enumerators": null,
+  "sectnum_xform": true,
+  "sectsubtitle_xform": false,
+  "smart_quotes": false,
+  "smartquotes_locales": null,
+  "source_link": null,
+  "source_url": null,
+  "strict_visitor": null,
+  "strip_classes": null,
+  "strip_comments": null,
+  "strip_elements_with_classes": null,
+  "stylesheet": "",
+  "stylesheet_dirs": [
+   "."
+  ],
+  "stylesheet_path": null,
+  "syntax_highlight": "long",
+  "tab_width": 8,
+  "table_style": [
+   "standard"
+  ],
+  "template": "default.tex",
+  "title": null,
+  "toc_backlinks": "entry",
+  "traceback": true,
+  "trim_footnote_reference_space": null,
+  "use_bibtex": "",
+  "use_latex_abstract": false,
+  "use_latex_citations": null,
+  "use_latex_docinfo": false,
+  "use_latex_toc": true,
+  "use_part_section": false,
+  "use_verbatim_when_possible": null,
+  "validate": null
+ },
+ "stage": "parsed",
+ "transformer": {
+  "queue": [
+   [
+    "220-005",
+    "docutils.transforms.references.Substitutions",
+    null,
+    {}
+   ],
+   [
+    "260-006",
+    "docutils.transforms.references.PropagateTargets",
+    null,
+    {}
+   ],
+   [
+    "320-007",
+    "docutils.transforms.frontmatter.DocTitle",
+    null,
+    {}
+   ],
+   [
+    "340-009",
+    "docutils.transforms.frontmatter.DocInfo",
+    null,
+    {}
+   ],
+   [
+    "350-008",
+    "docutils.transforms.frontmatter.SectionSubTitle",
+    null,
+    {}
+   ],
+   [
+    "420-021",
+    "docutils.transforms.universal.StripClassesAndElements",
+    null,
+    {}
+   ],
+   [
+    "440-010",
+    "docutils.transforms.references.AnonymousHyperlinks",
+    null,
+    {}
+   ],
+   [
+    "460-011",
+    "docutils.transforms.references.IndirectHyperlinks",
+    null,
+    {}
+   ],
+   [
+    "620-012",
+    "docutils.transforms.references.Footnotes",
+    null,
+    {}
+   ],
+   [
+    "640-013",
+    "docutils.transforms.references.ExternalTargets",
+    null,
+    {}
+   ],
+   [
+    "660-014",
+    "docutils.transforms.references.InternalTargets",
+    null,
+    {}
+   ],
+   [
+    "720-001",
+    "docutils.transforms.parts.Contents",
+    26,
+    {}
+   ],
+   [
+    "740-004",
+    "docutils.transforms.universal.StripComments",
+    null,
+    {}
+   ],
+   [
+    "770-023",
+    "docutils.transforms.references.CitationReferences",
+    null,
+    {}
+   ],
+   [
+    "820-002",
+    "docutils.transforms.universal.Decorations",
+    null,
+    {}
+   ],
+   [
+    "830-016",
+    "docutils.transforms.misc.Transitions",
+    null,
+    {}
+   ],
+   [
+    "835-017",
+    "docutils.transforms.universal.Validate",
+    null,
+    {}
+   ],
+   [
+    "840-003",
+    "docutils.transforms.universal.ExposeInternals",
+    null,
+    {}
+   ],
+   [
+    "850-015",
+    "docutils.transforms.references.DanglingReferences",
+    null,
+    {}
+   ],
+   [
+    "855-018",
+    "docutils.transforms.universal.SmartQuotes",
+    null,
+    {}
+   ],
+   [
+    "860-019",
+    "docutils.transforms.universal.Messages",
+    null,
+    {}
+   ],
+   [
+    "870-020",
+    "docutils.transforms.universal.FilterMessages",
+    null,
+    {}
+   ],
+   [
+    "920-022",
+    "docutils.transforms.writer_aux.Admonitions",
+    null,
+    {}
+   ]
+  ],
+  "serialno": 23
+ },
+ "tree": {
+  "attributes": {
+   "source": "fuzz-017.rst"
+  },
+  "children": [
+   {
+    "attributes": {
+     "alt": "x",
+     "uri": "pic.png"
+    },
+    "document": true,
+    "line": 1,
+    "rawsource": ".. image:: pic.png\n   :alt: x\n",
+    "source": "fuzz-017.rst",
+    "tag": "image"
+   },
+   {
+    "children": [
+     {
+      "attributes": {
+       "ids": [
+        "problematic-1"
+       ],
+       "refid": "system-message-1"
+      },
+      "children": [
+       {
+        "tag": "#text",
+        "text": ":a:`b`:c:"
+       }
+      ],
+      "rawsource": ":a:`b`:c:",
+      "tag": "problematic"
+     }
+    ],
+    "document": true,
+    "line": 4,
+    "rawsource": ":a:`b`:c:",
+    "source": "fuzz-017.rst",
+    "tag": "paragraph"
+   },
+   {
+    "attributes": {
+     "backrefs": [
+      "problematic-1"
+     ],
+     "ids": [
+      "system-message-1"
+     ],
+     "level": 2,
+     "line": 4,
+     "source": "fuzz-017.rst",
+     "type": "WARNING"
+    },
+    "children": [
+     {
+      "children": [
+       {
+        "tag": "#text",
+        "text": "Multiple roles in interpreted text (both prefix and suffix present; only one allowed)."
+       }
+      ],
+      "tag": "paragraph"
+     }
+    ],
+    "document": true,
+    "line": 5,
+    "source": "fuzz-017.rst",
+    "tag": "system_message"
+   },
+   {
+    "children": [
+     {
+      "attributes": {
+       "ids": [
+        "problematic-2"
+       ],
+       "refid": "system-message-2"
+      },
+      "children": [
+       {
+        "tag": "#text",
+        "text": "`"
+       }
+      ],
+      "rawsource": "`",
+      "tag": "problematic"
+     },
+     {
+      "tag": "#text",
+      "text": "unclosed"
+     }
+    ],
+    "document": true,
+    "line": 6,
+    "rawsource": "`unclosed",
+    "source": "fuzz-017.rst",
+    "tag": "paragraph"
+   },
+   {
+    "attributes": {
+     "backrefs": [
+      "problematic-2"
+     ],
+     "ids": [
+      "system-message-2"
+     ],
+     "level": 2,
+     "line": 6,
+     "source": "fuzz-017.rst",
+     "type": "WARNING"
+    },
+    "children": [
+     {
+      "children": [
+       {
+        "tag": "#text",
+        "text": "Inline interpreted text or phrase reference start-string without end-string."
+       }
+      ],
+      "tag": "paragraph"
+     }
+    ],
+    "document": true,
+    "line": 7,
+    "source": "fuzz-017.rst",
+    "tag": "system_message"
+   },
+   {
+    "children": [
+     {
+      "attributes": {
+       "enumtype": "loweralpha",
+       "prefix": "",
+       "suffix": ")"
+      },
+      "children": [
+       {
+        "children": [
+         {
+          "children": [
+           {
+            "tag": "#text",
+            "text": "x"
+           }
+          ],
+          "line": 10,
+          "rawsource": "x",
+          "source": "fuzz-017.rst",
+          "tag": "paragraph"
+         }
+        ],
+        "line": 10,
+        "rawsource": "x",
+        "source": "fuzz-017.rst",
+        "tag": "list_item"
+       },
+       {
+        "children": [
+         {
+          "children": [
+           {
+            "tag": "#text",
+            "text": "y"
+           }
+          ],
+          "line": 11,
+          "rawsource": "y",
+          "source": "fuzz-017.rst",
+          "tag": "paragraph"
+         }
+        ],
+        "line": 11,
+        "rawsource": "y\n",
+        "source": "fuzz-017.rst",
+        "tag": "list_item"
+       }
+      ],
+      "line": 10,
+      "source": "fuzz-017.rst",
+      "tag": "enumerated_list"
+     }
+    ],
+    "document": true,
+    "line": 10,
+    "rawsource": "a) x\nb) y\n",
+    "source": "fuzz-017.rst",
+    "tag": "block_quote"
+   },
+   {
+    "attributes": {
+     "classes": [
+      "contents"
+     ],
+     "ids": [
+      "contents"
+     ],
+     "names": [
+      "contents"
+     ]
+    },
+    "children": [
+     {
+      "children": [
+       {
+        "tag": "#text",
+        "text": "Contents"
+       }
+      ],
+      "tag": "title"
+     },
+     {
+      "pending": {
+       "default_priority": 720,
+       "details": {},
+       "transform": "docutils.transforms.parts.Contents"
+      },
+      "rawsource": ".. contents::\n",
+      "tag": "pending"
+     }
+    ],
+    "document": true,
+    "line": 13,
+    "source": "fuzz-017.rst",
+    "tag": "topic"
+   },
+   {
+    "attributes": {
+     "level": 2,
+     "line": 15,
+     "source": "fuzz-017.rst",
+     "type": "WARNING"
+    },
+    "children": [
+     {
+      "children": [
+       {
+        "tag": "#text",
+        "text": "Cannot analyze code. Pygments package not found."
+       }
+      ],
+      "tag": "paragraph"
+     },
+     {
+      "attributes": {
+       "xml:space": "preserve"
+      },
+      "children": [
+       {
+        "tag": "#text",
+        "text": ".. code:: python\n\n   x = 1"
+       }
+      ],
+      "rawsource": ".. code:: python\n\n   x = 1",
+      "tag": "literal_block"
+     }
+    ],
+    "document": true,
+    "line": 17,
+    "source": "fuzz-017.rst",
+    "tag": "system_message"
+   },
+   {
+    "attributes": {
+     "level": 2,
+     "line": 18,
+     "source": "fuzz-017.rst",
+     "type": "WARNING"
+    },
+    "children": [
+     {
+      "children": [
+       {
+        "tag": "#text",
+        "text": "Explicit markup ends without a blank line; unexpected unindent."
+       }
+      ],
+      "tag": "paragraph"
+     }
+    ],
+    "document": true,
+    "line": 17,
+    "source": "fuzz-017.rst",
+    "tag": "system_message"
+   },
+   {
+    "attributes": {
+     "ids": [
+      "title"
+     ],
+     "names": [
+      "title"
+     ]
+    },
+    "children": [
+     {
+      "children": [
+       {
+        "tag": "#text",
+        "text": "Title"
+       }
+      ],
+      "document": true,
+      "line": 19,
+      "rawsource": "Title",
+      "source": "fuzz-017.rst",
+      "tag": "title"
+     },
+     {
+      "attributes": {
+       "auto": 1,
+       "ids": [
+        "footnote-1"
+       ]
+      },
+      "children": [
+       {
+        "children": [
+         {
+          "tag": "#text",
+          "text": "auto"
+         }
+        ],
+        "line": 21,
+        "rawsource": "auto",
+        "source": "fuzz-017.rst",
+        "tag": "paragraph"
+       },
+       {
+        "children": [
+         {
+          "attributes": {
+           "ids": [
+            "problematic-3"
+           ],
+           "refid": "system-message-3"
+          },
+          "children": [
+           {
+            "tag": "#text",
+            "text": "_`"
+           }
+          ],
+          "rawsource": "_`",
+          "tag": "problematic"
+         },
+         {
+          "tag": "#text",
+          "text": "target"
+         }
+        ],
+        "line": 23,
+        "rawsource": "_`target",
+        "source": "fuzz-017.rst",
+        "tag": "paragraph"
+       },
+       {
+        "attributes": {
+         "backrefs": [
+          "problematic-3"
+         ],
+         "ids": [
+          "system-message-3"
+         ],
+         "level": 2,
+         "line": 23,
+         "source": "fuzz-017.rst",
+         "type": "WARNING"
+        },
+        "children": [
+         {
+          "children": [
+           {
+            "tag": "#text",
+            "text": "Inline target start-string without end-string."
+           }
+          ],
+          "tag": "paragraph"
+         }
+        ],
+        "tag": "system_message"
+       }
+      ],
+      "document": true,
+      "line": 21,
+      "rawsource": "auto\n\n_`target",
+      "source": "fuzz-017.rst",
+      "tag": "footnote"
+     }
+    ],
+    "document": true,
+    "line": 19,
+    "source": "fuzz-017.rst",
+    "tag": "section"
+   }
+  ],
+  "document": true,
+  "tag": "document"
+ }
+}

@@ -1,0 +1,645 @@
+{
+ "detached": [
+  {
+   "node": {
+    "attributes": {
+     "name": "y",
+     "refname": "z"
+    },
+    "children": [
+     {
+      "tag": "#text",
+      "text": "y"
+     }
+    ],
+    "rawsource": "`y <z_>`_",
+    "tag": "reference"
+   },
+   "parent": 11
+  }
+ ],
+ "expected": {
+  "output": "<document source=\"fuzz-015.rst\">\n    <block_quote>\n        <footnote ids=\"footnote-1\" names=\"1\">\n            <label>\n                1\n            <paragraph>\n                footnote\n    <system_message level=\"2\" line=\"2\" source=\"fuzz-015.rst\" type=\"WARNING\">\n        <paragraph>\n            Block quote ends without a blank line; unexpected unindent.\n    <target ids=\"target\" names=\"target\" refuri=\"http://x\">\n    <paragraph>\n        <problematic ids=\"problematic-1\" refid=\"system-message-1\">\n            `x`__\n         \n        <problematic ids=\"problematic-2\" refid=\"system-message-3\">\n            `y <z_>`_\n        <target ids=\"y\" names=\"y\" refname=\"z\">\n         \n        <reference name=\"http://u\" refuri=\"http://u\">\n            http://u\n        <target ids=\"http-u\" names=\"http://u\" refuri=\"http://u\">\n    <bullet_list bullet=\"*\">\n        <list_item>\n            <paragraph>\n                a\n    <system_message level=\"2\" line=\"7\" source=\"fuzz-015.rst\" type=\"WARNING\">\n        <paragraph>\n            Bullet list ends without a blank line; unexpected unindent.\n    <bullet_list bullet=\"+\">\n        <list_item>\n            <paragraph>\n                b\n    <section classes=\"system-messages\">\n        <title>\n            Docutils System Messages\n        <system_message backrefs=\"problematic-1\" ids=\"system-message-1\" level=\"3\" source=\"fuzz-015.rst\" type=\"ERROR\">\n            <paragraph>\n                Anonymous hyperlink mismatch: 1 references but 0 targets.\n                See \"backrefs\" attribute for IDs.\n        <system_message ids=\"system-message-2\" level=\"3\" line=\"4\" source=\"fuzz-015.rst\" type=\"ERROR\">\n            <paragraph>\n                Indirect hyperlink target \"y\" (id=\"y\") refers to target \"z\", which does not exist.\n        <system_message backrefs=\"problematic-2\" ids=\"system-message-3\" level=\"3\" line=\"4\" source=\"fuzz-015.rst\" type=\"ERROR\">\n            <paragraph>\n                Unknown target name: \"z\".\n",
+  "parts": {
+   "encoding": "utf-8",
+   "errors": "strict",
+   "version": "0.22.4",
+   "whole": "<document source=\"fuzz-015.rst\">\n    <block_quote>\n        <footnote ids=\"footnote-1\" names=\"1\">\n            <label>\n                1\n            <paragraph>\n                footnote\n    <system_message level=\"2\" line=\"2\" source=\"fuzz-015.rst\" type=\"WARNING\">\n        <paragraph>\n            Block quote ends without a blank line; unexpected unindent.\n    <target ids=\"target\" names=\"target\" refuri=\"http://x\">\n    <paragraph>\n        <problematic ids=\"problematic-1\" refid=\"system-message-1\">\n            `x`__\n         \n        <problematic ids=\"problematic-2\" refid=\"system-message-3\">\n            `y <z_>`_\n        <target ids=\"y\" names=\"y\" refname=\"z\">\n         \n        <reference name=\"http://u\" refuri=\"http://u\">\n            http://u\n        <target ids=\"http-u\" names=\"http://u\" refuri=\"http://u\">\n    <bullet_list bullet=\"*\">\n        <list_item>\n            <paragraph>\n                a\n    <system_message level=\"2\" line=\"7\" source=\"fuzz-015.rst\" type=\"WARNING\">\n        <paragraph>\n            Bullet list ends without a blank line; unexpected unindent.\n    <bullet_list bullet=\"+\">\n        <list_item>\n            <paragraph>\n                b\n    <section classes=\"system-messages\">\n        <title>\n            Docutils System Messages\n        <system_message backrefs=\"problematic-1\" ids=\"system-message-1\" level=\"3\" source=\"fuzz-015.rst\" type=\"ERROR\">\n            <paragraph>\n                Anonymous hyperlink mismatch: 1 references but 0 targets.\n                See \"backrefs\" attribute for IDs.\n        <system_message ids=\"system-message-2\" level=\"3\" line=\"4\" source=\"fuzz-015.rst\" type=\"ERROR\">\n            <paragraph>\n                Indirect hyperlink target \"y\" (id=\"y\") refers to target \"z\", which does not exist.\n        <system_message backrefs=\"problematic-2\" ids=\"system-message-3\" level=\"3\" line=\"4\" source=\"fuzz-015.rst\" type=\"ERROR\">\n            <paragraph>\n                Unknown target name: \"z\".\n"
+  },
+  "pformat": "<document source=\"fuzz-015.rst\">\n    <block_quote>\n        <footnote ids=\"footnote-1\" names=\"1\">\n            <label>\n                1\n            <paragraph>\n                footnote\n    <system_message level=\"2\" line=\"2\" source=\"fuzz-015.rst\" type=\"WARNING\">\n        <paragraph>\n            Block quote ends without a blank line; unexpected unindent.\n    <target ids=\"target\" names=\"target\" refuri=\"http://x\">\n    <paragraph>\n        <problematic ids=\"problematic-1\" refid=\"system-message-1\">\n            `x`__\n         \n        <problematic ids=\"problematic-2\" refid=\"system-message-3\">\n            `y <z_>`_\n        <target ids=\"y\" names=\"y\" refname=\"z\">\n         \n        <reference name=\"http://u\" refuri=\"http://u\">\n            http://u\n        <target ids=\"http-u\" names=\"http://u\" refuri=\"http://u\">\n    <bullet_list bullet=\"*\">\n        <list_item>\n            <paragraph>\n                a\n    <system_message level=\"2\" line=\"7\" source=\"fuzz-015.rst\" type=\"WARNING\">\n        <paragraph>\n            Bullet list ends without a blank line; unexpected unindent.\n    <bullet_list bullet=\"+\">\n        <list_item>\n            <paragraph>\n                b\n    <section classes=\"system-messages\">\n        <title>\n            Docutils System Messages\n        <system_message backrefs=\"problematic-1\" ids=\"system-message-1\" level=\"3\" source=\"fuzz-015.rst\" type=\"ERROR\">\n            <paragraph>\n                Anonymous hyperlink mismatch: 1 references but 0 targets.\n                See \"backrefs\" attribute for IDs.\n        <system_message ids=\"system-message-2\" level=\"3\" line=\"4\" source=\"fuzz-015.rst\" type=\"ERROR\">\n            <paragraph>\n                Indirect hyperlink target \"y\" (id=\"y\") refers to target \"z\", which does not exist.\n        <system_message backrefs=\"problematic-2\" ids=\"system-message-3\" level=\"3\" line=\"4\" source=\"fuzz-015.rst\" type=\"ERROR\">\n            <paragraph>\n                Unknown target name: \"z\".\n"
+ },
+ "format": "docodin-doctree/1",
+ "input": {
+  "overrides": {
+   "halt_level": 5,
+   "report_level": 2
+  },
+  "source_path": "fuzz-015.rst",
+  "writer": "pseudoxml"
+ },
+ "registry": {
+  "autofootnote_refs": [],
+  "autofootnote_start": 1,
+  "autofootnotes": [],
+  "citation_refs": [],
+  "citations": [],
+  "current_line": null,
+  "current_source": null,
+  "decoration": null,
+  "footnote_refs": [],
+  "footnotes": [
+   2
+  ],
+  "id_counter": [
+   [
+    "footnote-",
+    1
+   ],
+   [
+    "system-message-",
+    3
+   ],
+   [
+    "problematic-",
+    2
+   ]
+  ],
+  "ids": [
+   [
+    "footnote-1",
+    2
+   ],
+   [
+    "target",
+    10
+   ],
+   [
+    "y",
+    17
+   ],
+   [
+    "http-u",
+    21
+   ],
+   [
+    "system-message-1",
+    36
+   ],
+   [
+    "problematic-1",
+    12
+   ],
+   [
+    "system-message-2",
+    39
+   ],
+   [
+    "system-message-3",
+    42
+   ],
+   [
+    "problematic-2",
+    15
+   ]
+  ],
+  "indirect_targets": [
+   17
+  ],
+  "nameids": [
+   [
+    "1",
+    "footnote-1"
+   ],
+   [
+    "target",
+    "target"
+   ],
+   [
+    "y",
+    "y"
+   ],
+   [
+    "http://u",
+    "http-u"
+   ]
+  ],
+  "nametypes": [
+   [
+    "1",
+    true
+   ],
+   [
+    "target",
+    true
+   ],
+   [
+    "y",
+    false
+   ],
+   [
+    "http://u",
+    false
+   ]
+  ],
+  "parse_messages": [
+   7,
+   26
+  ],
+  "refids": [],
+  "refnames": [
+   [
+    "z",
+    [
+     17,
+     45
+    ]
+   ]
+  ],
+  "substitution_defs": [],
+  "substitution_names": [],
+  "symbol_footnote_refs": [],
+  "symbol_footnote_start": 0,
+  "symbol_footnotes": [],
+  "transform_messages": []
+ },
+ "reporter": {
+  "debug": false,
+  "halt_level": 5,
+  "max_level": 3,
+  "observers": [],
+  "report_level": 2,
+  "source": "fuzz-015.rst",
+  "source_lines": {
+   "input_offset": 0,
+   "line_offset": 9,
+   "runs": [
+    [
+     "fuzz-015.rst",
+     0,
+     8
+    ]
+   ]
+  },
+  "written": [
+   {
+    "level": 2,
+    "node": 7,
+    "text": "fuzz-015.rst:2: (WARNING/2) Block quote ends without a blank line; unexpected unindent.\n"
+   },
+   {
+    "level": 2,
+    "node": 26,
+    "text": "fuzz-015.rst:7: (WARNING/2) Bullet list ends without a blank line; unexpected unindent.\n"
+   },
+   {
+    "level": 3,
+    "node": 36,
+    "text": "fuzz-015.rst:: (ERROR/3) Anonymous hyperlink mismatch: 1 references but 0 targets.\nSee \"backrefs\" attribute for IDs.\n"
+   },
+   {
+    "level": 3,
+    "node": 39,
+    "text": "fuzz-015.rst:4: (ERROR/3) Indirect hyperlink target \"y\" (id=\"y\") refers to target \"z\", which does not exist.\n"
+   },
+   {
+    "level": 3,
+    "node": 42,
+    "text": "fuzz-015.rst:4: (ERROR/3) Unknown target name: \"z\".\n"
+   }
+  ]
+ },
+ "settings": {
+  "_config_files": [],
+  "_destination": null,
+  "_disable_config": true,
+  "_source": "fuzz-015.rst",
+  "auto_id_prefix": "%",
+  "character_level_inline_markup": false,
+  "config": null,
+  "datestamp": null,
+  "debug": null,
+  "detailed": null,
+  "docinfo_xform": true,
+  "doctitle_xform": true,
+  "dump_internals": null,
+  "dump_pseudo_xml": null,
+  "dump_settings": null,
+  "dump_transforms": null,
+  "error_encoding": "utf-8",
+  "error_encoding_error_handler": "backslashreplace",
+  "exit_status_level": 5,
+  "expose_internals": null,
+  "file_insertion_enabled": true,
+  "footnote_backlinks": true,
+  "generator": null,
+  "halt_level": 5,
+  "id_prefix": "",
+  "input_encoding": "utf-8",
+  "input_encoding_error_handler": "strict",
+  "language_code": "en",
+  "line_length_limit": 10000,
+  "output": null,
+  "output_encoding": "utf-8",
+  "output_encoding_error_handler": "strict",
+  "output_path": null,
+  "pep_base_url": "https://peps.python.org/",
+  "pep_file_url_template": "pep-%04d",
+  "pep_references": null,
+  "raw_enabled": true,
+  "report_level": 2,
+  "rfc_base_url": "https://tools.ietf.org/html/",
+  "rfc_references": null,
+  "root_prefix": "",
+  "sectnum_xform": true,
+  "sectsubtitle_xform": false,
+  "smart_quotes": false,
+  "smartquotes_locales": null,
+  "source_link": null,
+  "source_url": null,
+  "strict_visitor": null,
+  "strip_classes": null,
+  "strip_comments": null,
+  "strip_elements_with_classes": null,
+  "syntax_highlight": "long",
+  "tab_width": 8,
+  "title": null,
+  "toc_backlinks": "entry",
+  "traceback": true,
+  "trim_footnote_reference_space": null,
+  "validate": null
+ },
+ "stage": "output",
+ "transformer": {
+  "queue": [],
+  "serialno": 20
+ },
+ "tree": {
+  "attributes": {
+   "source": "fuzz-015.rst"
+  },
+  "children": [
+   {
+    "children": [
+     {
+      "attributes": {
+       "ids": [
+        "footnote-1"
+       ],
+       "names": [
+        "1"
+       ]
+      },
+      "children": [
+       {
+        "children": [
+         {
+          "tag": "#text",
+          "text": "1"
+         }
+        ],
+        "tag": "label"
+       },
+       {
+        "children": [
+         {
+          "tag": "#text",
+          "text": "footnote"
+         }
+        ],
+        "line": 1,
+        "rawsource": "footnote",
+        "source": "fuzz-015.rst",
+        "tag": "paragraph"
+       }
+      ],
+      "line": 1,
+      "rawsource": "footnote",
+      "source": "fuzz-015.rst",
+      "tag": "footnote"
+     }
+    ],
+    "document": true,
+    "line": 1,
+    "rawsource": ".. [1] footnote",
+    "source": "fuzz-015.rst",
+    "tag": "block_quote"
+   },
+   {
+    "attributes": {
+     "level": 2,
+     "line": 2,
+     "source": "fuzz-015.rst",
+     "type": "WARNING"
+    },
+    "children": [
+     {
+      "children": [
+       {
+        "tag": "#text",
+        "text": "Block quote ends without a blank line; unexpected unindent."
+       }
+      ],
+      "tag": "paragraph"
+     }
+    ],
+    "document": true,
+    "tag": "system_message"
+   },
+   {
+    "attributes": {
+     "ids": [
+      "target"
+     ],
+     "names": [
+      "target"
+     ],
+     "refuri": "http://x"
+    },
+    "document": true,
+    "line": 2,
+    "rawsource": ".. _target: http://x",
+    "source": "fuzz-015.rst",
+    "tag": "target"
+   },
+   {
+    "children": [
+     {
+      "attributes": {
+       "ids": [
+        "problematic-1"
+       ],
+       "refid": "system-message-1"
+      },
+      "children": [
+       {
+        "tag": "#text",
+        "text": "`x`__"
+       }
+      ],
+      "document": true,
+      "rawsource": "`x`__",
+      "tag": "problematic"
+     },
+     {
+      "tag": "#text",
+      "text": " "
+     },
+     {
+      "attributes": {
+       "ids": [
+        "problematic-2"
+       ],
+       "refid": "system-message-3"
+      },
+      "children": [
+       {
+        "tag": "#text",
+        "text": "`y <z_>`_"
+       }
+      ],
+      "document": true,
+      "rawsource": "`y <z_>`_",
+      "tag": "problematic"
+     },
+     {
+      "attributes": {
+       "ids": [
+        "y"
+       ],
+       "names": [
+        "y"
+       ],
+       "refname": "z"
+      },
+      "internal": {
+       "indirect_reference_name": "z"
+      },
+      "rawsource": " <z_>",
+      "resolved": true,
+      "tag": "target"
+     },
+     {
+      "tag": "#text",
+      "text": " "
+     },
+     {
+      "attributes": {
+       "name": "http://u",
+       "refuri": "http://u"
+      },
+      "children": [
+       {
+        "tag": "#text",
+        "text": "http://u"
+       }
+      ],
+      "rawsource": "`<http://u>`_",
+      "tag": "reference"
+     },
+     {
+      "attributes": {
+       "ids": [
+        "http-u"
+       ],
+       "names": [
+        "http://u"
+       ],
+       "refuri": "http://u"
+      },
+      "rawsource": "<http://u>",
+      "referenced": true,
+      "tag": "target"
+     }
+    ],
+    "document": true,
+    "line": 4,
+    "rawsource": "`x`__ `y <z_>`_ `<http://u>`_",
+    "source": "fuzz-015.rst",
+    "tag": "paragraph"
+   },
+   {
+    "attributes": {
+     "bullet": "*"
+    },
+    "children": [
+     {
+      "children": [
+       {
+        "children": [
+         {
+          "tag": "#text",
+          "text": "a"
+         }
+        ],
+        "line": 6,
+        "rawsource": "a",
+        "source": "fuzz-015.rst",
+        "tag": "paragraph"
+       }
+      ],
+      "document": true,
+      "line": 6,
+      "rawsource": "a",
+      "source": "fuzz-015.rst",
+      "tag": "list_item"
+     }
+    ],
+    "document": true,
+    "line": 6,
+    "source": "fuzz-015.rst",
+    "tag": "bullet_list"
+   },
+   {
+    "attributes": {
+     "level": 2,
+     "line": 7,
+     "source": "fuzz-015.rst",
+     "type": "WARNING"
+    },
+    "children": [
+     {
+      "children": [
+       {
+        "tag": "#text",
+        "text": "Bullet list ends without a blank line; unexpected unindent."
+       }
+      ],
+      "tag": "paragraph"
+     }
+    ],
+    "document": true,
+    "line": 6,
+    "source": "fuzz-015.rst",
+    "tag": "system_message"
+   },
+   {
+    "attributes": {
+     "bullet": "+"
+    },
+    "children": [
+     {
+      "children": [
+       {
+        "children": [
+         {
+          "tag": "#text",
+          "text": "b"
+         }
+        ],
+        "line": 7,
+        "rawsource": "b",
+        "source": "fuzz-015.rst",
+        "tag": "paragraph"
+       }
+      ],
+      "document": true,
+      "line": 7,
+      "rawsource": "b\n",
+      "source": "fuzz-015.rst",
+      "tag": "list_item"
+     }
+    ],
+    "document": true,
+    "line": 7,
+    "source": "fuzz-015.rst",
+    "tag": "bullet_list"
+   },
+   {
+    "attributes": {
+     "classes": [
+      "system-messages"
+     ]
+    },
+    "children": [
+     {
+      "children": [
+       {
+        "tag": "#text",
+        "text": "Docutils System Messages"
+       }
+      ],
+      "tag": "title"
+     },
+     {
+      "attributes": {
+       "backrefs": [
+        "problematic-1"
+       ],
+       "ids": [
+        "system-message-1"
+       ],
+       "level": 3,
+       "source": "fuzz-015.rst",
+       "type": "ERROR"
+      },
+      "children": [
+       {
+        "children": [
+         {
+          "tag": "#text",
+          "text": "Anonymous hyperlink mismatch: 1 references but 0 targets.\nSee \"backrefs\" attribute for IDs."
+         }
+        ],
+        "tag": "paragraph"
+       }
+      ],
+      "tag": "system_message"
+     },
+     {
+      "attributes": {
+       "ids": [
+        "system-message-2"
+       ],
+       "level": 3,
+       "line": 4,
+       "source": "fuzz-015.rst",
+       "type": "ERROR"
+      },
+      "children": [
+       {
+        "children": [
+         {
+          "tag": "#text",
+          "text": "Indirect hyperlink target \"y\" (id=\"y\") refers to target \"z\", which does not exist."
+         }
+        ],
+        "tag": "paragraph"
+       }
+      ],
+      "tag": "system_message"
+     },
+     {
+      "attributes": {
+       "backrefs": [
+        "problematic-2"
+       ],
+       "ids": [
+        "system-message-3"
+       ],
+       "level": 3,
+       "line": 4,
+       "source": "fuzz-015.rst",
+       "type": "ERROR"
+      },
+      "children": [
+       {
+        "children": [
+         {
+          "tag": "#text",
+          "text": "Unknown target name: \"z\"."
+         }
+        ],
+        "tag": "paragraph"
+       }
+      ],
+      "tag": "system_message"
+     }
+    ],
+    "document": true,
+    "tag": "section"
+   }
+  ],
+  "document": true,
+  "tag": "document"
+ }
+}

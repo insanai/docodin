@@ -1,0 +1,442 @@
+{
+ "detached": [],
+ "expected": {
+  "pformat": "<document source=\"fuzz-016.rst\">\n    <block_quote>\n        <paragraph>\n            :a:\n            <problematic ids=\"problematic-1\" refid=\"system-message-1\">\n                `\n            b`c:\n        <system_message backrefs=\"problematic-1\" ids=\"system-message-1\" level=\"2\" line=\"1\" source=\"fuzz-016.rst\" type=\"WARNING\">\n            <paragraph>\n                Inline interpreted text or phrase reference start-string without end-string.\n    <bullet_list bullet=\"-\">\n        <list_item>\n            <paragraph>\n                item\n        <list_item>\n            <paragraph>\n                it'm\n    <paragraph>\n        [  nes ted pa*ra\n"
+ },
+ "format": "docodin-doctree/1",
+ "input": {
+  "overrides": {
+   "halt_level": 5,
+   "report_level": 2
+  },
+  "source_path": "fuzz-016.rst",
+  "writer": "html5"
+ },
+ "registry": {
+  "autofootnote_refs": [],
+  "autofootnote_start": 1,
+  "autofootnotes": [],
+  "citation_refs": [],
+  "citations": [],
+  "current_line": null,
+  "current_source": null,
+  "decoration": null,
+  "footnote_refs": [],
+  "footnotes": [],
+  "id_counter": [
+   [
+    "system-message-",
+    1
+   ],
+   [
+    "problematic-",
+    1
+   ]
+  ],
+  "ids": [
+   [
+    "system-message-1",
+    7
+   ],
+   [
+    "problematic-1",
+    4
+   ]
+  ],
+  "indirect_targets": [],
+  "nameids": [],
+  "nametypes": [],
+  "parse_messages": [
+   7
+  ],
+  "refids": [],
+  "refnames": [],
+  "substitution_defs": [],
+  "substitution_names": [],
+  "symbol_footnote_refs": [],
+  "symbol_footnote_start": 0,
+  "symbol_footnotes": [],
+  "transform_messages": []
+ },
+ "reporter": {
+  "debug": false,
+  "halt_level": 5,
+  "max_level": 2,
+  "observers": [],
+  "report_level": 2,
+  "source": "fuzz-016.rst",
+  "source_lines": {
+   "input_offset": 0,
+   "line_offset": 6,
+   "runs": [
+    [
+     "fuzz-016.rst",
+     0,
+     6
+    ]
+   ]
+  },
+  "written": [
+   {
+    "level": 2,
+    "node": 7,
+    "text": "fuzz-016.rst:1: (WARNING/2) Inline interpreted text or phrase reference start-string without end-string.\n"
+   }
+  ]
+ },
+ "settings": {
+  "_config_files": [],
+  "_destination": null,
+  "_disable_config": true,
+  "_source": "fuzz-016.rst",
+  "attribution": "dash",
+  "auto_id_prefix": "%",
+  "character_level_inline_markup": false,
+  "cloak_email_addresses": null,
+  "compact_field_lists": true,
+  "compact_lists": true,
+  "config": null,
+  "datestamp": null,
+  "debug": null,
+  "docinfo_xform": true,
+  "doctitle_xform": true,
+  "dump_internals": null,
+  "dump_pseudo_xml": null,
+  "dump_settings": null,
+  "dump_transforms": null,
+  "embed_images": null,
+  "embed_stylesheet": true,
+  "error_encoding": "utf-8",
+  "error_encoding_error_handler": "backslashreplace",
+  "exit_status_level": 5,
+  "expose_internals": null,
+  "file_insertion_enabled": true,
+  "footnote_backlinks": true,
+  "footnote_references": "brackets",
+  "generator": null,
+  "halt_level": 5,
+  "id_prefix": "",
+  "image_loading": null,
+  "initial_header_level": "2",
+  "input_encoding": "utf-8",
+  "input_encoding_error_handler": "strict",
+  "language_code": "en",
+  "line_length_limit": 10000,
+  "math_output": "MathML",
+  "output": null,
+  "output_encoding": "utf-8",
+  "output_encoding_error_handler": "xmlcharrefreplace",
+  "output_path": null,
+  "pep_base_url": "https://peps.python.org/",
+  "pep_file_url_template": "pep-%04d",
+  "pep_references": null,
+  "raw_enabled": true,
+  "report_level": 2,
+  "rfc_base_url": "https://tools.ietf.org/html/",
+  "rfc_references": null,
+  "root_prefix": "",
+  "section_self_link": false,
+  "sectnum_xform": true,
+  "sectsubtitle_xform": false,
+  "smart_quotes": false,
+  "smartquotes_locales": null,
+  "source_link": null,
+  "source_url": null,
+  "strict_visitor": null,
+  "strip_classes": null,
+  "strip_comments": null,
+  "strip_elements_with_classes": null,
+  "stylesheet": null,
+  "stylesheet_dirs": [
+   ".",
+   "<docutils>/writers/html5_polyglot"
+  ],
+  "stylesheet_path": [
+   "minimal.css",
+   "plain.css"
+  ],
+  "syntax_highlight": "long",
+  "tab_width": 8,
+  "table_style": "",
+  "title": null,
+  "toc_backlinks": "entry",
+  "traceback": true,
+  "trim_footnote_reference_space": null,
+  "validate": null,
+  "xml_declaration": false
+ },
+ "stage": "parsed",
+ "transformer": {
+  "queue": [
+   [
+    "220-004",
+    "docutils.transforms.references.Substitutions",
+    null,
+    {}
+   ],
+   [
+    "260-005",
+    "docutils.transforms.references.PropagateTargets",
+    null,
+    {}
+   ],
+   [
+    "320-006",
+    "docutils.transforms.frontmatter.DocTitle",
+    null,
+    {}
+   ],
+   [
+    "340-008",
+    "docutils.transforms.frontmatter.DocInfo",
+    null,
+    {}
+   ],
+   [
+    "350-007",
+    "docutils.transforms.frontmatter.SectionSubTitle",
+    null,
+    {}
+   ],
+   [
+    "420-020",
+    "docutils.transforms.universal.StripClassesAndElements",
+    null,
+    {}
+   ],
+   [
+    "440-009",
+    "docutils.transforms.references.AnonymousHyperlinks",
+    null,
+    {}
+   ],
+   [
+    "460-010",
+    "docutils.transforms.references.IndirectHyperlinks",
+    null,
+    {}
+   ],
+   [
+    "620-011",
+    "docutils.transforms.references.Footnotes",
+    null,
+    {}
+   ],
+   [
+    "640-012",
+    "docutils.transforms.references.ExternalTargets",
+    null,
+    {}
+   ],
+   [
+    "660-013",
+    "docutils.transforms.references.InternalTargets",
+    null,
+    {}
+   ],
+   [
+    "740-003",
+    "docutils.transforms.universal.StripComments",
+    null,
+    {}
+   ],
+   [
+    "820-001",
+    "docutils.transforms.universal.Decorations",
+    null,
+    {}
+   ],
+   [
+    "830-015",
+    "docutils.transforms.misc.Transitions",
+    null,
+    {}
+   ],
+   [
+    "835-016",
+    "docutils.transforms.universal.Validate",
+    null,
+    {}
+   ],
+   [
+    "840-002",
+    "docutils.transforms.universal.ExposeInternals",
+    null,
+    {}
+   ],
+   [
+    "850-014",
+    "docutils.transforms.references.DanglingReferences",
+    null,
+    {}
+   ],
+   [
+    "855-017",
+    "docutils.transforms.universal.SmartQuotes",
+    null,
+    {}
+   ],
+   [
+    "860-018",
+    "docutils.transforms.universal.Messages",
+    null,
+    {}
+   ],
+   [
+    "870-019",
+    "docutils.transforms.universal.FilterMessages",
+    null,
+    {}
+   ],
+   [
+    "920-021",
+    "docutils.transforms.writer_aux.Admonitions",
+    null,
+    {}
+   ]
+  ],
+  "serialno": 21
+ },
+ "tree": {
+  "attributes": {
+   "source": "fuzz-016.rst"
+  },
+  "children": [
+   {
+    "children": [
+     {
+      "children": [
+       {
+        "tag": "#text",
+        "text": ":a:"
+       },
+       {
+        "attributes": {
+         "ids": [
+          "problematic-1"
+         ],
+         "refid": "system-message-1"
+        },
+        "children": [
+         {
+          "tag": "#text",
+          "text": "`"
+         }
+        ],
+        "rawsource": "`",
+        "tag": "problematic"
+       },
+       {
+        "tag": "#text",
+        "text": "b`c:"
+       }
+      ],
+      "line": 1,
+      "rawsource": ":a:`b`c:",
+      "source": "fuzz-016.rst",
+      "tag": "paragraph"
+     },
+     {
+      "attributes": {
+       "backrefs": [
+        "problematic-1"
+       ],
+       "ids": [
+        "system-message-1"
+       ],
+       "level": 2,
+       "line": 1,
+       "source": "fuzz-016.rst",
+       "type": "WARNING"
+      },
+      "children": [
+       {
+        "children": [
+         {
+          "tag": "#text",
+          "text": "Inline interpreted text or phrase reference start-string without end-string."
+         }
+        ],
+        "tag": "paragraph"
+       }
+      ],
+      "tag": "system_message"
+     }
+    ],
+    "document": true,
+    "line": 1,
+    "rawsource": ":a:`b`c:\n",
+    "source": "fuzz-016.rst",
+    "tag": "block_quote"
+   },
+   {
+    "attributes": {
+     "bullet": "-"
+    },
+    "children": [
+     {
+      "children": [
+       {
+        "children": [
+         {
+          "tag": "#text",
+          "text": "item"
+         }
+        ],
+        "line": 3,
+        "rawsource": "item",
+        "source": "fuzz-016.rst",
+        "tag": "paragraph"
+       }
+      ],
+      "document": true,
+      "line": 3,
+      "rawsource": "item",
+      "source": "fuzz-016.rst",
+      "tag": "list_item"
+     },
+     {
+      "children": [
+       {
+        "children": [
+         {
+          "tag": "#text",
+          "text": "it'm"
+         }
+        ],
+        "line": 4,
+        "rawsource": "it'm",
+        "source": "fuzz-016.rst",
+        "tag": "paragraph"
+       }
+      ],
+      "document": true,
+      "line": 4,
+      "rawsource": "it'm\n",
+      "source": "fuzz-016.rst",
+      "tag": "list_item"
+     }
+    ],
+    "document": true,
+    "line": 3,
+    "source": "fuzz-016.rst",
+    "tag": "bullet_list"
+   },
+   {
+    "children": [
+     {
+      "tag": "#text",
+      "text": "[  nes ted pa*ra"
+     }
+    ],
+    "document": true,
+    "line": 6,
+    "rawsource": "[  nes ted pa*ra",
+    "source": "fuzz-016.rst",
+    "tag": "paragraph"
+   }
+  ],
+  "document": true,
+  "tag": "document"
+ }
+}

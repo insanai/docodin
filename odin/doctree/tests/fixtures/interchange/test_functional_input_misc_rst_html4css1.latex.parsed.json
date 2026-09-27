@@ -1,0 +1,1553 @@
+{
+ "detached": [],
+ "expected": {
+  "pformat": "<document source=\"test/functional/input/misc_rst_html4css1.rst\">\n    <section ids=\"additional-tests-with-html4css1\" names=\"additional\\ tests\\ with\\ html4css1\">\n        <title>\n            Additional tests with html4css1\n        <section ids=\"section-heading-levels\" names=\"section\\ heading\\ levels\">\n            <title>\n                Section heading levels\n        <section ids=\"level-1\" names=\"level\\ 1\">\n            <title>\n                Level 1\n            <paragraph>\n                Nested sections\n            <section ids=\"level-2\" names=\"level\\ 2\">\n                <title>\n                    Level 2\n                <paragraph>\n                    reach at some level\n                <section ids=\"level-3\" names=\"level\\ 3\">\n                    <title>\n                        Level 3\n                    <paragraph>\n                        (depending on the document class and output format)\n                    <section ids=\"level-4\" names=\"level\\ 4\">\n                        <title>\n                            level 4\n                        <paragraph>\n                            a level\n                        <section ids=\"level-5\" names=\"level\\ 5\">\n                            <title>\n                                level 5\n                            <paragraph>\n                                that is not supported by the output format.\n                            <section ids=\"level-6\" names=\"level\\ 6\">\n                                <title>\n                                    level 6\n                                <paragraph>\n                                    Unsupported in LaTeX and HTML5\n                                    (HTML5 reserves the 1st level for the document title).\n                                <section ids=\"level-7\" names=\"level\\ 7\">\n                                    <title>\n                                        level 7\n                                    <paragraph>\n                                        Unsupported in HTML4.\n                                    <section ids=\"level-8\" names=\"level\\ 8\">\n                                        <title>\n                                            level 8\n                                        <paragraph>\n                                            Unsupported in ODT.\n                                        <target ids=\"references\" names=\"references\">\n        <section ids=\"section-titles-with-inline-markup\" names=\"section\\ titles\\ with\\ inline\\ markup\">\n            <title>\n                Section titles with inline markup\n            <section ids=\"emphasized-h2o-x-2-and-references\" names=\"emphasized,\\ h2o,\\ x^2,\\ and\\ references\">\n                <title>\n                    <emphasis>\n                        emphasized\n                    , H\n                    <subscript>\n                        2\n                    O, \n                    <math>\n                        x^2\n                    , and \n                    <reference name=\"references\" refname=\"references\">\n                        references\n            <section ids=\"substitutions-fail\" names=\"substitutions\\ fail\">\n                <title>\n                    Substitutions \n                    <substitution_reference refname=\"fail\">\n                        fail\n                <substitution_definition names=\"fail\">\n                    work\n                <paragraph>\n                    Note, that the \"reference name\" for this section is derived from the\n                    content \n                    <emphasis>\n                        before\n                     substitution. You can link to it with the \n                    <reference name=\"phrase reference\" refname=\"phrase reference\">\n                        phrase\n                        reference\n                     \"\n                    <reference name=\"substitutions fail\" refname=\"substitutions fail\">\n                        substitutions fail\n                    \".\n                    This behaviour may be exploited to get intelligible IDs after \n                    <reference name=\"identifier normalization\" refname=\"identifier normalization\">\n                        identifier\n                        normalization\n                     of the section's reference name.\n                <target ids=\"identifier-normalization\" names=\"identifier\\ normalization\" refuri=\"https://docutils.sourceforge.io/docs/ref/rst/directives.html#identifier-normalization\">\n                <target ids=\"phrase-reference\" names=\"phrase\\ reference\" refuri=\"https://docutils.sourceforge.io/docs/ref/rst/restructuredtext.html#hyperlink-references\">\n        <section ids=\"moving-images-video\" names=\"moving\\ images\\ (video)\">\n            <title>\n                Moving images (video)\n            <paragraph>\n                If the URL given to \n                <title_reference>\n                    images and figures\n                 hints to a video format\n                supported by HTML 5 (MIME types 'video/mp4', 'video/webm', or\n                'video/ogg'), the HTML5 writer will place it in a \n                <reference name=\"video element\" refname=\"video element\">\n                    video element\n                .\n            <image align=\"left\" alt=\"left-aligned test video\" uri=\"../../../docs/user/rst/images/pens.mp4\">\n            <paragraph>\n                A class option value \"controls\" tells the browser to display controls\n                for video playback.\n            <paragraph>\n                It is a good idea to include width and height attributes. If\n                height and width are not set, the page might flicker while the video\n                loads. According to the \n                <reference anonymous=\"1\" name=\"HTML5 spec\">\n                    HTML5 spec\n                , hight and width must be\n                specified as pixel values.\n            <figure align=\"center\">\n                <image alt=\"test video in a figure\" classes=\"controls\" uri=\"../../../docs/user/rst/images/pens.mp4\" width=\"200px\">\n                <caption>\n                    Simple test video in a centered figure\n            <substitution_definition names=\"testvideo\">\n                <image alt=\"rotating pens video\" uri=\"../../../docs/user/rst/images/pens.mp4\" width=\"60px\">\n            <paragraph>\n                A video like this \n                <substitution_reference refname=\"testvideo\">\n                    testvideo\n                 can be included inline via substitution.\n            <target anonymous=\"1\" ids=\"target-1\">\n            <target ids=\"video-element\" names=\"video\\ element\" refuri=\"https://developer.mozilla.org/en-US/docs/Web/HTML/Element/video\">\n"
+ },
+ "format": "docodin-doctree/1",
+ "input": {
+  "overrides": {},
+  "source_path": "test/functional/input/misc_rst_html4css1.rst",
+  "writer": "latex"
+ },
+ "registry": {
+  "autofootnote_refs": [],
+  "autofootnote_start": 1,
+  "autofootnotes": [],
+  "citation_refs": [],
+  "citations": [],
+  "current_line": null,
+  "current_source": null,
+  "decoration": null,
+  "footnote_refs": [],
+  "footnotes": [],
+  "id_counter": [
+   [
+    "target-",
+    1
+   ]
+  ],
+  "ids": [
+   [
+    "additional-tests-with-html4css1",
+    1
+   ],
+   [
+    "section-heading-levels",
+    4
+   ],
+   [
+    "level-1",
+    7
+   ],
+   [
+    "level-2",
+    12
+   ],
+   [
+    "level-3",
+    17
+   ],
+   [
+    "level-4",
+    22
+   ],
+   [
+    "level-5",
+    27
+   ],
+   [
+    "level-6",
+    32
+   ],
+   [
+    "level-7",
+    37
+   ],
+   [
+    "level-8",
+    42
+   ],
+   [
+    "references",
+    47
+   ],
+   [
+    "section-titles-with-inline-markup",
+    48
+   ],
+   [
+    "emphasized-h2o-x-2-and-references",
+    51
+   ],
+   [
+    "substitutions-fail",
+    64
+   ],
+   [
+    "identifier-normalization",
+    85
+   ],
+   [
+    "phrase-reference",
+    86
+   ],
+   [
+    "moving-images-video",
+    87
+   ],
+   [
+    "target-1",
+    117
+   ],
+   [
+    "video-element",
+    118
+   ]
+  ],
+  "indirect_targets": [],
+  "nameids": [
+   [
+    "additional tests with html4css1",
+    "additional-tests-with-html4css1"
+   ],
+   [
+    "section heading levels",
+    "section-heading-levels"
+   ],
+   [
+    "level 1",
+    "level-1"
+   ],
+   [
+    "level 2",
+    "level-2"
+   ],
+   [
+    "level 3",
+    "level-3"
+   ],
+   [
+    "level 4",
+    "level-4"
+   ],
+   [
+    "level 5",
+    "level-5"
+   ],
+   [
+    "level 6",
+    "level-6"
+   ],
+   [
+    "level 7",
+    "level-7"
+   ],
+   [
+    "level 8",
+    "level-8"
+   ],
+   [
+    "references",
+    "references"
+   ],
+   [
+    "section titles with inline markup",
+    "section-titles-with-inline-markup"
+   ],
+   [
+    "emphasized, h2o, x^2, and references",
+    "emphasized-h2o-x-2-and-references"
+   ],
+   [
+    "substitutions fail",
+    "substitutions-fail"
+   ],
+   [
+    "identifier normalization",
+    "identifier-normalization"
+   ],
+   [
+    "phrase reference",
+    "phrase-reference"
+   ],
+   [
+    "moving images (video)",
+    "moving-images-video"
+   ],
+   [
+    "video element",
+    "video-element"
+   ]
+  ],
+  "nametypes": [
+   [
+    "additional tests with html4css1",
+    false
+   ],
+   [
+    "section heading levels",
+    false
+   ],
+   [
+    "level 1",
+    false
+   ],
+   [
+    "level 2",
+    false
+   ],
+   [
+    "level 3",
+    false
+   ],
+   [
+    "level 4",
+    false
+   ],
+   [
+    "level 5",
+    false
+   ],
+   [
+    "level 6",
+    false
+   ],
+   [
+    "level 7",
+    false
+   ],
+   [
+    "level 8",
+    false
+   ],
+   [
+    "references",
+    true
+   ],
+   [
+    "section titles with inline markup",
+    false
+   ],
+   [
+    "emphasized, h2o, x^2, and references",
+    false
+   ],
+   [
+    "substitutions fail",
+    false
+   ],
+   [
+    "identifier normalization",
+    true
+   ],
+   [
+    "phrase reference",
+    true
+   ],
+   [
+    "moving images (video)",
+    false
+   ],
+   [
+    "video element",
+    true
+   ]
+  ],
+  "parse_messages": [],
+  "refids": [],
+  "refnames": [
+   [
+    "references",
+    [
+     62
+    ]
+   ],
+   [
+    "phrase reference",
+    [
+     76
+    ]
+   ],
+   [
+    "substitutions fail",
+    [
+     79
+    ]
+   ],
+   [
+    "identifier normalization",
+    [
+     82
+    ]
+   ],
+   [
+    "video element",
+    [
+     95
+    ]
+   ]
+  ],
+  "substitution_defs": [
+   [
+    "fail",
+    69
+   ],
+   [
+    "testvideo",
+    110
+   ]
+  ],
+  "substitution_names": [
+   [
+    "fail",
+    "fail"
+   ],
+   [
+    "testvideo",
+    "testvideo"
+   ]
+  ],
+  "symbol_footnote_refs": [],
+  "symbol_footnote_start": 0,
+  "symbol_footnotes": [],
+  "transform_messages": []
+ },
+ "reporter": {
+  "debug": false,
+  "halt_level": 4,
+  "max_level": -1,
+  "observers": [],
+  "report_level": 2,
+  "source": "test/functional/input/misc_rst_html4css1.rst",
+  "source_lines": {
+   "input_offset": 0,
+   "line_offset": 109,
+   "runs": [
+    [
+     "test/functional/input/misc_rst_html4css1.rst",
+     0,
+     6
+    ],
+    [
+     "internal padding before test/functional/input/data/section_titles.rst",
+     -1,
+     1
+    ],
+    [
+     "test/functional/input/data/section_titles.rst",
+     0,
+     60
+    ],
+    [
+     "internal padding after test/functional/input/data/section_titles.rst",
+     60,
+     1
+    ],
+    [
+     "test/functional/input/misc_rst_html4css1.rst",
+     6,
+     1
+    ],
+    [
+     "internal padding before test/functional/input/data/video.rst",
+     -1,
+     1
+    ],
+    [
+     "test/functional/input/data/video.rst",
+     0,
+     38
+    ],
+    [
+     "internal padding after test/functional/input/data/video.rst",
+     38,
+     1
+    ]
+   ]
+  },
+  "written": []
+ },
+ "settings": {
+  "_config_files": [],
+  "_destination": null,
+  "_disable_config": true,
+  "_source": "test/functional/input/misc_rst_html4css1.rst",
+  "attribution": "dash",
+  "auto_id_prefix": "%",
+  "character_level_inline_markup": false,
+  "compound_enumerators": false,
+  "config": null,
+  "datestamp": null,
+  "debug": null,
+  "docinfo_xform": true,
+  "doctitle_xform": true,
+  "documentclass": "article",
+  "documentoptions": "a4paper",
+  "docutils_footnotes": true,
+  "dump_internals": null,
+  "dump_pseudo_xml": null,
+  "dump_settings": null,
+  "dump_transforms": null,
+  "embed_stylesheet": false,
+  "error_encoding": "utf-8",
+  "error_encoding_error_handler": "backslashreplace",
+  "exit_status_level": 5,
+  "expose_internals": null,
+  "file_insertion_enabled": true,
+  "font_encoding": "T1",
+  "footnote_backlinks": true,
+  "footnote_references": "superscript",
+  "generator": null,
+  "graphicx_option": "",
+  "halt_level": 4,
+  "hyperlink_color": "blue",
+  "hyperref_options": "",
+  "id_prefix": "",
+  "input_encoding": "utf-8",
+  "input_encoding_error_handler": "strict",
+  "language_code": "en",
+  "latex_preamble": "% PDF Standard Fonts\n\\usepackage{mathptmx} % Times\n\\usepackage[scaled=.90]{helvet}\n\\usepackage{courier}",
+  "legacy_class_functions": false,
+  "legacy_column_widths": null,
+  "line_length_limit": 10000,
+  "literal_block_env": "",
+  "output": null,
+  "output_encoding": "utf-8",
+  "output_encoding_error_handler": "strict",
+  "output_path": null,
+  "pep_base_url": "https://peps.python.org/",
+  "pep_file_url_template": "pep-%04d",
+  "pep_references": null,
+  "raw_enabled": true,
+  "reference_label": "",
+  "report_level": 2,
+  "rfc_base_url": "https://tools.ietf.org/html/",
+  "rfc_references": null,
+  "root_prefix": "",
+  "section_enumerator_separator": "-",
+  "section_prefix_for_enumerators": null,
+  "sectnum_xform": true,
+  "sectsubtitle_xform": false,
+  "smart_quotes": false,
+  "smartquotes_locales": null,
+  "source_link": null,
+  "source_url": null,
+  "strict_visitor": null,
+  "strip_classes": null,
+  "strip_comments": null,
+  "strip_elements_with_classes": null,
+  "stylesheet": "",
+  "stylesheet_dirs": [
+   "."
+  ],
+  "stylesheet_path": null,
+  "syntax_highlight": "long",
+  "tab_width": 8,
+  "table_style": [
+   "standard"
+  ],
+  "template": "default.tex",
+  "title": null,
+  "toc_backlinks": "entry",
+  "traceback": true,
+  "trim_footnote_reference_space": null,
+  "use_bibtex": "",
+  "use_latex_abstract": false,
+  "use_latex_citations": null,
+  "use_latex_docinfo": false,
+  "use_latex_toc": true,
+  "use_part_section": false,
+  "use_verbatim_when_possible": null,
+  "validate": null
+ },
+ "stage": "parsed",
+ "transformer": {
+  "queue": [
+   [
+    "220-004",
+    "docutils.transforms.references.Substitutions",
+    null,
+    {}
+   ],
+   [
+    "260-005",
+    "docutils.transforms.references.PropagateTargets",
+    null,
+    {}
+   ],
+   [
+    "320-006",
+    "docutils.transforms.frontmatter.DocTitle",
+    null,
+    {}
+   ],
+   [
+    "340-008",
+    "docutils.transforms.frontmatter.DocInfo",
+    null,
+    {}
+   ],
+   [
+    "350-007",
+    "docutils.transforms.frontmatter.SectionSubTitle",
+    null,
+    {}
+   ],
+   [
+    "420-020",
+    "docutils.transforms.universal.StripClassesAndElements",
+    null,
+    {}
+   ],
+   [
+    "440-009",
+    "docutils.transforms.references.AnonymousHyperlinks",
+    null,
+    {}
+   ],
+   [
+    "460-010",
+    "docutils.transforms.references.IndirectHyperlinks",
+    null,
+    {}
+   ],
+   [
+    "620-011",
+    "docutils.transforms.references.Footnotes",
+    null,
+    {}
+   ],
+   [
+    "640-012",
+    "docutils.transforms.references.ExternalTargets",
+    null,
+    {}
+   ],
+   [
+    "660-013",
+    "docutils.transforms.references.InternalTargets",
+    null,
+    {}
+   ],
+   [
+    "740-003",
+    "docutils.transforms.universal.StripComments",
+    null,
+    {}
+   ],
+   [
+    "770-022",
+    "docutils.transforms.references.CitationReferences",
+    null,
+    {}
+   ],
+   [
+    "820-001",
+    "docutils.transforms.universal.Decorations",
+    null,
+    {}
+   ],
+   [
+    "830-015",
+    "docutils.transforms.misc.Transitions",
+    null,
+    {}
+   ],
+   [
+    "835-016",
+    "docutils.transforms.universal.Validate",
+    null,
+    {}
+   ],
+   [
+    "840-002",
+    "docutils.transforms.universal.ExposeInternals",
+    null,
+    {}
+   ],
+   [
+    "850-014",
+    "docutils.transforms.references.DanglingReferences",
+    null,
+    {}
+   ],
+   [
+    "855-017",
+    "docutils.transforms.universal.SmartQuotes",
+    null,
+    {}
+   ],
+   [
+    "860-018",
+    "docutils.transforms.universal.Messages",
+    null,
+    {}
+   ],
+   [
+    "870-019",
+    "docutils.transforms.universal.FilterMessages",
+    null,
+    {}
+   ],
+   [
+    "920-021",
+    "docutils.transforms.writer_aux.Admonitions",
+    null,
+    {}
+   ]
+  ],
+  "serialno": 22
+ },
+ "tree": {
+  "attributes": {
+   "source": "test/functional/input/misc_rst_html4css1.rst"
+  },
+  "children": [
+   {
+    "attributes": {
+     "ids": [
+      "additional-tests-with-html4css1"
+     ],
+     "names": [
+      "additional tests with html4css1"
+     ]
+    },
+    "children": [
+     {
+      "children": [
+       {
+        "tag": "#text",
+        "text": "Additional tests with html4css1"
+       }
+      ],
+      "document": true,
+      "line": 3,
+      "rawsource": "Additional tests with html4css1",
+      "source": "test/functional/input/misc_rst_html4css1.rst",
+      "tag": "title"
+     },
+     {
+      "attributes": {
+       "ids": [
+        "section-heading-levels"
+       ],
+       "names": [
+        "section heading levels"
+       ]
+      },
+      "children": [
+       {
+        "children": [
+         {
+          "tag": "#text",
+          "text": "Section heading levels"
+         }
+        ],
+        "document": true,
+        "line": 2,
+        "rawsource": "Section heading levels",
+        "source": "test/functional/input/data/section_titles.rst",
+        "tag": "title"
+       }
+      ],
+      "document": true,
+      "line": 2,
+      "source": "test/functional/input/data/section_titles.rst",
+      "tag": "section"
+     },
+     {
+      "attributes": {
+       "ids": [
+        "level-1"
+       ],
+       "names": [
+        "level 1"
+       ]
+      },
+      "children": [
+       {
+        "children": [
+         {
+          "tag": "#text",
+          "text": "Level 1"
+         }
+        ],
+        "document": true,
+        "line": 5,
+        "rawsource": "Level 1",
+        "source": "test/functional/input/data/section_titles.rst",
+        "tag": "title"
+       },
+       {
+        "children": [
+         {
+          "tag": "#text",
+          "text": "Nested sections"
+         }
+        ],
+        "document": true,
+        "line": 6,
+        "rawsource": "Nested sections",
+        "source": "test/functional/input/data/section_titles.rst",
+        "tag": "paragraph"
+       },
+       {
+        "attributes": {
+         "ids": [
+          "level-2"
+         ],
+         "names": [
+          "level 2"
+         ]
+        },
+        "children": [
+         {
+          "children": [
+           {
+            "tag": "#text",
+            "text": "Level 2"
+           }
+          ],
+          "document": true,
+          "line": 9,
+          "rawsource": "Level 2",
+          "source": "test/functional/input/data/section_titles.rst",
+          "tag": "title"
+         },
+         {
+          "children": [
+           {
+            "tag": "#text",
+            "text": "reach at some level"
+           }
+          ],
+          "document": true,
+          "line": 10,
+          "rawsource": "reach at some level",
+          "source": "test/functional/input/data/section_titles.rst",
+          "tag": "paragraph"
+         },
+         {
+          "attributes": {
+           "ids": [
+            "level-3"
+           ],
+           "names": [
+            "level 3"
+           ]
+          },
+          "children": [
+           {
+            "children": [
+             {
+              "tag": "#text",
+              "text": "Level 3"
+             }
+            ],
+            "document": true,
+            "line": 13,
+            "rawsource": "Level 3",
+            "source": "test/functional/input/data/section_titles.rst",
+            "tag": "title"
+           },
+           {
+            "children": [
+             {
+              "tag": "#text",
+              "text": "(depending on the document class and output format)"
+             }
+            ],
+            "document": true,
+            "line": 14,
+            "rawsource": "(depending on the document class and output format)",
+            "source": "test/functional/input/data/section_titles.rst",
+            "tag": "paragraph"
+           },
+           {
+            "attributes": {
+             "ids": [
+              "level-4"
+             ],
+             "names": [
+              "level 4"
+             ]
+            },
+            "children": [
+             {
+              "children": [
+               {
+                "tag": "#text",
+                "text": "level 4"
+               }
+              ],
+              "document": true,
+              "line": 17,
+              "rawsource": "level 4",
+              "source": "test/functional/input/data/section_titles.rst",
+              "tag": "title"
+             },
+             {
+              "children": [
+               {
+                "tag": "#text",
+                "text": "a level"
+               }
+              ],
+              "document": true,
+              "line": 18,
+              "rawsource": "a level",
+              "source": "test/functional/input/data/section_titles.rst",
+              "tag": "paragraph"
+             },
+             {
+              "attributes": {
+               "ids": [
+                "level-5"
+               ],
+               "names": [
+                "level 5"
+               ]
+              },
+              "children": [
+               {
+                "children": [
+                 {
+                  "tag": "#text",
+                  "text": "level 5"
+                 }
+                ],
+                "document": true,
+                "line": 21,
+                "rawsource": "level 5",
+                "source": "test/functional/input/data/section_titles.rst",
+                "tag": "title"
+               },
+               {
+                "children": [
+                 {
+                  "tag": "#text",
+                  "text": "that is not supported by the output format."
+                 }
+                ],
+                "document": true,
+                "line": 22,
+                "rawsource": "that is not supported by the output format.",
+                "source": "test/functional/input/data/section_titles.rst",
+                "tag": "paragraph"
+               },
+               {
+                "attributes": {
+                 "ids": [
+                  "level-6"
+                 ],
+                 "names": [
+                  "level 6"
+                 ]
+                },
+                "children": [
+                 {
+                  "children": [
+                   {
+                    "tag": "#text",
+                    "text": "level 6"
+                   }
+                  ],
+                  "document": true,
+                  "line": 25,
+                  "rawsource": "level 6",
+                  "source": "test/functional/input/data/section_titles.rst",
+                  "tag": "title"
+                 },
+                 {
+                  "children": [
+                   {
+                    "tag": "#text",
+                    "text": "Unsupported in LaTeX and HTML5\n(HTML5 reserves the 1st level for the document title)."
+                   }
+                  ],
+                  "document": true,
+                  "line": 26,
+                  "rawsource": "Unsupported in LaTeX and HTML5\n(HTML5 reserves the 1st level for the document title).",
+                  "source": "test/functional/input/data/section_titles.rst",
+                  "tag": "paragraph"
+                 },
+                 {
+                  "attributes": {
+                   "ids": [
+                    "level-7"
+                   ],
+                   "names": [
+                    "level 7"
+                   ]
+                  },
+                  "children": [
+                   {
+                    "children": [
+                     {
+                      "tag": "#text",
+                      "text": "level 7"
+                     }
+                    ],
+                    "document": true,
+                    "line": 30,
+                    "rawsource": "level 7",
+                    "source": "test/functional/input/data/section_titles.rst",
+                    "tag": "title"
+                   },
+                   {
+                    "children": [
+                     {
+                      "tag": "#text",
+                      "text": "Unsupported in HTML4."
+                     }
+                    ],
+                    "document": true,
+                    "line": 31,
+                    "rawsource": "Unsupported in HTML4.",
+                    "source": "test/functional/input/data/section_titles.rst",
+                    "tag": "paragraph"
+                   },
+                   {
+                    "attributes": {
+                     "ids": [
+                      "level-8"
+                     ],
+                     "names": [
+                      "level 8"
+                     ]
+                    },
+                    "children": [
+                     {
+                      "children": [
+                       {
+                        "tag": "#text",
+                        "text": "level 8"
+                       }
+                      ],
+                      "document": true,
+                      "line": 34,
+                      "rawsource": "level 8",
+                      "source": "test/functional/input/data/section_titles.rst",
+                      "tag": "title"
+                     },
+                     {
+                      "children": [
+                       {
+                        "tag": "#text",
+                        "text": "Unsupported in ODT."
+                       }
+                      ],
+                      "document": true,
+                      "line": 35,
+                      "rawsource": "Unsupported in ODT.",
+                      "source": "test/functional/input/data/section_titles.rst",
+                      "tag": "paragraph"
+                     },
+                     {
+                      "attributes": {
+                       "ids": [
+                        "references"
+                       ],
+                       "names": [
+                        "references"
+                       ]
+                      },
+                      "document": true,
+                      "line": 44,
+                      "rawsource": ".. _references:",
+                      "source": "test/functional/input/data/section_titles.rst",
+                      "tag": "target"
+                     }
+                    ],
+                    "document": true,
+                    "line": 34,
+                    "source": "test/functional/input/data/section_titles.rst",
+                    "tag": "section"
+                   }
+                  ],
+                  "document": true,
+                  "line": 30,
+                  "source": "test/functional/input/data/section_titles.rst",
+                  "tag": "section"
+                 }
+                ],
+                "document": true,
+                "line": 25,
+                "source": "test/functional/input/data/section_titles.rst",
+                "tag": "section"
+               }
+              ],
+              "document": true,
+              "line": 21,
+              "source": "test/functional/input/data/section_titles.rst",
+              "tag": "section"
+             }
+            ],
+            "document": true,
+            "line": 17,
+            "source": "test/functional/input/data/section_titles.rst",
+            "tag": "section"
+           }
+          ],
+          "document": true,
+          "line": 13,
+          "source": "test/functional/input/data/section_titles.rst",
+          "tag": "section"
+         }
+        ],
+        "document": true,
+        "line": 9,
+        "source": "test/functional/input/data/section_titles.rst",
+        "tag": "section"
+       }
+      ],
+      "document": true,
+      "line": 5,
+      "source": "test/functional/input/data/section_titles.rst",
+      "tag": "section"
+     },
+     {
+      "attributes": {
+       "ids": [
+        "section-titles-with-inline-markup"
+       ],
+       "names": [
+        "section titles with inline markup"
+       ]
+      },
+      "children": [
+       {
+        "children": [
+         {
+          "tag": "#text",
+          "text": "Section titles with inline markup"
+         }
+        ],
+        "document": true,
+        "line": 40,
+        "rawsource": "Section titles with inline markup",
+        "source": "test/functional/input/data/section_titles.rst",
+        "tag": "title"
+       },
+       {
+        "attributes": {
+         "ids": [
+          "emphasized-h2o-x-2-and-references"
+         ],
+         "names": [
+          "emphasized, h2o, x^2, and references"
+         ]
+        },
+        "children": [
+         {
+          "children": [
+           {
+            "children": [
+             {
+              "tag": "#text",
+              "text": "emphasized"
+             }
+            ],
+            "rawsource": "*emphasized*",
+            "tag": "emphasis"
+           },
+           {
+            "tag": "#text",
+            "text": ", H\u0000 "
+           },
+           {
+            "children": [
+             {
+              "tag": "#text",
+              "text": "2"
+             }
+            ],
+            "rawsource": ":sub:`2`",
+            "tag": "subscript"
+           },
+           {
+            "tag": "#text",
+            "text": "\u0000 O, "
+           },
+           {
+            "children": [
+             {
+              "tag": "#text",
+              "text": "x^2"
+             }
+            ],
+            "rawsource": ":math:`x^2`",
+            "tag": "math"
+           },
+           {
+            "tag": "#text",
+            "text": ", and "
+           },
+           {
+            "attributes": {
+             "name": "references",
+             "refname": "references"
+            },
+            "children": [
+             {
+              "tag": "#text",
+              "text": "references"
+             }
+            ],
+            "rawsource": "references_",
+            "tag": "reference"
+           }
+          ],
+          "document": true,
+          "line": 43,
+          "rawsource": "*emphasized*, H\\ :sub:`2`\\ O, :math:`x^2`, and references_",
+          "source": "test/functional/input/data/section_titles.rst",
+          "tag": "title"
+         }
+        ],
+        "document": true,
+        "line": 43,
+        "source": "test/functional/input/data/section_titles.rst",
+        "tag": "section"
+       },
+       {
+        "attributes": {
+         "ids": [
+          "substitutions-fail"
+         ],
+         "names": [
+          "substitutions fail"
+         ]
+        },
+        "children": [
+         {
+          "children": [
+           {
+            "tag": "#text",
+            "text": "Substitutions "
+           },
+           {
+            "attributes": {
+             "refname": "fail"
+            },
+            "children": [
+             {
+              "tag": "#text",
+              "text": "fail"
+             }
+            ],
+            "rawsource": "|fail|",
+            "tag": "substitution_reference"
+           }
+          ],
+          "document": true,
+          "line": 46,
+          "rawsource": "Substitutions |fail|",
+          "source": "test/functional/input/data/section_titles.rst",
+          "tag": "title"
+         },
+         {
+          "attributes": {
+           "names": [
+            "fail"
+           ]
+          },
+          "children": [
+           {
+            "tag": "#text",
+            "text": "work"
+           }
+          ],
+          "document": true,
+          "line": 47,
+          "rawsource": ".. |fail| replace:: work\n",
+          "source": "test/functional/input/data/section_titles.rst",
+          "tag": "substitution_definition"
+         },
+         {
+          "children": [
+           {
+            "tag": "#text",
+            "text": "Note, that the \"reference name\" for this section is derived from the\ncontent "
+           },
+           {
+            "children": [
+             {
+              "tag": "#text",
+              "text": "before"
+             }
+            ],
+            "rawsource": "*before*",
+            "tag": "emphasis"
+           },
+           {
+            "tag": "#text",
+            "text": " substitution. You can link to it with the "
+           },
+           {
+            "attributes": {
+             "name": "phrase reference",
+             "refname": "phrase reference"
+            },
+            "children": [
+             {
+              "tag": "#text",
+              "text": "phrase\nreference"
+             }
+            ],
+            "rawsource": "`phrase\nreference`_",
+            "tag": "reference"
+           },
+           {
+            "tag": "#text",
+            "text": " \""
+           },
+           {
+            "attributes": {
+             "name": "substitutions fail",
+             "refname": "substitutions fail"
+            },
+            "children": [
+             {
+              "tag": "#text",
+              "text": "substitutions fail"
+             }
+            ],
+            "rawsource": "`substitutions fail`_",
+            "tag": "reference"
+           },
+           {
+            "tag": "#text",
+            "text": "\".\nThis behaviour may be exploited to get intelligible IDs after "
+           },
+           {
+            "attributes": {
+             "name": "identifier normalization",
+             "refname": "identifier normalization"
+            },
+            "children": [
+             {
+              "tag": "#text",
+              "text": "identifier\nnormalization"
+             }
+            ],
+            "rawsource": "`identifier\nnormalization`_",
+            "tag": "reference"
+           },
+           {
+            "tag": "#text",
+            "text": " of the section's reference name."
+           }
+          ],
+          "document": true,
+          "line": 49,
+          "rawsource": "Note, that the \"reference name\" for this section is derived from the\ncontent *before* substitution. You can link to it with the `phrase\nreference`_ \"`substitutions fail`_\".\nThis behaviour may be exploited to get intelligible IDs after `identifier\nnormalization`_ of the section's reference name.",
+          "source": "test/functional/input/data/section_titles.rst",
+          "tag": "paragraph"
+         },
+         {
+          "attributes": {
+           "ids": [
+            "identifier-normalization"
+           ],
+           "names": [
+            "identifier normalization"
+           ],
+           "refuri": "https://docutils.sourceforge.io/docs/ref/rst/directives.html#identifier-normalization"
+          },
+          "document": true,
+          "line": 62,
+          "rawsource": ".. _identifier normalization: https://docutils.sourceforge.io/docs/ref/rst/\n                              directives.html#identifier-normalization",
+          "source": "test/functional/input/data/section_titles.rst",
+          "tag": "target"
+         },
+         {
+          "attributes": {
+           "ids": [
+            "phrase-reference"
+           ],
+           "names": [
+            "phrase reference"
+           ],
+           "refuri": "https://docutils.sourceforge.io/docs/ref/rst/restructuredtext.html#hyperlink-references"
+          },
+          "document": true,
+          "line": 64,
+          "rawsource": ".. _phrase reference: https://docutils.sourceforge.io/docs/ref/rst/\n                      restructuredtext.html#hyperlink-references",
+          "source": "test/functional/input/data/section_titles.rst",
+          "tag": "target"
+         }
+        ],
+        "document": true,
+        "line": 46,
+        "source": "test/functional/input/data/section_titles.rst",
+        "tag": "section"
+       }
+      ],
+      "document": true,
+      "line": 40,
+      "source": "test/functional/input/data/section_titles.rst",
+      "tag": "section"
+     },
+     {
+      "attributes": {
+       "ids": [
+        "moving-images-video"
+       ],
+       "names": [
+        "moving images (video)"
+       ]
+      },
+      "children": [
+       {
+        "children": [
+         {
+          "tag": "#text",
+          "text": "Moving images (video)"
+         }
+        ],
+        "document": true,
+        "line": 2,
+        "rawsource": "Moving images (video)",
+        "source": "test/functional/input/data/video.rst",
+        "tag": "title"
+       },
+       {
+        "children": [
+         {
+          "tag": "#text",
+          "text": "If the URL given to "
+         },
+         {
+          "children": [
+           {
+            "tag": "#text",
+            "text": "images and figures"
+           }
+          ],
+          "rawsource": "`images and figures`",
+          "tag": "title_reference"
+         },
+         {
+          "tag": "#text",
+          "text": " hints to a video format\nsupported by HTML 5 (MIME types 'video/mp4', 'video/webm', or\n'video/ogg'), the HTML5 writer will place it in a "
+         },
+         {
+          "attributes": {
+           "name": "video element",
+           "refname": "video element"
+          },
+          "children": [
+           {
+            "tag": "#text",
+            "text": "video element"
+           }
+          ],
+          "rawsource": "`video element`_",
+          "tag": "reference"
+         },
+         {
+          "tag": "#text",
+          "text": "."
+         }
+        ],
+        "document": true,
+        "line": 4,
+        "rawsource": "If the URL given to `images and figures` hints to a video format\nsupported by HTML 5 (MIME types 'video/mp4', 'video/webm', or\n'video/ogg'), the HTML5 writer will place it in a `video element`_.",
+        "source": "test/functional/input/data/video.rst",
+        "tag": "paragraph"
+       },
+       {
+        "attributes": {
+         "align": "left",
+         "alt": "left-aligned test video",
+         "uri": "../../../docs/user/rst/images/pens.mp4"
+        },
+        "document": true,
+        "line": 8,
+        "rawsource": ".. image:: ../../../docs/user/rst/images/pens.mp4\n   :align: left\n   :alt: left-aligned test video\n",
+        "source": "test/functional/input/data/video.rst",
+        "tag": "image"
+       },
+       {
+        "children": [
+         {
+          "tag": "#text",
+          "text": "A class option value \"controls\" tells the browser to display controls\nfor video playback."
+         }
+        ],
+        "document": true,
+        "line": 12,
+        "rawsource": "A class option value \"controls\" tells the browser to display controls\nfor video playback.",
+        "source": "test/functional/input/data/video.rst",
+        "tag": "paragraph"
+       },
+       {
+        "children": [
+         {
+          "tag": "#text",
+          "text": "It is a good idea to include width and height attributes. If\nheight and width are not set, the page might flicker while the video\nloads. According to the "
+         },
+         {
+          "attributes": {
+           "anonymous": true,
+           "name": "HTML5 spec"
+          },
+          "children": [
+           {
+            "tag": "#text",
+            "text": "HTML5 spec"
+           }
+          ],
+          "rawsource": "`HTML5 spec`__",
+          "tag": "reference"
+         },
+         {
+          "tag": "#text",
+          "text": ", hight and width must be\nspecified as pixel values."
+         }
+        ],
+        "document": true,
+        "line": 15,
+        "rawsource": "It is a good idea to include width and height attributes. If\nheight and width are not set, the page might flicker while the video\nloads. According to the `HTML5 spec`__, hight and width must be\nspecified as pixel values.",
+        "source": "test/functional/input/data/video.rst",
+        "tag": "paragraph"
+       },
+       {
+        "attributes": {
+         "align": "center"
+        },
+        "children": [
+         {
+          "attributes": {
+           "alt": "test video in a figure",
+           "classes": [
+            "controls"
+           ],
+           "uri": "../../../docs/user/rst/images/pens.mp4",
+           "width": "200px"
+          },
+          "line": 20,
+          "rawsource": ".. figure:: ../../../docs/user/rst/images/pens.mp4\n   :width: 200px\n   :align: center\n   :class: controls\n   :alt: test video in a figure\n\n   Simple test video in a centered figure\n",
+          "source": "test/functional/input/data/video.rst",
+          "tag": "image"
+         },
+         {
+          "children": [
+           {
+            "tag": "#text",
+            "text": "Simple test video in a centered figure"
+           }
+          ],
+          "line": 26,
+          "rawsource": "Simple test video in a centered figure",
+          "source": "test/functional/input/data/video.rst",
+          "tag": "caption"
+         }
+        ],
+        "document": true,
+        "line": 20,
+        "source": "test/functional/input/data/video.rst",
+        "tag": "figure"
+       },
+       {
+        "attributes": {
+         "names": [
+          "testvideo"
+         ]
+        },
+        "children": [
+         {
+          "attributes": {
+           "alt": "rotating pens video",
+           "uri": "../../../docs/user/rst/images/pens.mp4",
+           "width": "60px"
+          },
+          "line": 28,
+          "rawsource": "image:: ../../../docs/user/rst/images/pens.mp4\n   :width: 60 px\n   :alt: rotating pens video",
+          "source": "test/functional/input/data/video.rst",
+          "tag": "image"
+         }
+        ],
+        "document": true,
+        "line": 28,
+        "rawsource": ".. |testvideo| image:: ../../../docs/user/rst/images/pens.mp4\n   :width: 60 px\n   :alt: rotating pens video\n",
+        "source": "test/functional/input/data/video.rst",
+        "tag": "substitution_definition"
+       },
+       {
+        "children": [
+         {
+          "tag": "#text",
+          "text": "A video like this "
+         },
+         {
+          "attributes": {
+           "refname": "testvideo"
+          },
+          "children": [
+           {
+            "tag": "#text",
+            "text": "testvideo"
+           }
+          ],
+          "rawsource": "|testvideo|",
+          "tag": "substitution_reference"
+         },
+         {
+          "tag": "#text",
+          "text": " can be included inline via substitution."
+         }
+        ],
+        "document": true,
+        "line": 32,
+        "rawsource": "A video like this |testvideo| can be included inline via substitution.",
+        "source": "test/functional/input/data/video.rst",
+        "tag": "paragraph"
+       },
+       {
+        "attributes": {
+         "anonymous": true,
+         "ids": [
+          "target-1"
+         ]
+        },
+        "document": true,
+        "line": 104,
+        "rawsource": "__",
+        "source": "test/functional/input/data/video.rst",
+        "tag": "target"
+       },
+       {
+        "attributes": {
+         "ids": [
+          "video-element"
+         ],
+         "names": [
+          "video element"
+         ],
+         "refuri": "https://developer.mozilla.org/en-US/docs/Web/HTML/Element/video"
+        },
+        "document": true,
+        "line": 105,
+        "rawsource": ".. _video element:\n   https://developer.mozilla.org/en-US/docs/Web/HTML/Element/video",
+        "source": "test/functional/input/data/video.rst",
+        "tag": "target"
+       }
+      ],
+      "document": true,
+      "line": 2,
+      "source": "test/functional/input/data/video.rst",
+      "tag": "section"
+     }
+    ],
+    "document": true,
+    "line": 3,
+    "source": "test/functional/input/misc_rst_html4css1.rst",
+    "tag": "section"
+   }
+  ],
+  "document": true,
+  "tag": "document"
+ }
+}

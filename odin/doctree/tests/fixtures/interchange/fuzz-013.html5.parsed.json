@@ -1,0 +1,782 @@
+{
+ "detached": [],
+ "expected": {
+  "pformat": "<document source=\"fuzz-013.rst\">\n    <footnote ids=\"footnote-1\" names=\"1\">\n        <label>\n            1\n        <paragraph>\n            footnote\n    <definition_list>\n        <definition_list_item>\n            <term>\n                Term\n            <classifier>\n                classifier\n            <definition>\n                <paragraph>\n                    Def\n    <system_message level=\"2\" line=\"5\" source=\"fuzz-013.rst\" type=\"WARNING\">\n        <paragraph>\n            Definition list ends without a blank line; unexpected unindent.\n    <substitution_definition names=\"sub\">\n        text\n    <paragraph>\n        Text with \n        <reference refuri=\"http://example.or/path?q=1#frag\">\n            http://example.or/path?q=1#frag\n         and \n        <reference refuri=\"mailto:mail@example.co\">\n            mail@example.co\n         m.\n    <block_quote>\n        <paragraph>\n            block quote\n        <attribution>\n            Attribution\n    <target ids=\"ref\" names=\"ref\">\n    <system_message level=\"1\" line=\"15\" source=\"fuzz-013.rst\" type=\"INFO\">\n        <paragraph>\n            No directive entry for \"unknown\" in module \"docutils.parsers.rst.languages.en\".\n            Trying \"unknown\" as canonical directive name.\n    <system_message level=\"3\" line=\"15\" source=\"fuzz-013.rst\" type=\"ERROR\">\n        <paragraph>\n            Unknown directive type \"unknown\".\n        <literal_block xml:space=\"preserve\">\n            .. unknown:: arg\n    <section ids=\"section-1\" names=\"ﾃｰﾌﾞﾙ\">\n        <title>\n            ﾃｰﾌﾞﾙ\n        <system_message level=\"2\" line=\"18\" source=\"fuzz-013.rst\" type=\"WARNING\">\n            <paragraph>\n                Title underline too short.\n            <literal_block xml:space=\"preserve\">\n                ﾃｰﾌﾞﾙ\n                ====\n        <target anonymous=\"1\" ids=\"target-1\" refuri=\"http://anonテ\">\n        <section ids=\"sub\" names=\"sub\">\n            <title>\n                Sub\n"
+ },
+ "format": "docodin-doctree/1",
+ "input": {
+  "overrides": {
+   "halt_level": 5,
+   "report_level": 2
+  },
+  "source_path": "fuzz-013.rst",
+  "writer": "html5"
+ },
+ "registry": {
+  "autofootnote_refs": [],
+  "autofootnote_start": 1,
+  "autofootnotes": [],
+  "citation_refs": [],
+  "citations": [],
+  "current_line": null,
+  "current_source": null,
+  "decoration": null,
+  "footnote_refs": [],
+  "footnotes": [
+   1
+  ],
+  "id_counter": [
+   [
+    "footnote-",
+    1
+   ],
+   [
+    "section-",
+    1
+   ],
+   [
+    "target-",
+    1
+   ]
+  ],
+  "ids": [
+   [
+    "footnote-1",
+    1
+   ],
+   [
+    "ref",
+    33
+   ],
+   [
+    "section-1",
+    42
+   ],
+   [
+    "target-1",
+    50
+   ],
+   [
+    "sub",
+    51
+   ]
+  ],
+  "indirect_targets": [],
+  "nameids": [
+   [
+    "1",
+    "footnote-1"
+   ],
+   [
+    "ref",
+    "ref"
+   ],
+   [
+    "ﾃｰﾌﾞﾙ",
+    "section-1"
+   ],
+   [
+    "sub",
+    "sub"
+   ]
+  ],
+  "nametypes": [
+   [
+    "1",
+    true
+   ],
+   [
+    "ref",
+    true
+   ],
+   [
+    "ﾃｰﾌﾞﾙ",
+    false
+   ],
+   [
+    "sub",
+    false
+   ]
+  ],
+  "parse_messages": [
+   15,
+   34,
+   37,
+   45
+  ],
+  "refids": [],
+  "refnames": [],
+  "substitution_defs": [
+   [
+    "sub",
+    18
+   ]
+  ],
+  "substitution_names": [
+   [
+    "sub",
+    "sub"
+   ]
+  ],
+  "symbol_footnote_refs": [],
+  "symbol_footnote_start": 0,
+  "symbol_footnotes": [],
+  "transform_messages": []
+ },
+ "reporter": {
+  "debug": false,
+  "halt_level": 5,
+  "max_level": 3,
+  "observers": [],
+  "report_level": 2,
+  "source": "fuzz-013.rst",
+  "source_lines": {
+   "input_offset": 0,
+   "line_offset": 22,
+   "runs": [
+    [
+     "fuzz-013.rst",
+     0,
+     22
+    ]
+   ]
+  },
+  "written": [
+   {
+    "level": 2,
+    "node": 15,
+    "text": "fuzz-013.rst:5: (WARNING/2) Definition list ends without a blank line; unexpected unindent.\n"
+   },
+   {
+    "level": 3,
+    "node": 37,
+    "text": "fuzz-013.rst:15: (ERROR/3) Unknown directive type \"unknown\".\n\n.. unknown:: arg\n\n"
+   },
+   {
+    "level": 2,
+    "node": 45,
+    "text": "fuzz-013.rst:18: (WARNING/2) Title underline too short.\n\nﾃｰﾌﾞﾙ\n====\n"
+   }
+  ]
+ },
+ "settings": {
+  "_config_files": [],
+  "_destination": null,
+  "_disable_config": true,
+  "_source": "fuzz-013.rst",
+  "attribution": "dash",
+  "auto_id_prefix": "%",
+  "character_level_inline_markup": false,
+  "cloak_email_addresses": null,
+  "compact_field_lists": true,
+  "compact_lists": true,
+  "config": null,
+  "datestamp": null,
+  "debug": null,
+  "docinfo_xform": true,
+  "doctitle_xform": true,
+  "dump_internals": null,
+  "dump_pseudo_xml": null,
+  "dump_settings": null,
+  "dump_transforms": null,
+  "embed_images": null,
+  "embed_stylesheet": true,
+  "error_encoding": "utf-8",
+  "error_encoding_error_handler": "backslashreplace",
+  "exit_status_level": 5,
+  "expose_internals": null,
+  "file_insertion_enabled": true,
+  "footnote_backlinks": true,
+  "footnote_references": "brackets",
+  "generator": null,
+  "halt_level": 5,
+  "id_prefix": "",
+  "image_loading": null,
+  "initial_header_level": "2",
+  "input_encoding": "utf-8",
+  "input_encoding_error_handler": "strict",
+  "language_code": "en",
+  "line_length_limit": 10000,
+  "math_output": "MathML",
+  "output": null,
+  "output_encoding": "utf-8",
+  "output_encoding_error_handler": "xmlcharrefreplace",
+  "output_path": null,
+  "pep_base_url": "https://peps.python.org/",
+  "pep_file_url_template": "pep-%04d",
+  "pep_references": null,
+  "raw_enabled": true,
+  "report_level": 2,
+  "rfc_base_url": "https://tools.ietf.org/html/",
+  "rfc_references": null,
+  "root_prefix": "",
+  "section_self_link": false,
+  "sectnum_xform": true,
+  "sectsubtitle_xform": false,
+  "smart_quotes": false,
+  "smartquotes_locales": null,
+  "source_link": null,
+  "source_url": null,
+  "strict_visitor": null,
+  "strip_classes": null,
+  "strip_comments": null,
+  "strip_elements_with_classes": null,
+  "stylesheet": null,
+  "stylesheet_dirs": [
+   ".",
+   "<docutils>/writers/html5_polyglot"
+  ],
+  "stylesheet_path": [
+   "minimal.css",
+   "plain.css"
+  ],
+  "syntax_highlight": "long",
+  "tab_width": 8,
+  "table_style": "",
+  "title": null,
+  "toc_backlinks": "entry",
+  "traceback": true,
+  "trim_footnote_reference_space": null,
+  "validate": null,
+  "xml_declaration": false
+ },
+ "stage": "parsed",
+ "transformer": {
+  "queue": [
+   [
+    "220-004",
+    "docutils.transforms.references.Substitutions",
+    null,
+    {}
+   ],
+   [
+    "260-005",
+    "docutils.transforms.references.PropagateTargets",
+    null,
+    {}
+   ],
+   [
+    "320-006",
+    "docutils.transforms.frontmatter.DocTitle",
+    null,
+    {}
+   ],
+   [
+    "340-008",
+    "docutils.transforms.frontmatter.DocInfo",
+    null,
+    {}
+   ],
+   [
+    "350-007",
+    "docutils.transforms.frontmatter.SectionSubTitle",
+    null,
+    {}
+   ],
+   [
+    "420-020",
+    "docutils.transforms.universal.StripClassesAndElements",
+    null,
+    {}
+   ],
+   [
+    "440-009",
+    "docutils.transforms.references.AnonymousHyperlinks",
+    null,
+    {}
+   ],
+   [
+    "460-010",
+    "docutils.transforms.references.IndirectHyperlinks",
+    null,
+    {}
+   ],
+   [
+    "620-011",
+    "docutils.transforms.references.Footnotes",
+    null,
+    {}
+   ],
+   [
+    "640-012",
+    "docutils.transforms.references.ExternalTargets",
+    null,
+    {}
+   ],
+   [
+    "660-013",
+    "docutils.transforms.references.InternalTargets",
+    null,
+    {}
+   ],
+   [
+    "740-003",
+    "docutils.transforms.universal.StripComments",
+    null,
+    {}
+   ],
+   [
+    "820-001",
+    "docutils.transforms.universal.Decorations",
+    null,
+    {}
+   ],
+   [
+    "830-015",
+    "docutils.transforms.misc.Transitions",
+    null,
+    {}
+   ],
+   [
+    "835-016",
+    "docutils.transforms.universal.Validate",
+    null,
+    {}
+   ],
+   [
+    "840-002",
+    "docutils.transforms.universal.ExposeInternals",
+    null,
+    {}
+   ],
+   [
+    "850-014",
+    "docutils.transforms.references.DanglingReferences",
+    null,
+    {}
+   ],
+   [
+    "855-017",
+    "docutils.transforms.universal.SmartQuotes",
+    null,
+    {}
+   ],
+   [
+    "860-018",
+    "docutils.transforms.universal.Messages",
+    null,
+    {}
+   ],
+   [
+    "870-019",
+    "docutils.transforms.universal.FilterMessages",
+    null,
+    {}
+   ],
+   [
+    "920-021",
+    "docutils.transforms.writer_aux.Admonitions",
+    null,
+    {}
+   ]
+  ],
+  "serialno": 21
+ },
+ "tree": {
+  "attributes": {
+   "source": "fuzz-013.rst"
+  },
+  "children": [
+   {
+    "attributes": {
+     "ids": [
+      "footnote-1"
+     ],
+     "names": [
+      "1"
+     ]
+    },
+    "children": [
+     {
+      "children": [
+       {
+        "tag": "#text",
+        "text": "1"
+       }
+      ],
+      "tag": "label"
+     },
+     {
+      "children": [
+       {
+        "tag": "#text",
+        "text": "footnote"
+       }
+      ],
+      "line": 1,
+      "rawsource": "footnote",
+      "source": "fuzz-013.rst",
+      "tag": "paragraph"
+     }
+    ],
+    "document": true,
+    "line": 1,
+    "rawsource": "footnote\n",
+    "source": "fuzz-013.rst",
+    "tag": "footnote"
+   },
+   {
+    "children": [
+     {
+      "children": [
+       {
+        "children": [
+         {
+          "tag": "#text",
+          "text": "Term"
+         }
+        ],
+        "line": 3,
+        "rawsource": "Term : classifier",
+        "source": "fuzz-013.rst",
+        "tag": "term"
+       },
+       {
+        "children": [
+         {
+          "tag": "#text",
+          "text": "classifier"
+         }
+        ],
+        "rawsource": "classifier",
+        "tag": "classifier"
+       },
+       {
+        "children": [
+         {
+          "children": [
+           {
+            "tag": "#text",
+            "text": "Def"
+           }
+          ],
+          "line": 4,
+          "rawsource": "Def",
+          "source": "fuzz-013.rst",
+          "tag": "paragraph"
+         }
+        ],
+        "line": 4,
+        "source": "fuzz-013.rst",
+        "tag": "definition"
+       }
+      ],
+      "line": 3,
+      "rawsource": "Term : classifier\nDef",
+      "source": "fuzz-013.rst",
+      "tag": "definition_list_item"
+     }
+    ],
+    "document": true,
+    "line": 3,
+    "source": "fuzz-013.rst",
+    "tag": "definition_list"
+   },
+   {
+    "attributes": {
+     "level": 2,
+     "line": 5,
+     "source": "fuzz-013.rst",
+     "type": "WARNING"
+    },
+    "children": [
+     {
+      "children": [
+       {
+        "tag": "#text",
+        "text": "Definition list ends without a blank line; unexpected unindent."
+       }
+      ],
+      "tag": "paragraph"
+     }
+    ],
+    "document": true,
+    "line": 4,
+    "source": "fuzz-013.rst",
+    "tag": "system_message"
+   },
+   {
+    "attributes": {
+     "names": [
+      "sub"
+     ]
+    },
+    "children": [
+     {
+      "tag": "#text",
+      "text": "text"
+     }
+    ],
+    "document": true,
+    "line": 5,
+    "rawsource": ".. |sub| replace:: text\n",
+    "source": "fuzz-013.rst",
+    "tag": "substitution_definition"
+   },
+   {
+    "children": [
+     {
+      "tag": "#text",
+      "text": "Text with "
+     },
+     {
+      "attributes": {
+       "refuri": "http://example.or/path?q=1#frag"
+      },
+      "children": [
+       {
+        "tag": "#text",
+        "text": "http://example.or/path?q=1#frag"
+       }
+      ],
+      "rawsource": "http://example.or/path?q=1#frag",
+      "tag": "reference"
+     },
+     {
+      "tag": "#text",
+      "text": " and "
+     },
+     {
+      "attributes": {
+       "refuri": "mailto:mail@example.co"
+      },
+      "children": [
+       {
+        "tag": "#text",
+        "text": "mail@example.co"
+       }
+      ],
+      "rawsource": "mail@example.co",
+      "tag": "reference"
+     },
+     {
+      "tag": "#text",
+      "text": " m."
+     }
+    ],
+    "document": true,
+    "line": 7,
+    "rawsource": "Text with http://example.or/path?q=1#frag and mail@example.co m.",
+    "source": "fuzz-013.rst",
+    "tag": "paragraph"
+   },
+   {
+    "children": [
+     {
+      "children": [
+       {
+        "tag": "#text",
+        "text": "block quote"
+       }
+      ],
+      "line": 9,
+      "rawsource": "block quote",
+      "source": "fuzz-013.rst",
+      "tag": "paragraph"
+     },
+     {
+      "children": [
+       {
+        "tag": "#text",
+        "text": "Attribution"
+       }
+      ],
+      "line": 11,
+      "rawsource": "Attribution",
+      "source": "fuzz-013.rst",
+      "tag": "attribution"
+     }
+    ],
+    "document": true,
+    "line": 9,
+    "rawsource": "block quote\n\n-- Attribution\n",
+    "source": "fuzz-013.rst",
+    "tag": "block_quote"
+   },
+   {
+    "attributes": {
+     "ids": [
+      "ref"
+     ],
+     "names": [
+      "ref"
+     ]
+    },
+    "document": true,
+    "line": 13,
+    "rawsource": ".. _ref:",
+    "source": "fuzz-013.rst",
+    "tag": "target"
+   },
+   {
+    "attributes": {
+     "level": 1,
+     "line": 15,
+     "source": "fuzz-013.rst",
+     "type": "INFO"
+    },
+    "children": [
+     {
+      "children": [
+       {
+        "tag": "#text",
+        "text": "No directive entry for \"unknown\" in module \"docutils.parsers.rst.languages.en\".\nTrying \"unknown\" as canonical directive name."
+       }
+      ],
+      "tag": "paragraph"
+     }
+    ],
+    "document": true,
+    "line": 15,
+    "source": "fuzz-013.rst",
+    "tag": "system_message"
+   },
+   {
+    "attributes": {
+     "level": 3,
+     "line": 15,
+     "source": "fuzz-013.rst",
+     "type": "ERROR"
+    },
+    "children": [
+     {
+      "children": [
+       {
+        "tag": "#text",
+        "text": "Unknown directive type \"unknown\"."
+       }
+      ],
+      "tag": "paragraph"
+     },
+     {
+      "attributes": {
+       "xml:space": "preserve"
+      },
+      "children": [
+       {
+        "tag": "#text",
+        "text": ".. unknown:: arg\n"
+       }
+      ],
+      "rawsource": ".. unknown:: arg\n",
+      "tag": "literal_block"
+     }
+    ],
+    "document": true,
+    "line": 16,
+    "source": "fuzz-013.rst",
+    "tag": "system_message"
+   },
+   {
+    "attributes": {
+     "ids": [
+      "section-1"
+     ],
+     "names": [
+      "ﾃｰﾌﾞﾙ"
+     ]
+    },
+    "children": [
+     {
+      "children": [
+       {
+        "tag": "#text",
+        "text": "ﾃｰﾌﾞﾙ"
+       }
+      ],
+      "document": true,
+      "line": 18,
+      "rawsource": "ﾃｰﾌﾞﾙ",
+      "source": "fuzz-013.rst",
+      "tag": "title"
+     },
+     {
+      "attributes": {
+       "level": 2,
+       "line": 18,
+       "source": "fuzz-013.rst",
+       "type": "WARNING"
+      },
+      "children": [
+       {
+        "children": [
+         {
+          "tag": "#text",
+          "text": "Title underline too short."
+         }
+        ],
+        "tag": "paragraph"
+       },
+       {
+        "attributes": {
+         "xml:space": "preserve"
+        },
+        "children": [
+         {
+          "tag": "#text",
+          "text": "ﾃｰﾌﾞﾙ\n===="
+         }
+        ],
+        "rawsource": "ﾃｰﾌﾞﾙ\n====",
+        "tag": "literal_block"
+       }
+      ],
+      "document": true,
+      "line": 18,
+      "source": "fuzz-013.rst",
+      "tag": "system_message"
+     },
+     {
+      "attributes": {
+       "anonymous": true,
+       "ids": [
+        "target-1"
+       ],
+       "refuri": "http://anonテ"
+      },
+      "document": true,
+      "line": 19,
+      "rawsource": ".. __: http://anonテ",
+      "source": "fuzz-013.rst",
+      "tag": "target"
+     },
+     {
+      "attributes": {
+       "ids": [
+        "sub"
+       ],
+       "names": [
+        "sub"
+       ]
+      },
+      "children": [
+       {
+        "children": [
+         {
+          "tag": "#text",
+          "text": "Sub"
+         }
+        ],
+        "document": true,
+        "line": 22,
+        "rawsource": "Sub",
+        "source": "fuzz-013.rst",
+        "tag": "title"
+       }
+      ],
+      "document": true,
+      "line": 22,
+      "source": "fuzz-013.rst",
+      "tag": "section"
+     }
+    ],
+    "document": true,
+    "line": 18,
+    "source": "fuzz-013.rst",
+    "tag": "section"
+   }
+  ],
+  "document": true,
+  "tag": "document"
+ }
+}

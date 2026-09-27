@@ -1,0 +1,1298 @@
+{
+ "detached": [
+  {
+   "node": {
+    "attributes": {
+     "ids": [
+      "docutils-web-site"
+     ],
+     "names": [
+      "docutils web site"
+     ]
+    },
+    "document": true,
+    "line": 5,
+    "source": "docs/dev/website.rst",
+    "tag": "section"
+   },
+   "parent": 0
+  }
+ ],
+ "expected": {
+  "output": "<document ids=\"docutils-web-site\" names=\"docutils\\ web\\ site\" source=\"docs/dev/website.rst\" title=\"Docutils Web Site\">\n    <title>\n        Docutils Web Site\n    <decoration>\n        <header>\n            <paragraph>\n                <reference anonymous=\"1\" name=\"Docutils\" refuri=\"https://docutils.sourceforge.io\">\n                    Docutils\n                 | \n                <reference anonymous=\"1\" name=\"Overview\" refuri=\"../index.html\">\n                    Overview\n                 | \n                <reference anonymous=\"1\" name=\"About\" refuri=\"../index.html#project-fundamentals\">\n                    About\n                 | \n                <reference anonymous=\"1\" name=\"Users\" refuri=\"../index.html#user\">\n                    Users\n                 | \n                <reference anonymous=\"1\" name=\"Reference\" refuri=\"../index.html#ref\">\n                    Reference\n                 | \n                <reference anonymous=\"1\" name=\"Developers\" refuri=\"../index.html#howto\">\n                    Developers\n            <target anonymous=\"1\" ids=\"target-1\" refuri=\"https://docutils.sourceforge.io\">\n            <target anonymous=\"1\" ids=\"target-2\" refuri=\"../index.html\">\n            <target anonymous=\"1\" ids=\"target-3\" refuri=\"../index.html#project-fundamentals\">\n            <target anonymous=\"1\" ids=\"target-4\" refuri=\"../index.html#user\">\n            <target anonymous=\"1\" ids=\"target-5\" refuri=\"../index.html#ref\">\n            <target anonymous=\"1\" ids=\"target-6\" refuri=\"../index.html#howto\">\n    <docinfo>\n        <author>\n            David Goodger; open to all Docutils developers\n        <contact>\n            <reference refuri=\"mailto:docutils-develop@lists.sourceforge.net\">\n                docutils-develop@lists.sourceforge.net\n        <date>\n            2025-03-07\n        <revision>\n            10020\n        <copyright>\n            This document has been placed in the public domain.\n    <comment xml:space=\"preserve\">\n        Minimal menu bar for inclusion in documentation sources\n        in ``docutils/docs/*/`` sub-diretories.\n        \n        Attention: this is not a standalone document.\n    <paragraph>\n        The Docutils web site, <\n        <reference refuri=\"https://docutils.sourceforge.io/\">\n            https://docutils.sourceforge.io/\n        >, is\n        maintained by the \n        <literal>\n            docutils-update.local\n         script, run by project\n        maintainers on their local machines.  The script\n        will process any .rst/.txt file which is newer than the corresponding .html\n        file in the local copy of the project's web directory and upload the changes\n        to the web site at SourceForge.\n    <paragraph>\n        Please \n        <strong>\n            do not\n         add any generated .html files to the Docutils\n        repository.  They will be generated automatically after a one-time\n        setup (\n        <reference anonymous=\"1\" name=\"described below\" refid=\"adding-rst-txt-files\">\n            described below\n        ).\n    <target anonymous=\"1\" ids=\"target-7\" refid=\"adding-rst-txt-files\">\n    <paragraph>\n        The \n        <reference anonymous=\"1\" name=\"docutils-update.local\" refuri=\"https://docutils.sourceforge.io/sandbox/infrastructure/docutils-update.local\">\n            docutils-update.local\n         script is located at\n        <literal>\n            sandbox/infrastructure/docutils-update.local\n        .\n    <target anonymous=\"1\" ids=\"target-8\" refuri=\"https://docutils.sourceforge.io/sandbox/infrastructure/docutils-update.local\">\n    <section ids=\"setting-up\" names=\"setting\\ up\">\n        <title>\n            Setting Up\n        <paragraph>\n            (TBA)\n        <hint>\n            <paragraph>\n                Anyone with checkin privileges can be a web-site maintainer. You need to\n                set up the directories for a local website build.\n            <paragraph>\n                The procedure for that was on the docutils-devel list a while ago.\n    <section ids=\"adding-rst-txt-files\" names=\"adding\\ .rst/.txt\\ files\">\n        <title>\n            Adding .rst/.txt Files\n        <section ids=\"user-contributor\" names=\"user/contributor\">\n            <title>\n                User/Contributor\n            <paragraph>\n                When adding a new .rst/.txt file that should be converted to HTML:\n            <enumerated_list enumtype=\"arabic\" prefix=\"\" suffix=\".\">\n                <list_item>\n                    <paragraph>\n                        Edit sandbox/infrastructure/htmlfiles.lst, and add the .html file\n                        corresponding to the new .rst/.txt file (please keep the sorted order).\n                <list_item>\n                    <paragraph>\n                        Commit the edited version to the SVN repository.\n        <section ids=\"maintainer\" names=\"maintainer\">\n            <title>\n                Maintainer\n            <enumerated_list enumtype=\"arabic\" prefix=\"\" suffix=\".\">\n                <list_item>\n                    <paragraph>\n                        If there are new directories in the SVN, allow the update script to run\n                        once to create the directories in the filesystem before preparing for\n                        HTML processing.\n                <list_item>\n                    <paragraph>\n                        Any .html document with a corresponding .rst/.txt file is regenerated\n                        if the .rst/.txt has changed, but no new .html files will be generated.\n                    <paragraph>\n                        Therefore \n                        <emphasis>\n                            touch\n                         the .html-file and then the .rst/.txt.\n                <list_item>\n                    <paragraph>\n                        <literal>\n                            docutils-update.local -u\n                            Regenerate .html unconditionally.\n    <section ids=\"removing-files-directories\" names=\"removing\\ files\\ &\\ directories\">\n        <title>\n            Removing Files & Directories\n        <enumerated_list enumtype=\"arabic\" prefix=\"\" suffix=\".\">\n            <list_item>\n                <paragraph>\n                    Remove from SVN\n            <list_item>\n                <paragraph>\n                    Remove to-be-generated HTML files from\n                    <literal>\n                        sandbox/infrastructure/htmlfiles.lst\n                    .\n            <list_item>\n                <paragraph>\n                    Removing files and directories from SVN will not trigger their removal\n                    from the web site.  Files and directories must be manually removed from\n                    sourceforge.net (under \n                    <literal>\n                        /home/project-web/docutils/htdocs/\n                    ).\n        <comment xml:space=\"preserve\">\n            Emacs settings\n            \n            Local Variables:\n            mode: indented-text\n            mode: rst\n            indent-tabs-mode: nil\n            sentence-end-double-space: t\n            fill-column: 70\n            End:\n",
+  "parts": {
+   "encoding": "utf-8",
+   "errors": "strict",
+   "version": "0.22.4",
+   "whole": "<document ids=\"docutils-web-site\" names=\"docutils\\ web\\ site\" source=\"docs/dev/website.rst\" title=\"Docutils Web Site\">\n    <title>\n        Docutils Web Site\n    <decoration>\n        <header>\n            <paragraph>\n                <reference anonymous=\"1\" name=\"Docutils\" refuri=\"https://docutils.sourceforge.io\">\n                    Docutils\n                 | \n                <reference anonymous=\"1\" name=\"Overview\" refuri=\"../index.html\">\n                    Overview\n                 | \n                <reference anonymous=\"1\" name=\"About\" refuri=\"../index.html#project-fundamentals\">\n                    About\n                 | \n                <reference anonymous=\"1\" name=\"Users\" refuri=\"../index.html#user\">\n                    Users\n                 | \n                <reference anonymous=\"1\" name=\"Reference\" refuri=\"../index.html#ref\">\n                    Reference\n                 | \n                <reference anonymous=\"1\" name=\"Developers\" refuri=\"../index.html#howto\">\n                    Developers\n            <target anonymous=\"1\" ids=\"target-1\" refuri=\"https://docutils.sourceforge.io\">\n            <target anonymous=\"1\" ids=\"target-2\" refuri=\"../index.html\">\n            <target anonymous=\"1\" ids=\"target-3\" refuri=\"../index.html#project-fundamentals\">\n            <target anonymous=\"1\" ids=\"target-4\" refuri=\"../index.html#user\">\n            <target anonymous=\"1\" ids=\"target-5\" refuri=\"../index.html#ref\">\n            <target anonymous=\"1\" ids=\"target-6\" refuri=\"../index.html#howto\">\n    <docinfo>\n        <author>\n            David Goodger; open to all Docutils developers\n        <contact>\n            <reference refuri=\"mailto:docutils-develop@lists.sourceforge.net\">\n                docutils-develop@lists.sourceforge.net\n        <date>\n            2025-03-07\n        <revision>\n            10020\n        <copyright>\n            This document has been placed in the public domain.\n    <comment xml:space=\"preserve\">\n        Minimal menu bar for inclusion in documentation sources\n        in ``docutils/docs/*/`` sub-diretories.\n        \n        Attention: this is not a standalone document.\n    <paragraph>\n        The Docutils web site, <\n        <reference refuri=\"https://docutils.sourceforge.io/\">\n            https://docutils.sourceforge.io/\n        >, is\n        maintained by the \n        <literal>\n            docutils-update.local\n         script, run by project\n        maintainers on their local machines.  The script\n        will process any .rst/.txt file which is newer than the corresponding .html\n        file in the local copy of the project's web directory and upload the changes\n        to the web site at SourceForge.\n    <paragraph>\n        Please \n        <strong>\n            do not\n         add any generated .html files to the Docutils\n        repository.  They will be generated automatically after a one-time\n        setup (\n        <reference anonymous=\"1\" name=\"described below\" refid=\"adding-rst-txt-files\">\n            described below\n        ).\n    <target anonymous=\"1\" ids=\"target-7\" refid=\"adding-rst-txt-files\">\n    <paragraph>\n        The \n        <reference anonymous=\"1\" name=\"docutils-update.local\" refuri=\"https://docutils.sourceforge.io/sandbox/infrastructure/docutils-update.local\">\n            docutils-update.local\n         script is located at\n        <literal>\n            sandbox/infrastructure/docutils-update.local\n        .\n    <target anonymous=\"1\" ids=\"target-8\" refuri=\"https://docutils.sourceforge.io/sandbox/infrastructure/docutils-update.local\">\n    <section ids=\"setting-up\" names=\"setting\\ up\">\n        <title>\n            Setting Up\n        <paragraph>\n            (TBA)\n        <hint>\n            <paragraph>\n                Anyone with checkin privileges can be a web-site maintainer. You need to\n                set up the directories for a local website build.\n            <paragraph>\n                The procedure for that was on the docutils-devel list a while ago.\n    <section ids=\"adding-rst-txt-files\" names=\"adding\\ .rst/.txt\\ files\">\n        <title>\n            Adding .rst/.txt Files\n        <section ids=\"user-contributor\" names=\"user/contributor\">\n            <title>\n                User/Contributor\n            <paragraph>\n                When adding a new .rst/.txt file that should be converted to HTML:\n            <enumerated_list enumtype=\"arabic\" prefix=\"\" suffix=\".\">\n                <list_item>\n                    <paragraph>\n                        Edit sandbox/infrastructure/htmlfiles.lst, and add the .html file\n                        corresponding to the new .rst/.txt file (please keep the sorted order).\n                <list_item>\n                    <paragraph>\n                        Commit the edited version to the SVN repository.\n        <section ids=\"maintainer\" names=\"maintainer\">\n            <title>\n                Maintainer\n            <enumerated_list enumtype=\"arabic\" prefix=\"\" suffix=\".\">\n                <list_item>\n                    <paragraph>\n                        If there are new directories in the SVN, allow the update script to run\n                        once to create the directories in the filesystem before preparing for\n                        HTML processing.\n                <list_item>\n                    <paragraph>\n                        Any .html document with a corresponding .rst/.txt file is regenerated\n                        if the .rst/.txt has changed, but no new .html files will be generated.\n                    <paragraph>\n                        Therefore \n                        <emphasis>\n                            touch\n                         the .html-file and then the .rst/.txt.\n                <list_item>\n                    <paragraph>\n                        <literal>\n                            docutils-update.local -u\n                            Regenerate .html unconditionally.\n    <section ids=\"removing-files-directories\" names=\"removing\\ files\\ &\\ directories\">\n        <title>\n            Removing Files & Directories\n        <enumerated_list enumtype=\"arabic\" prefix=\"\" suffix=\".\">\n            <list_item>\n                <paragraph>\n                    Remove from SVN\n            <list_item>\n                <paragraph>\n                    Remove to-be-generated HTML files from\n                    <literal>\n                        sandbox/infrastructure/htmlfiles.lst\n                    .\n            <list_item>\n                <paragraph>\n                    Removing files and directories from SVN will not trigger their removal\n                    from the web site.  Files and directories must be manually removed from\n                    sourceforge.net (under \n                    <literal>\n                        /home/project-web/docutils/htdocs/\n                    ).\n        <comment xml:space=\"preserve\">\n            Emacs settings\n            \n            Local Variables:\n            mode: indented-text\n            mode: rst\n            indent-tabs-mode: nil\n            sentence-end-double-space: t\n            fill-column: 70\n            End:\n"
+  },
+  "pformat": "<document ids=\"docutils-web-site\" names=\"docutils\\ web\\ site\" source=\"docs/dev/website.rst\" title=\"Docutils Web Site\">\n    <title>\n        Docutils Web Site\n    <decoration>\n        <header>\n            <paragraph>\n                <reference anonymous=\"1\" name=\"Docutils\" refuri=\"https://docutils.sourceforge.io\">\n                    Docutils\n                 | \n                <reference anonymous=\"1\" name=\"Overview\" refuri=\"../index.html\">\n                    Overview\n                 | \n                <reference anonymous=\"1\" name=\"About\" refuri=\"../index.html#project-fundamentals\">\n                    About\n                 | \n                <reference anonymous=\"1\" name=\"Users\" refuri=\"../index.html#user\">\n                    Users\n                 | \n                <reference anonymous=\"1\" name=\"Reference\" refuri=\"../index.html#ref\">\n                    Reference\n                 | \n                <reference anonymous=\"1\" name=\"Developers\" refuri=\"../index.html#howto\">\n                    Developers\n            <target anonymous=\"1\" ids=\"target-1\" refuri=\"https://docutils.sourceforge.io\">\n            <target anonymous=\"1\" ids=\"target-2\" refuri=\"../index.html\">\n            <target anonymous=\"1\" ids=\"target-3\" refuri=\"../index.html#project-fundamentals\">\n            <target anonymous=\"1\" ids=\"target-4\" refuri=\"../index.html#user\">\n            <target anonymous=\"1\" ids=\"target-5\" refuri=\"../index.html#ref\">\n            <target anonymous=\"1\" ids=\"target-6\" refuri=\"../index.html#howto\">\n    <docinfo>\n        <author>\n            David Goodger; open to all Docutils developers\n        <contact>\n            <reference refuri=\"mailto:docutils-develop@lists.sourceforge.net\">\n                docutils-develop@lists.sourceforge.net\n        <date>\n            2025-03-07\n        <revision>\n            10020\n        <copyright>\n            This document has been placed in the public domain.\n    <comment xml:space=\"preserve\">\n        Minimal menu bar for inclusion in documentation sources\n        in ``docutils/docs/*/`` sub-diretories.\n        \n        Attention: this is not a standalone document.\n    <paragraph>\n        The Docutils web site, <\n        <reference refuri=\"https://docutils.sourceforge.io/\">\n            https://docutils.sourceforge.io/\n        >, is\n        maintained by the \n        <literal>\n            docutils-update.local\n         script, run by project\n        maintainers on their local machines.  The script\n        will process any .rst/.txt file which is newer than the corresponding .html\n        file in the local copy of the project's web directory and upload the changes\n        to the web site at SourceForge.\n    <paragraph>\n        Please \n        <strong>\n            do not\n         add any generated .html files to the Docutils\n        repository.  They will be generated automatically after a one-time\n        setup (\n        <reference anonymous=\"1\" name=\"described below\" refid=\"adding-rst-txt-files\">\n            described below\n        ).\n    <target anonymous=\"1\" ids=\"target-7\" refid=\"adding-rst-txt-files\">\n    <paragraph>\n        The \n        <reference anonymous=\"1\" name=\"docutils-update.local\" refuri=\"https://docutils.sourceforge.io/sandbox/infrastructure/docutils-update.local\">\n            docutils-update.local\n         script is located at\n        <literal>\n            sandbox/infrastructure/docutils-update.local\n        .\n    <target anonymous=\"1\" ids=\"target-8\" refuri=\"https://docutils.sourceforge.io/sandbox/infrastructure/docutils-update.local\">\n    <section ids=\"setting-up\" names=\"setting\\ up\">\n        <title>\n            Setting Up\n        <paragraph>\n            (TBA)\n        <hint>\n            <paragraph>\n                Anyone with checkin privileges can be a web-site maintainer. You need to\n                set up the directories for a local website build.\n            <paragraph>\n                The procedure for that was on the docutils-devel list a while ago.\n    <section ids=\"adding-rst-txt-files\" names=\"adding\\ .rst/.txt\\ files\">\n        <title>\n            Adding .rst/.txt Files\n        <section ids=\"user-contributor\" names=\"user/contributor\">\n            <title>\n                User/Contributor\n            <paragraph>\n                When adding a new .rst/.txt file that should be converted to HTML:\n            <enumerated_list enumtype=\"arabic\" prefix=\"\" suffix=\".\">\n                <list_item>\n                    <paragraph>\n                        Edit sandbox/infrastructure/htmlfiles.lst, and add the .html file\n                        corresponding to the new .rst/.txt file (please keep the sorted order).\n                <list_item>\n                    <paragraph>\n                        Commit the edited version to the SVN repository.\n        <section ids=\"maintainer\" names=\"maintainer\">\n            <title>\n                Maintainer\n            <enumerated_list enumtype=\"arabic\" prefix=\"\" suffix=\".\">\n                <list_item>\n                    <paragraph>\n                        If there are new directories in the SVN, allow the update script to run\n                        once to create the directories in the filesystem before preparing for\n                        HTML processing.\n                <list_item>\n                    <paragraph>\n                        Any .html document with a corresponding .rst/.txt file is regenerated\n                        if the .rst/.txt has changed, but no new .html files will be generated.\n                    <paragraph>\n                        Therefore \n                        <emphasis>\n                            touch\n                         the .html-file and then the .rst/.txt.\n                <list_item>\n                    <paragraph>\n                        <literal>\n                            docutils-update.local -u\n                            Regenerate .html unconditionally.\n    <section ids=\"removing-files-directories\" names=\"removing\\ files\\ &\\ directories\">\n        <title>\n            Removing Files & Directories\n        <enumerated_list enumtype=\"arabic\" prefix=\"\" suffix=\".\">\n            <list_item>\n                <paragraph>\n                    Remove from SVN\n            <list_item>\n                <paragraph>\n                    Remove to-be-generated HTML files from\n                    <literal>\n                        sandbox/infrastructure/htmlfiles.lst\n                    .\n            <list_item>\n                <paragraph>\n                    Removing files and directories from SVN will not trigger their removal\n                    from the web site.  Files and directories must be manually removed from\n                    sourceforge.net (under \n                    <literal>\n                        /home/project-web/docutils/htdocs/\n                    ).\n        <comment xml:space=\"preserve\">\n            Emacs settings\n            \n            Local Variables:\n            mode: indented-text\n            mode: rst\n            indent-tabs-mode: nil\n            sentence-end-double-space: t\n            fill-column: 70\n            End:\n"
+ },
+ "format": "docodin-doctree/1",
+ "input": {
+  "overrides": {},
+  "source_path": "docs/dev/website.rst",
+  "writer": "pseudoxml"
+ },
+ "registry": {
+  "autofootnote_refs": [],
+  "autofootnote_start": 1,
+  "autofootnotes": [],
+  "citation_refs": [],
+  "citations": [],
+  "current_line": null,
+  "current_source": null,
+  "decoration": 3,
+  "footnote_refs": [],
+  "footnotes": [],
+  "id_counter": [
+   [
+    "target-",
+    8
+   ]
+  ],
+  "ids": [
+   [
+    "target-1",
+    23
+   ],
+   [
+    "target-2",
+    24
+   ],
+   [
+    "target-3",
+    25
+   ],
+   [
+    "target-4",
+    26
+   ],
+   [
+    "target-5",
+    27
+   ],
+   [
+    "target-6",
+    28
+   ],
+   [
+    "docutils-web-site",
+    135
+   ],
+   [
+    "target-7",
+    59
+   ],
+   [
+    "target-8",
+    68
+   ],
+   [
+    "setting-up",
+    69
+   ],
+   [
+    "adding-rst-txt-files",
+    79
+   ],
+   [
+    "user-contributor",
+    82
+   ],
+   [
+    "maintainer",
+    94
+   ],
+   [
+    "removing-files-directories",
+    114
+   ]
+  ],
+  "indirect_targets": [
+   59
+  ],
+  "nameids": [
+   [
+    "docutils web site",
+    "docutils-web-site"
+   ],
+   [
+    "setting up",
+    "setting-up"
+   ],
+   [
+    "adding .rst/.txt files",
+    "adding-rst-txt-files"
+   ],
+   [
+    "user/contributor",
+    "user-contributor"
+   ],
+   [
+    "maintainer",
+    "maintainer"
+   ],
+   [
+    "removing files & directories",
+    "removing-files-directories"
+   ]
+  ],
+  "nametypes": [
+   [
+    "docutils web site",
+    false
+   ],
+   [
+    "setting up",
+    false
+   ],
+   [
+    "adding .rst/.txt files",
+    false
+   ],
+   [
+    "user/contributor",
+    false
+   ],
+   [
+    "maintainer",
+    false
+   ],
+   [
+    "removing files & directories",
+    false
+   ]
+  ],
+  "parse_messages": [],
+  "refids": [
+   [
+    "target-7",
+    [
+     56
+    ]
+   ],
+   [
+    "adding-rst-txt-files",
+    [
+     59,
+     56
+    ]
+   ]
+  ],
+  "refnames": [],
+  "substitution_defs": [],
+  "substitution_names": [],
+  "symbol_footnote_refs": [],
+  "symbol_footnote_start": 0,
+  "symbol_footnotes": [],
+  "transform_messages": []
+ },
+ "reporter": {
+  "debug": false,
+  "halt_level": 4,
+  "max_level": -1,
+  "observers": [],
+  "report_level": 2,
+  "source": "docs/dev/website.rst",
+  "source_lines": {
+   "input_offset": 0,
+   "line_offset": 111,
+   "runs": [
+    [
+     "docs/dev/website.rst",
+     0,
+     2
+    ],
+    [
+     "internal padding before docs/header.rst",
+     -1,
+     1
+    ],
+    [
+     "docs/header.rst",
+     0,
+     16
+    ],
+    [
+     "internal padding after docs/header.rst",
+     16,
+     1
+    ],
+    [
+     "docs/dev/website.rst",
+     2,
+     90
+    ]
+   ]
+  },
+  "written": []
+ },
+ "settings": {
+  "_config_files": [],
+  "_destination": null,
+  "_disable_config": true,
+  "_source": "docs/dev/website.rst",
+  "auto_id_prefix": "%",
+  "character_level_inline_markup": false,
+  "config": null,
+  "datestamp": null,
+  "debug": null,
+  "detailed": null,
+  "docinfo_xform": true,
+  "doctitle_xform": true,
+  "dump_internals": null,
+  "dump_pseudo_xml": null,
+  "dump_settings": null,
+  "dump_transforms": null,
+  "error_encoding": "utf-8",
+  "error_encoding_error_handler": "backslashreplace",
+  "exit_status_level": 5,
+  "expose_internals": null,
+  "file_insertion_enabled": true,
+  "footnote_backlinks": true,
+  "generator": null,
+  "halt_level": 4,
+  "id_prefix": "",
+  "input_encoding": "utf-8",
+  "input_encoding_error_handler": "strict",
+  "language_code": "en",
+  "line_length_limit": 10000,
+  "output": null,
+  "output_encoding": "utf-8",
+  "output_encoding_error_handler": "strict",
+  "output_path": null,
+  "pep_base_url": "https://peps.python.org/",
+  "pep_file_url_template": "pep-%04d",
+  "pep_references": null,
+  "raw_enabled": true,
+  "report_level": 2,
+  "rfc_base_url": "https://tools.ietf.org/html/",
+  "rfc_references": null,
+  "root_prefix": "",
+  "sectnum_xform": true,
+  "sectsubtitle_xform": false,
+  "smart_quotes": false,
+  "smartquotes_locales": null,
+  "source_link": null,
+  "source_url": null,
+  "strict_visitor": null,
+  "strip_classes": null,
+  "strip_comments": null,
+  "strip_elements_with_classes": null,
+  "syntax_highlight": "long",
+  "tab_width": 8,
+  "title": null,
+  "toc_backlinks": "entry",
+  "traceback": true,
+  "trim_footnote_reference_space": null,
+  "validate": null
+ },
+ "stage": "output",
+ "transformer": {
+  "queue": [],
+  "serialno": 20
+ },
+ "tree": {
+  "attributes": {
+   "ids": [
+    "docutils-web-site"
+   ],
+   "names": [
+    "docutils web site"
+   ],
+   "source": "docs/dev/website.rst",
+   "title": "Docutils Web Site"
+  },
+  "children": [
+   {
+    "children": [
+     {
+      "tag": "#text",
+      "text": "Docutils Web Site"
+     }
+    ],
+    "document": true,
+    "line": 5,
+    "rawsource": "Docutils Web Site",
+    "source": "docs/dev/website.rst",
+    "tag": "title"
+   },
+   {
+    "children": [
+     {
+      "children": [
+       {
+        "children": [
+         {
+          "attributes": {
+           "anonymous": true,
+           "name": "Docutils",
+           "refuri": "https://docutils.sourceforge.io"
+          },
+          "children": [
+           {
+            "tag": "#text",
+            "text": "Docutils"
+           }
+          ],
+          "rawsource": "Docutils__",
+          "resolved": true,
+          "tag": "reference"
+         },
+         {
+          "tag": "#text",
+          "text": " | "
+         },
+         {
+          "attributes": {
+           "anonymous": true,
+           "name": "Overview",
+           "refuri": "../index.html"
+          },
+          "children": [
+           {
+            "tag": "#text",
+            "text": "Overview"
+           }
+          ],
+          "rawsource": "Overview__",
+          "resolved": true,
+          "tag": "reference"
+         },
+         {
+          "tag": "#text",
+          "text": " | "
+         },
+         {
+          "attributes": {
+           "anonymous": true,
+           "name": "About",
+           "refuri": "../index.html#project-fundamentals"
+          },
+          "children": [
+           {
+            "tag": "#text",
+            "text": "About"
+           }
+          ],
+          "rawsource": "About__",
+          "resolved": true,
+          "tag": "reference"
+         },
+         {
+          "tag": "#text",
+          "text": " | "
+         },
+         {
+          "attributes": {
+           "anonymous": true,
+           "name": "Users",
+           "refuri": "../index.html#user"
+          },
+          "children": [
+           {
+            "tag": "#text",
+            "text": "Users"
+           }
+          ],
+          "rawsource": "Users__",
+          "resolved": true,
+          "tag": "reference"
+         },
+         {
+          "tag": "#text",
+          "text": " | "
+         },
+         {
+          "attributes": {
+           "anonymous": true,
+           "name": "Reference",
+           "refuri": "../index.html#ref"
+          },
+          "children": [
+           {
+            "tag": "#text",
+            "text": "Reference"
+           }
+          ],
+          "rawsource": "Reference__",
+          "resolved": true,
+          "tag": "reference"
+         },
+         {
+          "tag": "#text",
+          "text": " | "
+         },
+         {
+          "attributes": {
+           "anonymous": true,
+           "name": "Developers",
+           "refuri": "../index.html#howto"
+          },
+          "children": [
+           {
+            "tag": "#text",
+            "text": "Developers"
+           }
+          ],
+          "rawsource": "Developers__",
+          "resolved": true,
+          "tag": "reference"
+         }
+        ],
+        "document": true,
+        "line": 7,
+        "rawsource": "Docutils__ | Overview__ | About__ | Users__ | Reference__ | Developers__",
+        "source": "docs/header.rst",
+        "tag": "paragraph"
+       },
+       {
+        "attributes": {
+         "anonymous": true,
+         "ids": [
+          "target-1"
+         ],
+         "refuri": "https://docutils.sourceforge.io"
+        },
+        "document": true,
+        "line": 12,
+        "rawsource": "__ https://docutils.sourceforge.io",
+        "referenced": true,
+        "source": "docs/header.rst",
+        "tag": "target"
+       },
+       {
+        "attributes": {
+         "anonymous": true,
+         "ids": [
+          "target-2"
+         ],
+         "refuri": "../index.html"
+        },
+        "document": true,
+        "line": 13,
+        "rawsource": "__ ../index.html",
+        "referenced": true,
+        "source": "docs/header.rst",
+        "tag": "target"
+       },
+       {
+        "attributes": {
+         "anonymous": true,
+         "ids": [
+          "target-3"
+         ],
+         "refuri": "../index.html#project-fundamentals"
+        },
+        "document": true,
+        "line": 14,
+        "rawsource": "__ ../index.html#project-fundamentals",
+        "referenced": true,
+        "source": "docs/header.rst",
+        "tag": "target"
+       },
+       {
+        "attributes": {
+         "anonymous": true,
+         "ids": [
+          "target-4"
+         ],
+         "refuri": "../index.html#user"
+        },
+        "document": true,
+        "line": 15,
+        "rawsource": "__ ../index.html#user",
+        "referenced": true,
+        "source": "docs/header.rst",
+        "tag": "target"
+       },
+       {
+        "attributes": {
+         "anonymous": true,
+         "ids": [
+          "target-5"
+         ],
+         "refuri": "../index.html#ref"
+        },
+        "document": true,
+        "line": 16,
+        "rawsource": "__ ../index.html#ref",
+        "referenced": true,
+        "source": "docs/header.rst",
+        "tag": "target"
+       },
+       {
+        "attributes": {
+         "anonymous": true,
+         "ids": [
+          "target-6"
+         ],
+         "refuri": "../index.html#howto"
+        },
+        "document": true,
+        "line": 17,
+        "rawsource": "__ ../index.html#howto",
+        "referenced": true,
+        "source": "docs/header.rst",
+        "tag": "target"
+       }
+      ],
+      "document": true,
+      "line": 15,
+      "source": "docs/header.rst",
+      "tag": "header"
+     }
+    ],
+    "document": true,
+    "line": 15,
+    "source": "docs/header.rst",
+    "tag": "decoration"
+   },
+   {
+    "children": [
+     {
+      "children": [
+       {
+        "tag": "#text",
+        "text": "David Goodger; open to all Docutils developers"
+       }
+      ],
+      "tag": "author"
+     },
+     {
+      "children": [
+       {
+        "attributes": {
+         "refuri": "mailto:docutils-develop@lists.sourceforge.net"
+        },
+        "children": [
+         {
+          "tag": "#text",
+          "text": "docutils-develop@lists.sourceforge.net"
+         }
+        ],
+        "rawsource": "docutils-develop@lists.sourceforge.net",
+        "tag": "reference"
+       }
+      ],
+      "tag": "contact"
+     },
+     {
+      "children": [
+       {
+        "document": true,
+        "tag": "#text",
+        "text": "2025-03-07"
+       }
+      ],
+      "tag": "date"
+     },
+     {
+      "children": [
+       {
+        "document": true,
+        "tag": "#text",
+        "text": "10020"
+       }
+      ],
+      "tag": "revision"
+     },
+     {
+      "children": [
+       {
+        "tag": "#text",
+        "text": "This document has been placed in the public domain."
+       }
+      ],
+      "tag": "copyright"
+     }
+    ],
+    "document": true,
+    "tag": "docinfo"
+   },
+   {
+    "attributes": {
+     "xml:space": "preserve"
+    },
+    "children": [
+     {
+      "tag": "#text",
+      "text": "Minimal menu bar for inclusion in documentation sources\nin ``docutils/docs/*/`` sub-diretories.\n\nAttention: this is not a standalone document."
+     }
+    ],
+    "document": true,
+    "line": 5,
+    "rawsource": "Minimal menu bar for inclusion in documentation sources\nin ``docutils/docs/*/`` sub-diretories.\n\nAttention: this is not a standalone document.",
+    "source": "docs/header.rst",
+    "tag": "comment"
+   },
+   {
+    "children": [
+     {
+      "tag": "#text",
+      "text": "The Docutils web site, <"
+     },
+     {
+      "attributes": {
+       "refuri": "https://docutils.sourceforge.io/"
+      },
+      "children": [
+       {
+        "tag": "#text",
+        "text": "https://docutils.sourceforge.io/"
+       }
+      ],
+      "rawsource": "https://docutils.sourceforge.io/",
+      "tag": "reference"
+     },
+     {
+      "tag": "#text",
+      "text": ">, is\nmaintained by the "
+     },
+     {
+      "children": [
+       {
+        "tag": "#text",
+        "text": "docutils-update.local"
+       }
+      ],
+      "rawsource": "``docutils-update.local``",
+      "tag": "literal"
+     },
+     {
+      "tag": "#text",
+      "text": " script, run by project\nmaintainers on their local machines.  The script\nwill process any .rst/.txt file which is newer than the corresponding .html\nfile in the local copy of the project's web directory and upload the changes\nto the web site at SourceForge."
+     }
+    ],
+    "document": true,
+    "line": 13,
+    "rawsource": "The Docutils web site, <https://docutils.sourceforge.io/>, is\nmaintained by the ``docutils-update.local`` script, run by project\nmaintainers on their local machines.  The script\nwill process any .rst/.txt file which is newer than the corresponding .html\nfile in the local copy of the project's web directory and upload the changes\nto the web site at SourceForge.",
+    "source": "docs/dev/website.rst",
+    "tag": "paragraph"
+   },
+   {
+    "children": [
+     {
+      "tag": "#text",
+      "text": "Please "
+     },
+     {
+      "children": [
+       {
+        "tag": "#text",
+        "text": "do not"
+       }
+      ],
+      "rawsource": "**do not**",
+      "tag": "strong"
+     },
+     {
+      "tag": "#text",
+      "text": " add any generated .html files to the Docutils\nrepository.  They will be generated automatically after a one-time\nsetup ("
+     },
+     {
+      "attributes": {
+       "anonymous": true,
+       "name": "described below",
+       "refid": "adding-rst-txt-files"
+      },
+      "children": [
+       {
+        "tag": "#text",
+        "text": "described below"
+       }
+      ],
+      "rawsource": "`described below`__",
+      "resolved": true,
+      "tag": "reference"
+     },
+     {
+      "tag": "#text",
+      "text": ")."
+     }
+    ],
+    "document": true,
+    "line": 20,
+    "rawsource": "Please **do not** add any generated .html files to the Docutils\nrepository.  They will be generated automatically after a one-time\nsetup (`described below`__).",
+    "source": "docs/dev/website.rst",
+    "tag": "paragraph"
+   },
+   {
+    "attributes": {
+     "anonymous": true,
+     "ids": [
+      "target-7"
+     ],
+     "refid": "adding-rst-txt-files"
+    },
+    "document": true,
+    "internal": {
+     "indirect_reference_name": "Adding .rst/.txt Files"
+    },
+    "line": 42,
+    "rawsource": "__ `Adding .rst/.txt Files`_",
+    "referenced": true,
+    "resolved": true,
+    "source": "docs/dev/website.rst",
+    "tag": "target"
+   },
+   {
+    "children": [
+     {
+      "tag": "#text",
+      "text": "The "
+     },
+     {
+      "attributes": {
+       "anonymous": true,
+       "name": "docutils-update.local",
+       "refuri": "https://docutils.sourceforge.io/sandbox/infrastructure/docutils-update.local"
+      },
+      "children": [
+       {
+        "tag": "#text",
+        "text": "docutils-update.local"
+       }
+      ],
+      "rawsource": "docutils-update.local__",
+      "resolved": true,
+      "tag": "reference"
+     },
+     {
+      "tag": "#text",
+      "text": " script is located at\n"
+     },
+     {
+      "children": [
+       {
+        "tag": "#text",
+        "text": "sandbox/infrastructure/docutils-update.local"
+       }
+      ],
+      "rawsource": "``sandbox/infrastructure/docutils-update.local``",
+      "tag": "literal"
+     },
+     {
+      "tag": "#text",
+      "text": "."
+     }
+    ],
+    "document": true,
+    "line": 26,
+    "rawsource": "The docutils-update.local__ script is located at\n``sandbox/infrastructure/docutils-update.local``.",
+    "source": "docs/dev/website.rst",
+    "tag": "paragraph"
+   },
+   {
+    "attributes": {
+     "anonymous": true,
+     "ids": [
+      "target-8"
+     ],
+     "refuri": "https://docutils.sourceforge.io/sandbox/infrastructure/docutils-update.local"
+    },
+    "document": true,
+    "line": 47,
+    "rawsource": "__ https://docutils.sourceforge.io/sandbox/infrastructure/docutils-update.local",
+    "referenced": true,
+    "source": "docs/dev/website.rst",
+    "tag": "target"
+   },
+   {
+    "attributes": {
+     "ids": [
+      "setting-up"
+     ],
+     "names": [
+      "setting up"
+     ]
+    },
+    "children": [
+     {
+      "children": [
+       {
+        "tag": "#text",
+        "text": "Setting Up"
+       }
+      ],
+      "document": true,
+      "line": 33,
+      "rawsource": "Setting Up",
+      "source": "docs/dev/website.rst",
+      "tag": "title"
+     },
+     {
+      "children": [
+       {
+        "tag": "#text",
+        "text": "(TBA)"
+       }
+      ],
+      "document": true,
+      "line": 35,
+      "rawsource": "(TBA)",
+      "source": "docs/dev/website.rst",
+      "tag": "paragraph"
+     },
+     {
+      "children": [
+       {
+        "children": [
+         {
+          "tag": "#text",
+          "text": "Anyone with checkin privileges can be a web-site maintainer. You need to\nset up the directories for a local website build."
+         }
+        ],
+        "line": 38,
+        "rawsource": "Anyone with checkin privileges can be a web-site maintainer. You need to\nset up the directories for a local website build.",
+        "source": "docs/dev/website.rst",
+        "tag": "paragraph"
+       },
+       {
+        "children": [
+         {
+          "tag": "#text",
+          "text": "The procedure for that was on the docutils-devel list a while ago."
+         }
+        ],
+        "line": 41,
+        "rawsource": "The procedure for that was on the docutils-devel list a while ago.",
+        "source": "docs/dev/website.rst",
+        "tag": "paragraph"
+       }
+      ],
+      "document": true,
+      "line": 37,
+      "rawsource": "Anyone with checkin privileges can be a web-site maintainer. You need to\nset up the directories for a local website build.\n\nThe procedure for that was on the docutils-devel list a while ago.",
+      "source": "docs/dev/website.rst",
+      "tag": "hint"
+     }
+    ],
+    "document": true,
+    "line": 33,
+    "source": "docs/dev/website.rst",
+    "tag": "section"
+   },
+   {
+    "attributes": {
+     "ids": [
+      "adding-rst-txt-files"
+     ],
+     "names": [
+      "adding .rst/.txt files"
+     ]
+    },
+    "children": [
+     {
+      "children": [
+       {
+        "tag": "#text",
+        "text": "Adding .rst/.txt Files"
+       }
+      ],
+      "document": true,
+      "line": 45,
+      "rawsource": "Adding .rst/.txt Files",
+      "source": "docs/dev/website.rst",
+      "tag": "title"
+     },
+     {
+      "attributes": {
+       "ids": [
+        "user-contributor"
+       ],
+       "names": [
+        "user/contributor"
+       ]
+      },
+      "children": [
+       {
+        "children": [
+         {
+          "tag": "#text",
+          "text": "User/Contributor"
+         }
+        ],
+        "document": true,
+        "line": 48,
+        "rawsource": "User/Contributor",
+        "source": "docs/dev/website.rst",
+        "tag": "title"
+       },
+       {
+        "children": [
+         {
+          "tag": "#text",
+          "text": "When adding a new .rst/.txt file that should be converted to HTML:"
+         }
+        ],
+        "document": true,
+        "line": 50,
+        "rawsource": "When adding a new .rst/.txt file that should be converted to HTML:",
+        "source": "docs/dev/website.rst",
+        "tag": "paragraph"
+       },
+       {
+        "attributes": {
+         "enumtype": "arabic",
+         "prefix": "",
+         "suffix": "."
+        },
+        "children": [
+         {
+          "children": [
+           {
+            "children": [
+             {
+              "tag": "#text",
+              "text": "Edit sandbox/infrastructure/htmlfiles.lst, and add the .html file\ncorresponding to the new .rst/.txt file (please keep the sorted order)."
+             }
+            ],
+            "line": 52,
+            "rawsource": "Edit sandbox/infrastructure/htmlfiles.lst, and add the .html file\ncorresponding to the new .rst/.txt file (please keep the sorted order).",
+            "source": "docs/dev/website.rst",
+            "tag": "paragraph"
+           }
+          ],
+          "document": true,
+          "line": 52,
+          "rawsource": "Edit sandbox/infrastructure/htmlfiles.lst, and add the .html file\ncorresponding to the new .rst/.txt file (please keep the sorted order).\n",
+          "source": "docs/dev/website.rst",
+          "tag": "list_item"
+         },
+         {
+          "children": [
+           {
+            "children": [
+             {
+              "tag": "#text",
+              "text": "Commit the edited version to the SVN repository."
+             }
+            ],
+            "line": 55,
+            "rawsource": "Commit the edited version to the SVN repository.",
+            "source": "docs/dev/website.rst",
+            "tag": "paragraph"
+           }
+          ],
+          "document": true,
+          "line": 55,
+          "rawsource": "Commit the edited version to the SVN repository.\n",
+          "source": "docs/dev/website.rst",
+          "tag": "list_item"
+         }
+        ],
+        "document": true,
+        "line": 52,
+        "source": "docs/dev/website.rst",
+        "tag": "enumerated_list"
+       }
+      ],
+      "document": true,
+      "line": 48,
+      "source": "docs/dev/website.rst",
+      "tag": "section"
+     },
+     {
+      "attributes": {
+       "ids": [
+        "maintainer"
+       ],
+       "names": [
+        "maintainer"
+       ]
+      },
+      "children": [
+       {
+        "children": [
+         {
+          "tag": "#text",
+          "text": "Maintainer"
+         }
+        ],
+        "document": true,
+        "line": 58,
+        "rawsource": "Maintainer",
+        "source": "docs/dev/website.rst",
+        "tag": "title"
+       },
+       {
+        "attributes": {
+         "enumtype": "arabic",
+         "prefix": "",
+         "suffix": "."
+        },
+        "children": [
+         {
+          "children": [
+           {
+            "children": [
+             {
+              "tag": "#text",
+              "text": "If there are new directories in the SVN, allow the update script to run\nonce to create the directories in the filesystem before preparing for\nHTML processing."
+             }
+            ],
+            "line": 60,
+            "rawsource": "If there are new directories in the SVN, allow the update script to run\nonce to create the directories in the filesystem before preparing for\nHTML processing.",
+            "source": "docs/dev/website.rst",
+            "tag": "paragraph"
+           }
+          ],
+          "document": true,
+          "line": 60,
+          "rawsource": "If there are new directories in the SVN, allow the update script to run\nonce to create the directories in the filesystem before preparing for\nHTML processing.\n",
+          "source": "docs/dev/website.rst",
+          "tag": "list_item"
+         },
+         {
+          "children": [
+           {
+            "children": [
+             {
+              "tag": "#text",
+              "text": "Any .html document with a corresponding .rst/.txt file is regenerated\nif the .rst/.txt has changed, but no new .html files will be generated."
+             }
+            ],
+            "line": 64,
+            "rawsource": "Any .html document with a corresponding .rst/.txt file is regenerated\nif the .rst/.txt has changed, but no new .html files will be generated.",
+            "source": "docs/dev/website.rst",
+            "tag": "paragraph"
+           },
+           {
+            "children": [
+             {
+              "tag": "#text",
+              "text": "Therefore "
+             },
+             {
+              "children": [
+               {
+                "tag": "#text",
+                "text": "touch"
+               }
+              ],
+              "rawsource": "*touch*",
+              "tag": "emphasis"
+             },
+             {
+              "tag": "#text",
+              "text": " the .html-file and then the .rst/.txt."
+             }
+            ],
+            "line": 67,
+            "rawsource": "Therefore *touch* the .html-file and then the .rst/.txt.",
+            "source": "docs/dev/website.rst",
+            "tag": "paragraph"
+           }
+          ],
+          "document": true,
+          "line": 64,
+          "rawsource": "Any .html document with a corresponding .rst/.txt file is regenerated\nif the .rst/.txt has changed, but no new .html files will be generated.\n\nTherefore *touch* the .html-file and then the .rst/.txt.\n",
+          "source": "docs/dev/website.rst",
+          "tag": "list_item"
+         },
+         {
+          "children": [
+           {
+            "children": [
+             {
+              "children": [
+               {
+                "tag": "#text",
+                "text": "docutils-update.local -u"
+               }
+              ],
+              "rawsource": "``docutils-update.local -u``",
+              "tag": "literal"
+             },
+             {
+              "tag": "#text",
+              "text": "    Regenerate .html unconditionally."
+             }
+            ],
+            "line": 69,
+            "rawsource": "``docutils-update.local -u``    Regenerate .html unconditionally.",
+            "source": "docs/dev/website.rst",
+            "tag": "paragraph"
+           }
+          ],
+          "document": true,
+          "line": 69,
+          "rawsource": "``docutils-update.local -u``    Regenerate .html unconditionally.\n\n",
+          "source": "docs/dev/website.rst",
+          "tag": "list_item"
+         }
+        ],
+        "document": true,
+        "line": 60,
+        "source": "docs/dev/website.rst",
+        "tag": "enumerated_list"
+       }
+      ],
+      "document": true,
+      "line": 58,
+      "source": "docs/dev/website.rst",
+      "tag": "section"
+     }
+    ],
+    "document": true,
+    "line": 45,
+    "referenced": true,
+    "source": "docs/dev/website.rst",
+    "tag": "section"
+   },
+   {
+    "attributes": {
+     "ids": [
+      "removing-files-directories"
+     ],
+     "names": [
+      "removing files & directories"
+     ]
+    },
+    "children": [
+     {
+      "children": [
+       {
+        "tag": "#text",
+        "text": "Removing Files & Directories"
+       }
+      ],
+      "document": true,
+      "line": 73,
+      "rawsource": "Removing Files & Directories",
+      "source": "docs/dev/website.rst",
+      "tag": "title"
+     },
+     {
+      "attributes": {
+       "enumtype": "arabic",
+       "prefix": "",
+       "suffix": "."
+      },
+      "children": [
+       {
+        "children": [
+         {
+          "children": [
+           {
+            "tag": "#text",
+            "text": "Remove from SVN"
+           }
+          ],
+          "line": 75,
+          "rawsource": "Remove from SVN",
+          "source": "docs/dev/website.rst",
+          "tag": "paragraph"
+         }
+        ],
+        "document": true,
+        "line": 75,
+        "rawsource": "Remove from SVN\n",
+        "source": "docs/dev/website.rst",
+        "tag": "list_item"
+       },
+       {
+        "children": [
+         {
+          "children": [
+           {
+            "tag": "#text",
+            "text": "Remove to-be-generated HTML files from\n"
+           },
+           {
+            "children": [
+             {
+              "tag": "#text",
+              "text": "sandbox/infrastructure/htmlfiles.lst"
+             }
+            ],
+            "rawsource": "``sandbox/infrastructure/htmlfiles.lst``",
+            "tag": "literal"
+           },
+           {
+            "tag": "#text",
+            "text": "."
+           }
+          ],
+          "line": 77,
+          "rawsource": "Remove to-be-generated HTML files from\n``sandbox/infrastructure/htmlfiles.lst``.",
+          "source": "docs/dev/website.rst",
+          "tag": "paragraph"
+         }
+        ],
+        "document": true,
+        "line": 77,
+        "rawsource": "Remove to-be-generated HTML files from\n``sandbox/infrastructure/htmlfiles.lst``.\n",
+        "source": "docs/dev/website.rst",
+        "tag": "list_item"
+       },
+       {
+        "children": [
+         {
+          "children": [
+           {
+            "tag": "#text",
+            "text": "Removing files and directories from SVN will not trigger their removal\nfrom the web site.  Files and directories must be manually removed from\nsourceforge.net (under "
+           },
+           {
+            "children": [
+             {
+              "tag": "#text",
+              "text": "/home/project-web/docutils/htdocs/"
+             }
+            ],
+            "rawsource": "``/home/project-web/docutils/htdocs/``",
+            "tag": "literal"
+           },
+           {
+            "tag": "#text",
+            "text": ")."
+           }
+          ],
+          "line": 80,
+          "rawsource": "Removing files and directories from SVN will not trigger their removal\nfrom the web site.  Files and directories must be manually removed from\nsourceforge.net (under ``/home/project-web/docutils/htdocs/``).",
+          "source": "docs/dev/website.rst",
+          "tag": "paragraph"
+         }
+        ],
+        "document": true,
+        "line": 80,
+        "rawsource": "Removing files and directories from SVN will not trigger their removal\nfrom the web site.  Files and directories must be manually removed from\nsourceforge.net (under ``/home/project-web/docutils/htdocs/``).\n",
+        "source": "docs/dev/website.rst",
+        "tag": "list_item"
+       }
+      ],
+      "document": true,
+      "line": 75,
+      "source": "docs/dev/website.rst",
+      "tag": "enumerated_list"
+     },
+     {
+      "attributes": {
+       "xml:space": "preserve"
+      },
+      "children": [
+       {
+        "tag": "#text",
+        "text": "Emacs settings\n\nLocal Variables:\nmode: indented-text\nmode: rst\nindent-tabs-mode: nil\nsentence-end-double-space: t\nfill-column: 70\nEnd:"
+       }
+      ],
+      "document": true,
+      "line": 92,
+      "rawsource": "Emacs settings\n\nLocal Variables:\nmode: indented-text\nmode: rst\nindent-tabs-mode: nil\nsentence-end-double-space: t\nfill-column: 70\nEnd:",
+      "source": "docs/dev/website.rst",
+      "tag": "comment"
+     }
+    ],
+    "document": true,
+    "line": 73,
+    "source": "docs/dev/website.rst",
+    "tag": "section"
+   }
+  ],
+  "document": true,
+  "tag": "document"
+ }
+}

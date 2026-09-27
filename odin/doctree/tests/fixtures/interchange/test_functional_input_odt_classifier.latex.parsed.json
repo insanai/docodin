@@ -1,0 +1,491 @@
+{
+ "detached": [],
+ "expected": {
+  "pformat": "<document source=\"test/functional/input/odt_classifier.rst\">\n    <section ids=\"definition-lists\" names=\"definition\\ lists\">\n        <title>\n            Definition Lists\n        <definition_list>\n            <definition_list_item>\n                <term>\n                    Term\n                <definition>\n                    <paragraph>\n                        Definition\n            <definition_list_item>\n                <term>\n                    Term\n                <classifier>\n                    classifier\n                <definition>\n                    <paragraph>\n                        Definition paragraph 1.\n                    <paragraph>\n                        Definition paragraph 2.\n            <definition_list_item>\n                <term>\n                    Term\n                <definition>\n                    <paragraph>\n                        Definition\n"
+ },
+ "format": "docodin-doctree/1",
+ "input": {
+  "overrides": {},
+  "source_path": "test/functional/input/odt_classifier.rst",
+  "writer": "latex"
+ },
+ "registry": {
+  "autofootnote_refs": [],
+  "autofootnote_start": 1,
+  "autofootnotes": [],
+  "citation_refs": [],
+  "citations": [],
+  "current_line": null,
+  "current_source": null,
+  "decoration": null,
+  "footnote_refs": [],
+  "footnotes": [],
+  "id_counter": [],
+  "ids": [
+   [
+    "definition-lists",
+    1
+   ]
+  ],
+  "indirect_targets": [],
+  "nameids": [
+   [
+    "definition lists",
+    "definition-lists"
+   ]
+  ],
+  "nametypes": [
+   [
+    "definition lists",
+    false
+   ]
+  ],
+  "parse_messages": [],
+  "refids": [],
+  "refnames": [],
+  "substitution_defs": [],
+  "substitution_names": [],
+  "symbol_footnote_refs": [],
+  "symbol_footnote_start": 0,
+  "symbol_footnotes": [],
+  "transform_messages": []
+ },
+ "reporter": {
+  "debug": false,
+  "halt_level": 4,
+  "max_level": -1,
+  "observers": [],
+  "report_level": 2,
+  "source": "test/functional/input/odt_classifier.rst",
+  "source_lines": {
+   "input_offset": 0,
+   "line_offset": 12,
+   "runs": [
+    [
+     "test/functional/input/odt_classifier.rst",
+     0,
+     11
+    ]
+   ]
+  },
+  "written": []
+ },
+ "settings": {
+  "_config_files": [],
+  "_destination": null,
+  "_disable_config": true,
+  "_source": "test/functional/input/odt_classifier.rst",
+  "attribution": "dash",
+  "auto_id_prefix": "%",
+  "character_level_inline_markup": false,
+  "compound_enumerators": false,
+  "config": null,
+  "datestamp": null,
+  "debug": null,
+  "docinfo_xform": true,
+  "doctitle_xform": true,
+  "documentclass": "article",
+  "documentoptions": "a4paper",
+  "docutils_footnotes": true,
+  "dump_internals": null,
+  "dump_pseudo_xml": null,
+  "dump_settings": null,
+  "dump_transforms": null,
+  "embed_stylesheet": false,
+  "error_encoding": "utf-8",
+  "error_encoding_error_handler": "backslashreplace",
+  "exit_status_level": 5,
+  "expose_internals": null,
+  "file_insertion_enabled": true,
+  "font_encoding": "T1",
+  "footnote_backlinks": true,
+  "footnote_references": "superscript",
+  "generator": null,
+  "graphicx_option": "",
+  "halt_level": 4,
+  "hyperlink_color": "blue",
+  "hyperref_options": "",
+  "id_prefix": "",
+  "input_encoding": "utf-8",
+  "input_encoding_error_handler": "strict",
+  "language_code": "en",
+  "latex_preamble": "% PDF Standard Fonts\n\\usepackage{mathptmx} % Times\n\\usepackage[scaled=.90]{helvet}\n\\usepackage{courier}",
+  "legacy_class_functions": false,
+  "legacy_column_widths": null,
+  "line_length_limit": 10000,
+  "literal_block_env": "",
+  "output": null,
+  "output_encoding": "utf-8",
+  "output_encoding_error_handler": "strict",
+  "output_path": null,
+  "pep_base_url": "https://peps.python.org/",
+  "pep_file_url_template": "pep-%04d",
+  "pep_references": null,
+  "raw_enabled": true,
+  "reference_label": "",
+  "report_level": 2,
+  "rfc_base_url": "https://tools.ietf.org/html/",
+  "rfc_references": null,
+  "root_prefix": "",
+  "section_enumerator_separator": "-",
+  "section_prefix_for_enumerators": null,
+  "sectnum_xform": true,
+  "sectsubtitle_xform": false,
+  "smart_quotes": false,
+  "smartquotes_locales": null,
+  "source_link": null,
+  "source_url": null,
+  "strict_visitor": null,
+  "strip_classes": null,
+  "strip_comments": null,
+  "strip_elements_with_classes": null,
+  "stylesheet": "",
+  "stylesheet_dirs": [
+   "."
+  ],
+  "stylesheet_path": null,
+  "syntax_highlight": "long",
+  "tab_width": 8,
+  "table_style": [
+   "standard"
+  ],
+  "template": "default.tex",
+  "title": null,
+  "toc_backlinks": "entry",
+  "traceback": true,
+  "trim_footnote_reference_space": null,
+  "use_bibtex": "",
+  "use_latex_abstract": false,
+  "use_latex_citations": null,
+  "use_latex_docinfo": false,
+  "use_latex_toc": true,
+  "use_part_section": false,
+  "use_verbatim_when_possible": null,
+  "validate": null
+ },
+ "stage": "parsed",
+ "transformer": {
+  "queue": [
+   [
+    "220-004",
+    "docutils.transforms.references.Substitutions",
+    null,
+    {}
+   ],
+   [
+    "260-005",
+    "docutils.transforms.references.PropagateTargets",
+    null,
+    {}
+   ],
+   [
+    "320-006",
+    "docutils.transforms.frontmatter.DocTitle",
+    null,
+    {}
+   ],
+   [
+    "340-008",
+    "docutils.transforms.frontmatter.DocInfo",
+    null,
+    {}
+   ],
+   [
+    "350-007",
+    "docutils.transforms.frontmatter.SectionSubTitle",
+    null,
+    {}
+   ],
+   [
+    "420-020",
+    "docutils.transforms.universal.StripClassesAndElements",
+    null,
+    {}
+   ],
+   [
+    "440-009",
+    "docutils.transforms.references.AnonymousHyperlinks",
+    null,
+    {}
+   ],
+   [
+    "460-010",
+    "docutils.transforms.references.IndirectHyperlinks",
+    null,
+    {}
+   ],
+   [
+    "620-011",
+    "docutils.transforms.references.Footnotes",
+    null,
+    {}
+   ],
+   [
+    "640-012",
+    "docutils.transforms.references.ExternalTargets",
+    null,
+    {}
+   ],
+   [
+    "660-013",
+    "docutils.transforms.references.InternalTargets",
+    null,
+    {}
+   ],
+   [
+    "740-003",
+    "docutils.transforms.universal.StripComments",
+    null,
+    {}
+   ],
+   [
+    "770-022",
+    "docutils.transforms.references.CitationReferences",
+    null,
+    {}
+   ],
+   [
+    "820-001",
+    "docutils.transforms.universal.Decorations",
+    null,
+    {}
+   ],
+   [
+    "830-015",
+    "docutils.transforms.misc.Transitions",
+    null,
+    {}
+   ],
+   [
+    "835-016",
+    "docutils.transforms.universal.Validate",
+    null,
+    {}
+   ],
+   [
+    "840-002",
+    "docutils.transforms.universal.ExposeInternals",
+    null,
+    {}
+   ],
+   [
+    "850-014",
+    "docutils.transforms.references.DanglingReferences",
+    null,
+    {}
+   ],
+   [
+    "855-017",
+    "docutils.transforms.universal.SmartQuotes",
+    null,
+    {}
+   ],
+   [
+    "860-018",
+    "docutils.transforms.universal.Messages",
+    null,
+    {}
+   ],
+   [
+    "870-019",
+    "docutils.transforms.universal.FilterMessages",
+    null,
+    {}
+   ],
+   [
+    "920-021",
+    "docutils.transforms.writer_aux.Admonitions",
+    null,
+    {}
+   ]
+  ],
+  "serialno": 22
+ },
+ "tree": {
+  "attributes": {
+   "source": "test/functional/input/odt_classifier.rst"
+  },
+  "children": [
+   {
+    "attributes": {
+     "ids": [
+      "definition-lists"
+     ],
+     "names": [
+      "definition lists"
+     ]
+    },
+    "children": [
+     {
+      "children": [
+       {
+        "tag": "#text",
+        "text": "Definition Lists"
+       }
+      ],
+      "document": true,
+      "line": 2,
+      "rawsource": "Definition Lists",
+      "source": "test/functional/input/odt_classifier.rst",
+      "tag": "title"
+     },
+     {
+      "children": [
+       {
+        "children": [
+         {
+          "children": [
+           {
+            "tag": "#text",
+            "text": "Term"
+           }
+          ],
+          "line": 4,
+          "rawsource": "Term",
+          "source": "test/functional/input/odt_classifier.rst",
+          "tag": "term"
+         },
+         {
+          "children": [
+           {
+            "children": [
+             {
+              "tag": "#text",
+              "text": "Definition"
+             }
+            ],
+            "line": 5,
+            "rawsource": "Definition",
+            "source": "test/functional/input/odt_classifier.rst",
+            "tag": "paragraph"
+           }
+          ],
+          "line": 5,
+          "source": "test/functional/input/odt_classifier.rst",
+          "tag": "definition"
+         }
+        ],
+        "line": 4,
+        "rawsource": "Term\nDefinition",
+        "source": "test/functional/input/odt_classifier.rst",
+        "tag": "definition_list_item"
+       },
+       {
+        "children": [
+         {
+          "children": [
+           {
+            "tag": "#text",
+            "text": "Term"
+           }
+          ],
+          "line": 6,
+          "rawsource": "Term : classifier",
+          "source": "test/functional/input/odt_classifier.rst",
+          "tag": "term"
+         },
+         {
+          "children": [
+           {
+            "tag": "#text",
+            "text": "classifier"
+           }
+          ],
+          "rawsource": "classifier",
+          "tag": "classifier"
+         },
+         {
+          "children": [
+           {
+            "children": [
+             {
+              "tag": "#text",
+              "text": "Definition paragraph 1."
+             }
+            ],
+            "line": 7,
+            "rawsource": "Definition paragraph 1.",
+            "source": "test/functional/input/odt_classifier.rst",
+            "tag": "paragraph"
+           },
+           {
+            "children": [
+             {
+              "tag": "#text",
+              "text": "Definition paragraph 2."
+             }
+            ],
+            "line": 9,
+            "rawsource": "Definition paragraph 2.",
+            "source": "test/functional/input/odt_classifier.rst",
+            "tag": "paragraph"
+           }
+          ],
+          "line": 7,
+          "source": "test/functional/input/odt_classifier.rst",
+          "tag": "definition"
+         }
+        ],
+        "document": true,
+        "line": 6,
+        "rawsource": "Term : classifier\nDefinition paragraph 1.\n\nDefinition paragraph 2.",
+        "source": "test/functional/input/odt_classifier.rst",
+        "tag": "definition_list_item"
+       },
+       {
+        "children": [
+         {
+          "children": [
+           {
+            "tag": "#text",
+            "text": "Term"
+           }
+          ],
+          "line": 10,
+          "rawsource": "Term",
+          "source": "test/functional/input/odt_classifier.rst",
+          "tag": "term"
+         },
+         {
+          "children": [
+           {
+            "children": [
+             {
+              "tag": "#text",
+              "text": "Definition"
+             }
+            ],
+            "line": 11,
+            "rawsource": "Definition",
+            "source": "test/functional/input/odt_classifier.rst",
+            "tag": "paragraph"
+           }
+          ],
+          "line": 11,
+          "source": "test/functional/input/odt_classifier.rst",
+          "tag": "definition"
+         }
+        ],
+        "document": true,
+        "line": 10,
+        "rawsource": "Term\nDefinition",
+        "source": "test/functional/input/odt_classifier.rst",
+        "tag": "definition_list_item"
+       }
+      ],
+      "document": true,
+      "line": 4,
+      "source": "test/functional/input/odt_classifier.rst",
+      "tag": "definition_list"
+     }
+    ],
+    "document": true,
+    "line": 2,
+    "source": "test/functional/input/odt_classifier.rst",
+    "tag": "section"
+   }
+  ],
+  "document": true,
+  "tag": "document"
+ }
+}

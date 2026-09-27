@@ -1,0 +1,398 @@
+{
+ "detached": [
+  {
+   "node": {
+    "attributes": {
+     "level": 1,
+     "line": 10,
+     "source": "fuzz-021.rst",
+     "type": "INFO"
+    },
+    "children": [
+     {
+      "children": [
+       {
+        "tag": "#text",
+        "text": "Possible title underline, too short for the title.\nTreating it as ordinary text because it's so short."
+       }
+      ],
+      "tag": "paragraph"
+     }
+    ],
+    "document": true,
+    "line": 10,
+    "source": "fuzz-021.rst",
+    "tag": "system_message"
+   },
+   "parent": 9
+  }
+ ],
+ "expected": {
+  "pformat": "<document source=\"fuzz-021.rst\">\n    <block_quote>\n        <paragraph>\n            <problematic ids=\"problematic-1\" refid=\"system-message-1\">\n                `\n            unclosed literal\n        <system_message backrefs=\"problematic-1\" ids=\"system-message-1\" level=\"2\" line=\"1\" source=\"fuzz-021.rst\" type=\"WARNING\">\n            <paragraph>\n                Inline interpreted text or phrase reference start-string without end-string.\n    <section ids=\"title\" names=\"title\">\n        <title>\n            Title\n        <system_message level=\"2\" line=\"3\" source=\"fuzz-021.rst\" type=\"WARNING\">\n            <paragraph>\n                Title overline too short.\n            <literal_block xml:space=\"preserve\">\n                ====\n                Title\n                ====\n        <block_quote>\n            <paragraph>\n                ) . [1]        ootnote\n        <paragraph>\n            S(ub\n            ---\n        <target ids=\"ref\" names=\"ref.\">\n"
+ },
+ "format": "docodin-doctree/1",
+ "input": {
+  "overrides": {
+   "halt_level": 5,
+   "report_level": 2
+  },
+  "source_path": "fuzz-021.rst",
+  "writer": "pseudoxml"
+ },
+ "registry": {
+  "autofootnote_refs": [],
+  "autofootnote_start": 1,
+  "autofootnotes": [],
+  "citation_refs": [],
+  "citations": [],
+  "current_line": null,
+  "current_source": null,
+  "decoration": null,
+  "footnote_refs": [],
+  "footnotes": [],
+  "id_counter": [
+   [
+    "system-message-",
+    1
+   ],
+   [
+    "problematic-",
+    1
+   ]
+  ],
+  "ids": [
+   [
+    "system-message-1",
+    6
+   ],
+   [
+    "problematic-1",
+    3
+   ],
+   [
+    "title",
+    9
+   ],
+   [
+    "ref",
+    22
+   ]
+  ],
+  "indirect_targets": [],
+  "nameids": [
+   [
+    "title",
+    "title"
+   ],
+   [
+    "ref.",
+    "ref"
+   ]
+  ],
+  "nametypes": [
+   [
+    "title",
+    false
+   ],
+   [
+    "ref.",
+    true
+   ]
+  ],
+  "parse_messages": [
+   6,
+   12,
+   23
+  ],
+  "refids": [],
+  "refnames": [],
+  "substitution_defs": [],
+  "substitution_names": [],
+  "symbol_footnote_refs": [],
+  "symbol_footnote_start": 0,
+  "symbol_footnotes": [],
+  "transform_messages": []
+ },
+ "reporter": {
+  "debug": false,
+  "halt_level": 5,
+  "max_level": 2,
+  "observers": [],
+  "report_level": 2,
+  "source": "fuzz-021.rst",
+  "source_lines": {
+   "input_offset": 0,
+   "line_offset": 13,
+   "runs": [
+    [
+     "fuzz-021.rst",
+     0,
+     13
+    ]
+   ]
+  },
+  "written": [
+   {
+    "level": 2,
+    "node": 6,
+    "text": "fuzz-021.rst:1: (WARNING/2) Inline interpreted text or phrase reference start-string without end-string.\n"
+   },
+   {
+    "level": 2,
+    "node": 12,
+    "text": "fuzz-021.rst:3: (WARNING/2) Title overline too short.\n\n====\nTitle\n====\n"
+   }
+  ]
+ },
+ "settings": {
+  "_config_files": [],
+  "_destination": null,
+  "_disable_config": true,
+  "_source": "fuzz-021.rst",
+  "auto_id_prefix": "%",
+  "character_level_inline_markup": false,
+  "config": null,
+  "datestamp": null,
+  "debug": null,
+  "detailed": null,
+  "docinfo_xform": true,
+  "doctitle_xform": true,
+  "dump_internals": null,
+  "dump_pseudo_xml": null,
+  "dump_settings": null,
+  "dump_transforms": null,
+  "error_encoding": "utf-8",
+  "error_encoding_error_handler": "backslashreplace",
+  "exit_status_level": 5,
+  "expose_internals": null,
+  "file_insertion_enabled": true,
+  "footnote_backlinks": true,
+  "generator": null,
+  "halt_level": 5,
+  "id_prefix": "",
+  "input_encoding": "utf-8",
+  "input_encoding_error_handler": "strict",
+  "language_code": "en",
+  "line_length_limit": 10000,
+  "output": null,
+  "output_encoding": "utf-8",
+  "output_encoding_error_handler": "strict",
+  "output_path": null,
+  "pep_base_url": "https://peps.python.org/",
+  "pep_file_url_template": "pep-%04d",
+  "pep_references": null,
+  "raw_enabled": true,
+  "report_level": 2,
+  "rfc_base_url": "https://tools.ietf.org/html/",
+  "rfc_references": null,
+  "root_prefix": "",
+  "sectnum_xform": true,
+  "sectsubtitle_xform": false,
+  "smart_quotes": false,
+  "smartquotes_locales": null,
+  "source_link": null,
+  "source_url": null,
+  "strict_visitor": null,
+  "strip_classes": null,
+  "strip_comments": null,
+  "strip_elements_with_classes": null,
+  "syntax_highlight": "long",
+  "tab_width": 8,
+  "title": null,
+  "toc_backlinks": "entry",
+  "traceback": true,
+  "trim_footnote_reference_space": null,
+  "validate": null
+ },
+ "stage": "transformed",
+ "transformer": {
+  "queue": [],
+  "serialno": 20
+ },
+ "tree": {
+  "attributes": {
+   "source": "fuzz-021.rst"
+  },
+  "children": [
+   {
+    "children": [
+     {
+      "children": [
+       {
+        "attributes": {
+         "ids": [
+          "problematic-1"
+         ],
+         "refid": "system-message-1"
+        },
+        "children": [
+         {
+          "tag": "#text",
+          "text": "`"
+         }
+        ],
+        "rawsource": "`",
+        "tag": "problematic"
+       },
+       {
+        "tag": "#text",
+        "text": "unclosed literal"
+       }
+      ],
+      "line": 1,
+      "rawsource": "`unclosed literal",
+      "source": "fuzz-021.rst",
+      "tag": "paragraph"
+     },
+     {
+      "attributes": {
+       "backrefs": [
+        "problematic-1"
+       ],
+       "ids": [
+        "system-message-1"
+       ],
+       "level": 2,
+       "line": 1,
+       "source": "fuzz-021.rst",
+       "type": "WARNING"
+      },
+      "children": [
+       {
+        "children": [
+         {
+          "tag": "#text",
+          "text": "Inline interpreted text or phrase reference start-string without end-string."
+         }
+        ],
+        "tag": "paragraph"
+       }
+      ],
+      "tag": "system_message"
+     }
+    ],
+    "document": true,
+    "line": 1,
+    "rawsource": "`unclosed literal\n",
+    "source": "fuzz-021.rst",
+    "tag": "block_quote"
+   },
+   {
+    "attributes": {
+     "ids": [
+      "title"
+     ],
+     "names": [
+      "title"
+     ]
+    },
+    "children": [
+     {
+      "children": [
+       {
+        "tag": "#text",
+        "text": "Title"
+       }
+      ],
+      "document": true,
+      "line": 5,
+      "rawsource": "Title",
+      "source": "fuzz-021.rst",
+      "tag": "title"
+     },
+     {
+      "attributes": {
+       "level": 2,
+       "line": 3,
+       "source": "fuzz-021.rst",
+       "type": "WARNING"
+      },
+      "children": [
+       {
+        "children": [
+         {
+          "tag": "#text",
+          "text": "Title overline too short."
+         }
+        ],
+        "tag": "paragraph"
+       },
+       {
+        "attributes": {
+         "xml:space": "preserve"
+        },
+        "children": [
+         {
+          "tag": "#text",
+          "text": "====\nTitle\n===="
+         }
+        ],
+        "rawsource": "====\nTitle\n====",
+        "tag": "literal_block"
+       }
+      ],
+      "document": true,
+      "line": 5,
+      "source": "fuzz-021.rst",
+      "tag": "system_message"
+     },
+     {
+      "children": [
+       {
+        "children": [
+         {
+          "tag": "#text",
+          "text": ") . [1]        ootnote"
+         }
+        ],
+        "line": 7,
+        "rawsource": ") . [1]        ootnote",
+        "source": "fuzz-021.rst",
+        "tag": "paragraph"
+       }
+      ],
+      "document": true,
+      "line": 7,
+      "rawsource": ") . [1]        ootnote\n",
+      "source": "fuzz-021.rst",
+      "tag": "block_quote"
+     },
+     {
+      "children": [
+       {
+        "tag": "#text",
+        "text": "S(ub\n---"
+       }
+      ],
+      "document": true,
+      "line": 9,
+      "rawsource": "S(ub\n---",
+      "source": "fuzz-021.rst",
+      "tag": "paragraph"
+     },
+     {
+      "attributes": {
+       "ids": [
+        "ref"
+       ],
+       "names": [
+        "ref."
+       ]
+      },
+      "document": true,
+      "line": 12,
+      "rawsource": ".. _ref.:",
+      "source": "fuzz-021.rst",
+      "tag": "target"
+     }
+    ],
+    "document": true,
+    "line": 5,
+    "source": "fuzz-021.rst",
+    "tag": "section"
+   }
+  ],
+  "document": true,
+  "tag": "document"
+ }
+}
