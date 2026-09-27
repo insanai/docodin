@@ -94,6 +94,14 @@ spans_through_tabs :: proc(t: ^testing.T) {
 	testing.expect_value(t, source_of(tree, text, find(tree, doc, .Emphasis)), "*em*")
 	testing.expect_value(t, source_of(tree, text, find(tree, doc, .Block_Quote)), "quoted *e*")
 	testing.expect_value(t, source_of(tree, text, find(tree, doc, .Emphasis, 1)), "*e*")
+	// a term line (inline text given alone) and table rows with tabs
+	text = "Term\t*a* : cls\n   Def\n\n=\t=\nx\t*y*\n=\t=\n"
+	doc, p = parse_spans(text)
+	tree = &p.tree
+	testing.expect_value(t, source_of(tree, text, find(tree, doc, .Emphasis)), "*a*")
+	testing.expect_value(t, source_of(tree, text, find(tree, doc, .Classifier)), "cls")
+	testing.expect_value(t, source_of(tree, text, find(tree, doc, .Emphasis, 1)), "*y*")
+	check_nesting(t, tree, doc, len(text))
 }
 
 // Spans change nothing else, and are off by default.
