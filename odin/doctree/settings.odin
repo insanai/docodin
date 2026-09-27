@@ -113,6 +113,13 @@ Settings :: struct {
 	legacy_column_widths:           bool,
 	use_verbatim_when_possible:     bool,
 	use_bibtex:                     string,
+	// not docutils settings: the docutils package directory, for module
+	// reprs in messages ("" for "<docutils>") and the standard include
+	// files (``parsers/rst/include``; "" for the shim's copy); the rST
+	// language module was loaded before (docutils' cache): the parser
+	// reports nothing about it
+	docutils_dir:                   string,
+	rst_language_cached:            bool,
 }
 
 LATEX_PREAMBLE :: `% PDF Standard Fonts

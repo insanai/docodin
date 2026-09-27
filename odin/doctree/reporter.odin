@@ -32,7 +32,9 @@ Observer :: proc(doc: ^Doc, msg: Node)
 // the source and line of an absolute line number (or of the current line).
 Source_Line_Proc :: proc(doc: ^Doc, data: rawptr, line: Maybe(int)) -> (Maybe(string), Maybe(int))
 
-// A message as written to the warning stream (``msg.astext()``).
+// A message as written to the warning stream (``msg.astext()``); ``node``
+// is 0 for a message of another reporter writing to the same stream (the
+// document of a nested parse).
 Written_Message :: struct {
 	level: Level,
 	node:  Node,
@@ -49,8 +51,13 @@ Reporter :: struct {
 	source_and_line:  Source_Line_Proc,
 	source_line_data: rawptr,
 	max_level:        int, // highest level generated so far, -1: none
-	halted:           bool, // a message reached ``halt_level``
+	// The first message that reached ``halt_level`` (where docutils raises
+	// ``SystemMessage``), and the reporter's state then: ``max_level`` and
+	// the number of ``written`` messages (the halting one included).
+	halted:           bool,
 	halt_message:     Node,
+	halt_max_level:   int,
+	halt_written:     int,
 	written:          [dynamic]Written_Message,
 }
 
@@ -143,20 +150,31 @@ system_message :: proc(
 	opts := Message_Options{},
 ) -> Node {
 	msg := new_message(doc, level, message, opts)
+	report(doc, level, msg)
+	return msg
+}
+
+// The reporting part of ``Reporter.system_message`` for the message
+// ``msg``: written to the stream, the halt level (``SystemMessage``), the
+// observers and ``max_level``.
+report :: proc(doc: ^Doc, level: Level, msg: Node) {
 	r := &doc.reporter
 	lv := int(level)
 	loud := lv >= r.report_level || (r.debug_flag && level == .DEBUG) || lv >= r.halt_level
 	if r.stream != .Discard && loud do write_message(doc, level, msg)
 	if lv >= r.halt_level {
-		r.halted = true
-		r.halt_message = msg
-		return msg
+		if !r.halted {
+			r.halted = true
+			r.halt_message = msg
+			r.halt_max_level = r.max_level
+			r.halt_written = len(r.written)
+		}
+		return
 	}
 	if level > .DEBUG || r.debug_flag {
 		for o in r.observers do o(doc, msg)
 	}
 	r.max_level = max(lv, r.max_level)
-	return msg
 }
 
 // The ``system_message`` element (``nodes.system_message(message,

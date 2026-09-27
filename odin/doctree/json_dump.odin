@@ -391,6 +391,7 @@ dump_reporter :: proc(d: ^Dumper) -> json.Value {
 	out["source_lines"] = source_lines_value(d)
 	written := make(json.Array, 0, len(r.written), d.a)
 	for w in r.written {
+		if w.node == 0 do continue // written by another reporter (a nested parse)
 		msg := make(json.Object, 3, d.a)
 		msg["level"] = json.Integer(w.level)
 		msg["node"] = ref(d, w.node)
