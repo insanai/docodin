@@ -49,3 +49,8 @@ echo "=== Building docodin native checker ==="
 mkdir -p "${PROJECT_DIR}/bin"
 odin build "${PROJECT_DIR}/cmd/docodin-check" "${OPT[@]}" -out:"${PROJECT_DIR}/bin/docodin-check"
 echo "Built ${PROJECT_DIR}/bin/docodin-check"
+
+echo "=== Building docodin standalone CLI compiler ==="
+odin build "${PROJECT_DIR}/cmd/docodin" "${OPT[@]}" -out:"${PROJECT_DIR}/bin/docodin"
+echo "Built ${PROJECT_DIR}/bin/docodin"
+

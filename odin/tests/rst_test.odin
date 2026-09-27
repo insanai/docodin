@@ -1,5 +1,6 @@
 package rst_tests
 
+import "core:fmt"
 import "core:mem"
 import "core:strings"
 import "core:testing"
@@ -162,3 +163,34 @@ current_line_tracking :: proc(t: ^testing.T) {
 	testing.expect_value(t, table.kind, rst.Node_Kind.Table)
 	testing.expect_value(t, table.cur_line, rst.CUR_NONE)
 }
+
+@(test)
+html_writer_produces_valid_html :: proc(t: ^testing.T) {
+	context.allocator = context.temp_allocator
+	source := "Hello World\n===========\n\nThis is **bold** and *italic* and ``code``.\n\n- item 1\n- item 2\n\n.. note::\n   Important message.\n"
+	doc, p := parse(source)
+	html := rst.write_html(doc, &p, rst.Html_Config{standalone = true, embed_css = true})
+	testing.expect(t, strings.contains(html, "<!DOCTYPE html>"))
+	testing.expect(t, strings.contains(html, "<h1 id=\"hello-world\">"))
+	testing.expect(t, strings.contains(html, "<strong>bold</strong>"))
+	testing.expect(t, strings.contains(html, "<em>italic</em>"))
+	testing.expect(t, strings.contains(html, "<code>code</code>"))
+	testing.expect(t, strings.contains(html, "<ul>"))
+	testing.expect(t, strings.contains(html, "<li>item 1</li>"))
+	testing.expect(t, strings.contains(html, "<div class=\"admonition note\">"))
+}
+
+@(test)
+latex_writer_produces_valid_latex :: proc(t: ^testing.T) {
+	context.allocator = context.temp_allocator
+	source := "LaTeX Title\n===========\n\nParagraph with $100 & 50% discount.\n\n.. note::\n   Be careful.\n"
+	doc, p := parse(source)
+	latex := rst.write_latex(doc, &p, rst.Latex_Config{standalone = true})
+	testing.expect(t, strings.contains(latex, "\\documentclass[11pt,a4paper]{article}"))
+	testing.expect(t, strings.contains(latex, "\\section{"))
+	testing.expect(t, strings.contains(latex, "\\$100 \\& 50\\% discount."))
+	testing.expect(t, strings.contains(latex, "\\begin{quote}"))
+	testing.expect(t, strings.contains(latex, "\\textbf{NOTE:}\\newline"))
+	testing.expect(t, strings.contains(latex, "\\end{document}"))
+}
+
