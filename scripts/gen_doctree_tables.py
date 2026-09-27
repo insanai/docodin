@@ -200,7 +200,9 @@ BASIC_LISTS = ["ids", "classes", "names", "dupnames", "backrefs"]
 
 
 def node_classes() -> list[type]:
-    return [getattr(nodes, name) for name in nodes.node_class_names]
+    # The generic ``nodes.Element`` comes last: directives use it as a dummy
+    # container (``class``, ``replace``).
+    return [getattr(nodes, name) for name in nodes.node_class_names] + [nodes.Element]
 
 
 def class_ref(cls: type) -> tuple[str, str]:
@@ -223,8 +225,9 @@ def model_item(category, quantifier: str) -> str:
 def check_concrete_classes(classes: list[type]) -> None:
     # isinstance() against a concrete class must be a tag test: no concrete
     # node class may derive from another one.
-    for a in classes:
-        for b in classes:
+    concrete = [c for c in classes if c is not nodes.Element]
+    for a in concrete:
+        for b in concrete:
             assert a is b or not issubclass(a, b), (a, b)
 
 

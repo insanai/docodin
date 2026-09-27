@@ -103,6 +103,7 @@ Tag :: enum u8 {
 	transition,
 	version,
 	warning,
+	Element,
 }
 
 // A docutils element category (abstract base or mix-in class).
@@ -234,6 +235,7 @@ TAG_NAMES := [Tag]string{
 	.transition = "transition",
 	.version = "version",
 	.warning = "warning",
+	.Element = "Element",
 }
 
 @(rodata)
@@ -344,6 +346,7 @@ TAG_CATEGORIES := [Tag]Categories{
 	.transition = {.Element, .SubStructural},
 	.version = {.Element, .TextElement, .Bibliographic},
 	.warning = {.Element, .Body, .Admonition},
+	.Element = {.Element},
 }
 
 @(rodata)
@@ -362,7 +365,7 @@ CATEGORY_TAGS := [Category]Tag_Set{
 		.section, .sidebar, .status, .strong, .subscript, .substitution_definition,
 		.substitution_reference, .subtitle, .superscript, .system_message, .table, .target,
 		.tbody, .term, .tgroup, .thead, .tip, .title, .title_reference, .topic, .transition,
-		.version, .warning},
+		.version, .warning, .Element},
 	.TextElement = {.abbreviation, .acronym, .address, .attribution, .author, .caption,
 		.citation_reference, .classifier, .comment, .contact, .copyright, .date,
 		.doctest_block, .emphasis, .field_name, .footnote_reference, .generated, .inline,
@@ -513,6 +516,7 @@ TAG_TEXT_SEPARATOR := [Tag]string{
 	.transition = "\n\n",
 	.version = "",
 	.warning = "\n\n",
+	.Element = "\n\n",
 }
 
 @(rodata)
@@ -646,6 +650,7 @@ TAG_VALID_ATTRS := [Tag][2]u8{
 	.transition = {0, 5},
 	.version = {0, 5},
 	.warning = {0, 5},
+	.Element = {0, 5},
 }
 
 @(rodata)
@@ -749,6 +754,7 @@ TAG_LIST_ATTRS := [Tag]Basic_Lists{
 	.transition = {.ids, .classes, .names, .dupnames},
 	.version = {.ids, .classes, .names, .dupnames},
 	.warning = {.ids, .classes, .names, .dupnames},
+	.Element = {.ids, .classes, .names, .dupnames},
 }
 
 @(rodata)
@@ -919,5 +925,6 @@ TAG_MODEL := [Tag][2]u8{
 	.transition = {14, 0},
 	.version = {0, 1},
 	.warning = {3, 1},
+	.Element = {14, 0},
 }
 
