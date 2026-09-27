@@ -6,7 +6,7 @@ running the docodin shim, under randomly varied settings.  The outputs
 (including warnings and exceptions) must be identical.
 
     uv run python tests/shim_differential.py [--cases N] [--seed S] [--jobs J]
-        [--corpus DIR] [--out DIR]
+        [--corpus DIR] [--out DIR] [--writers W,...]
 """
 
 from __future__ import annotations
@@ -25,7 +25,9 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 import fuzz_differential as fuzz  # noqa: E402
 
-WRITERS = ("pseudoxml", "xml", "html5", "html4", "latex", "xetex", "manpage", "odt")
+# "positions": source and line of every element after the transforms (Sphinx
+# reports warnings with them; pseudo-XML does not show them).
+WRITERS = ("positions", "pseudoxml", "xml", "html5", "html4", "latex", "xetex", "manpage", "odt")
 
 SETTING_CHOICES = {
     "doctitle_xform": [True, False],
@@ -52,7 +54,7 @@ warnings.simplefilter("ignore", FutureWarning)  # docutils announces 1.0 default
 if sys.argv[1] == "shim":
     import docodin.shim
     docodin.shim.install_shim(force=True)
-import docutils.core
+import docutils.core, docutils.nodes
 assert (sys.argv[1] == "shim") == bool(getattr(docutils, "__docodin_shim__", False))
 
 def publish(text, writer, settings):
@@ -63,8 +65,14 @@ def publish(text, writer, settings):
     if writer == "odt":
         overrides.pop("output_encoding")
     try:
-        out = docutils.core.publish_string(text, source_path="doc.rst", writer_name=writer,
-                                           settings_overrides=overrides)
+        if writer == "positions":
+            doc = docutils.core.publish_doctree(text, source_path="doc.rst",
+                                                settings_overrides=overrides)
+            out = "\n".join("%s %s %s" % (n.tagname, n.source, n.line)
+                            for n in doc.findall(docutils.nodes.Element))
+        else:
+            out = docutils.core.publish_string(text, source_path="doc.rst", writer_name=writer,
+                                               settings_overrides=overrides)
     except BaseException as error:  # noqa: BLE001 - the exception is the result
         out = "EXCEPTION %s: %s" % (type(error).__name__, error)
     if isinstance(out, bytes):  # odt: compare the document parts
@@ -122,14 +130,15 @@ def masked(output: str) -> str:
                      if "site-packages" not in line and "/shim/docutils/" not in line)
 
 
-def run_chunk(items: list[tuple[str, dict]], out_dir: Path, first: int) -> int:
+def run_chunk(items: list[tuple[str, dict]], out_dir: Path, first: int,
+              writers: tuple[str, ...] = WRITERS) -> int:
     real, shim = Worker("real"), Worker("shim")
     failures = 0
     try:
         for i, (text, settings) in enumerate(items, first):
-            expected = real.publish(text, settings, WRITERS)
-            got = shim.publish(text, settings, WRITERS)
-            bad = [w for w in WRITERS
+            expected = real.publish(text, settings, writers)
+            got = shim.publish(text, settings, writers)
+            bad = [w for w in writers
                    if [masked(x) for x in expected[w]] != [masked(x) for x in got[w]]]
             if bad:
                 failures += 1
@@ -150,6 +159,7 @@ def main() -> int:
     parser.add_argument("--jobs", type=int, default=os.cpu_count() or 1)
     parser.add_argument("--corpus", default="")
     parser.add_argument("--out", default="shim-differential-failures")
+    parser.add_argument("--writers", default=",".join(WRITERS))
     args = parser.parse_args()
     corpus = [p.read_text(encoding="utf-8", errors="replace")
               for p in Path(args.corpus).rglob("*.rst")] if args.corpus else []
@@ -159,7 +169,9 @@ def main() -> int:
     size = max(1, -(-len(items) // args.jobs))
     chunks = [(items[i:i + size], i) for i in range(0, len(items), size)]
     with ThreadPoolExecutor(args.jobs) as pool:
-        failures = sum(pool.map(lambda chunk: run_chunk(chunk[0], out_dir, chunk[1]), chunks))
+        writers = tuple(args.writers.split(","))
+        failures = sum(pool.map(lambda chunk: run_chunk(chunk[0], out_dir, chunk[1], writers),
+                                chunks))
     print(f"{len(items) - failures}/{len(items)} identical (failures in {out_dir})")
     return 1 if failures else 0
 
