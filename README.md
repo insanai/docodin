@@ -16,11 +16,12 @@ It has three parts:
   grammar exactly as docutils does, including every system message and line
   number, about 5× faster. The shim builds the Python document tree from its
   output.
-- **Native tools** (`odin/check`, `cmd/`). `docodin-check` reports markup
-  errors without Python: Elm-style reports with source excerpts and hints, or
-  docutils' one-line format. A native document pipeline (document tree,
-  transforms, HTML and LaTeX writers) is being built; see
-  [docs/NATIVE_PIPELINE.md](docs/NATIVE_PIPELINE.md).
+- **Native tools** (`odin/check`, `odin/publish`, `cmd/`). `docodin-check`
+  reports markup errors without Python: Elm-style reports with source excerpts
+  and hints, or docutils' one-line format. `docodin` publishes documents
+  without Python, with docutils' output, messages and exit status: the native
+  document pipeline (reader, transforms, and the pseudo-XML, XML, HTML5, LaTeX
+  and XeLaTeX writers); see [docs/NATIVE_PIPELINE.md](docs/NATIVE_PIPELINE.md).
 
 ## Installation
 
@@ -99,6 +100,29 @@ Apple M1):
 | publish HTML5 | 1794 ms | 802 ms | 2.2× |
 | `docodin-check` on the docutils and Sphinx docs (2.75 MB) | 2.47 s | 49 ms (1 core), 14 ms (8 cores) | 50–175× |
 
+## Native publishing
+
+```bash
+docodin doc.rst doc.html                     # as: python -m docutils doc.rst doc.html
+docodin --writer=latex --documentclass=book doc.rst doc.tex
+rst2xetex doc.rst doc.tex                    # rst2* names (links to docodin) pick the writer
+docodin pdf doc.rst                          # LaTeX writer + pdflatex (or --engine=xelatex)
+docodin --help --writer=latex                # the options of a writer
+```
+
+`docodin` takes docutils' front-end options (report, halt and exit-status
+levels, title and docinfo switches, section numbering, backlinks, footnote
+references, smart quotes, stripping, language, encodings, stylesheets, math
+output, table styles, LaTeX document class and options, ...) and writes the
+same output, messages and exit status as `python -m docutils`. It reads no
+configuration files; `html` is the html5 writer. Bad options get Elm-style
+reports with a hint.
+
+From Python, `docodin.publish_native(source, writer="html5",
+settings_overrides=...)` returns what `publish_string` returns (and
+`publish_parts` with `parts=True`), raising docutils' exceptions, for
+documents that need no Python extensions.
+
 ## Native checker
 
 ```bash
@@ -128,6 +152,10 @@ resolution need Python; use `docodin` or Sphinx for those.
 odin/rst/           reST parser (data-oriented parse tree)
 odin/check/         checker core and Elm-style diagnostics
 odin/doctree/       native docutils document tree, registry, reporter, JSON interchange
+odin/reader/        native reader: docutils document trees, directives and roles
+odin/transforms/    native docutils transforms
+odin/writers/       native pseudo-XML, XML, HTML5 and LaTeX/XeLaTeX writers
+odin/publish/       native publisher (settings, reader, transforms, writer)
 odin/lib/           C ABI library used by the Python package
 cmd/                docodin-check and the docodin native CLI
 python/docodin/     Python package: tree builder, shim, Sphinx integration
@@ -141,11 +169,13 @@ See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for the design.
 ## Tests
 
 ```bash
-odin test odin/tests && odin test odin/doctree/tests
+for t in odin/tests odin/{doctree,reader,transforms,writers,publish}/tests; do odin test $t; done
 uv run python -m pytest tests
 uv run python tests/shim_differential.py --cases 2000
 uv run python tests/fuzz_differential.py --cases 10000
 uv run python tests/lint_differential.py
+uv run --no-project --python 3.14 --with docutils==0.22.4 python \
+    tests/native_publish_differential.py --docutils-src ~/src/docutils-0.22.4 --fuzz 3000
 ```
 
 ## License
