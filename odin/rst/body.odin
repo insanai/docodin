@@ -670,7 +670,7 @@ paragraph :: proc(
 	append_chain(t, para, parse_inline_lines(sm.p, lines, text, lineno).first)
 	append_child(t, out, para)
 	if sp := sm.p.spans; sp != nil {
-		end := joined_offset(sp, lines, nil, len(data))
+		end := joined_offset(sp, lines, len(data))
 		set_span(sm.p, para, source_offset(sp, lines[0], 0), end)
 	}
 	return

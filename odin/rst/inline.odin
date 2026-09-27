@@ -41,13 +41,19 @@ Inliner :: struct {
 	row_at:     int,
 	row:        int,
 	row_end:    int,
-	// source positions (nil when off): the lines the text was joined from
-	// and the offset of each in the text
+	// source positions (nil when off): the lines the text was joined from,
+	// the offset of each in the text and of its end, the source offset of
+	// each line that is a view of the input (else -1), and the line of the
+	// last lookup (lookups come nearly in text order)
 	spans:      ^Span_Map,
 	lines:      []string,
 	line_at:    []int,
-	one_line:   [1]string, // ``lines`` of a text that is a single view
-	one_at:     [1]int,
+	line_end:   []int,
+	line_src:   []int,
+	line_hint:  int,
+	// the source offset of the text when it is a view of the input, else -1
+	direct:     int,
+	one_line:   [1]string, // ``lines`` of a text given alone
 }
 
 @(private = "file")
@@ -129,28 +135,46 @@ parse_inline_lines :: proc(p: ^Parser, lines: []string, text: string, lineno: in
 inline_spans_begin :: proc(il: ^Inliner, text: string) {
 	sp := il.p.spans
 	il.spans = sp
+	il.direct = direct_offset(sp, text) // a line or a block of the input
 	il.lines = sp.inline_lines
 	sp.inline_lines = nil // nested parses (none today) start afresh
-	if len(il.lines) <= 1 {
+	if il.direct >= 0 do return
+	if len(il.lines) == 0 {
 		il.one_line[0] = text
-		il.lines, il.line_at = il.one_line[:], il.one_at[:]
-		return
+		il.lines = il.one_line[:]
 	}
-	il.line_at = make([]int, len(il.lines), il.allocator)
+	n := len(il.lines)
+	il.line_at = make([]int, 3 * n, il.allocator)
+	il.line_end, il.line_src = il.line_at[n:2 * n], il.line_at[2 * n:]
+	il.line_at = il.line_at[:n]
 	at := 0
 	for line, i in il.lines {
 		il.line_at[i] = at
+		il.line_end[i] = at + len(line)
+		il.line_src[i] = direct_offset(sp, line) if len(line) > 0 else -1
 		at += len(line) + 1
 	}
+	il.line_end[n - 1] = max(int) // the text may be cut short
+}
+
+// Source offset of offset ``k`` of the text.
+@(private = "file")
+inline_source :: proc(il: ^Inliner, k: int) -> int {
+	if il.direct >= 0 do return il.direct + k
+	// the first line whose end reaches k, from the last one found
+	i, ends := il.line_hint, il.line_end
+	for i > 0 && ends[i - 1] >= k do i -= 1
+	for ends[i] < k do i += 1
+	il.line_hint = i
+	if il.line_src[i] >= 0 do return il.line_src[i] + k - il.line_at[i]
+	return source_offset(il.spans, il.lines[i], k - il.line_at[i])
 }
 
 // Record the text range ``[start, end)`` as the span of ``n``.
 @(private = "file")
 inline_span :: proc(il: ^Inliner, n: Node, start, end: int) {
 	if il.spans == nil do return
-	s := joined_offset(il.spans, il.lines, il.line_at, start)
-	e := joined_offset(il.spans, il.lines, il.line_at, end)
-	set_span(il.p, n, s, e)
+	set_span(il.p, n, inline_source(il, start), inline_source(il, end))
 }
 
 // Offset of ``sub`` (a view of the escaped text) in the text.
