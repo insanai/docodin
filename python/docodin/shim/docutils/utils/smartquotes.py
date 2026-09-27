@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import re
 from collections.abc import Iterable, Iterator
+from typing import Any
 
 from ._smartquotes_data import quotes as _QUOTES
 
@@ -103,7 +104,80 @@ def _educate(text: str, actions: dict[str, int | bool], language: str, context: 
 
 def educate_tokens(text_tokens: Iterable[tuple[str, str]], attr: str = default_smartypants_attr,
                    language: str = "en") -> Iterator[str]:
-    """Return iterator that "educates" the items of `text_tokens`."""
+    """Return iterator that "educates" the items of `text_tokens`.
+
+    Runs natively (all tokens at once) when the docodin library is available
+    and the arguments are supported; the Python implementation is the reference.
+    """
+    lib = _native_library()
+    if lib is not None and type(attr) is str and type(language) is str and language.isascii():
+        quotes = _native_quotes(language)
+        if quotes is not False:
+            tokens = list(text_tokens)
+            try:
+                return iter(_native_educate(lib, tokens, attr, language, quotes))
+            except (TypeError, ValueError, UnicodeEncodeError):
+                text_tokens = tokens
+    return _educate_tokens(text_tokens, attr, language)
+
+
+def _native_educate(lib: Any, tokens: list[tuple[str, str]], attr: str, language: str,
+                    quotes: tuple[str, ...] | None) -> list[str] | tuple[str, ...]:
+    if not tokens:
+        return []
+    kinds, texts = zip(*tokens, strict=True)
+    if attr != "-1" and _ACTIVE.search("".join(texts)) is None:
+        return texts
+    return lib.educate(kinds, texts, attr, language, quotes)
+
+
+# The native library: None until loaded, False if unavailable.
+_native_lib: Any = None
+_DEFAULT_QUOTES = dict(_QUOTES)
+_DEFAULT_CHARS = ("–", "—", "…", "’")
+# text without these is left unchanged by all rules but "stupefy"
+_ACTIVE = re.compile(r"[\"'`\\&]|--|\.\.\.|\. \. \.")
+
+
+def _native_library() -> Any:
+    global _native_lib
+    if _native_lib is None:
+        try:
+            from docodin._native import native
+
+            lib = native()
+        except Exception:  # noqa: BLE001 - no library: the Python implementation
+            lib = None
+        _native_lib = lib if lib is not None and lib.has_educate else False
+    if (smartchars.endash, smartchars.emdash, smartchars.ellipsis,
+            smartchars.apostrophe) != _DEFAULT_CHARS:
+        return None
+    return _native_lib or None
+
+
+def _native_quotes(language: str) -> tuple[str, ...] | None | bool:
+    """Quotes for the native educator: None for its (generated) table, or the
+    customized `smartchars.quotes` entry, or False if it cannot take them."""
+    key = language.lower()
+    marks = smartchars.quotes.get(key)
+    if marks is _DEFAULT_QUOTES.get(key):
+        return None
+    if marks is None:
+        return ('"', '"', "'", "'")
+    try:
+        marks = tuple(marks)
+    except TypeError:
+        return False
+    # the marks go into ``re.sub`` templates: no escapes, no group numbers
+    if len(marks) != 4 or not all(type(mark) is str and "\\" not in mark
+                                  and not mark[:1].isdigit() for mark in marks):
+        return False
+    return marks
+
+
+def _educate_tokens(text_tokens: Iterable[tuple[str, str]], attr: str,
+                    language: str) -> Iterator[str]:
+    """The Python implementation of `educate_tokens`."""
     actions = _actions(attr)
     prev_token_last_char = " "
     for ttype, text in text_tokens:
