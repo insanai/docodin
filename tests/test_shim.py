@@ -237,6 +237,5 @@ def test_sphinx_build_wrapper_tunes_the_collector(tmp_path: Path) -> None:
             "frozen = gc.get_freeze_count()  # the interpreter may freeze some at start-up\n"
             f"rc = b.main(['-q', '-b', 'html', {str(tmp_path)!r}, {str(tmp_path / 'out')!r}])\n"
             "print(rc, gc.get_threshold() == b.GC_THRESHOLDS, gc.get_freeze_count() > frozen)")
-    assert _python(code).stdout.split() == ["0", "True", "True"]
-    default = _python(code, DOCODIN_GC="default").stdout.split()
-    assert default == ["0", "False", "False"]
+    assert _python(code, DOCODIN_GC="tuned").stdout.split() == ["0", "True", "True"]
+    assert _python(code).stdout.split() == ["0", "False", "False"]  # opt-in

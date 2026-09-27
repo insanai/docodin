@@ -76,8 +76,8 @@ def setup(app: Any) -> dict[str, Any]:
         Extension metadata dictionary including version and parallel safety flags.
     """
     app.add_source_parser(OdinSphinxRSTParser, override=True)
-    # the collector tuning of docodin-sphinx-build (``docodin_gc_tuning = False`` disables it)
-    app.add_config_value("docodin_gc_tuning", True, "")
+    # the opt-in collector tuning of docodin-sphinx-build (see docodin.sphinx_build)
+    app.add_config_value("docodin_gc_tuning", False, "")
     app.connect("builder-inited", _tune_garbage_collection)
     from docodin import __version__
 

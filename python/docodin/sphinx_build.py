@@ -3,19 +3,20 @@
 Takes exactly the arguments of ``sphinx-build``.
 
 A Sphinx build keeps a large, long-lived environment in memory, and Python's
-full garbage collections rescan it again and again (a sixth of the build
-time of CPython's documentation).  Unless ``DOCODIN_GC=default`` is set, the
-build therefore runs with a tuned collector:
+full garbage collections rescan it again and again.  With
+``DOCODIN_GC=tuned`` the build runs with a tuned collector:
 
 * the collection thresholds are raised moderately, and
 * after the extensions are loaded and after all documents are read, the
   live objects are collected once and then frozen (`gc.freeze`): later
   collections skip them.
 
-The output is unchanged.  On CPython's documentation the build is about 18 %
-faster and its peak memory about 17 % higher (garbage collected later during
-reading); ``DOCODIN_GC=default`` keeps Python's default collector for
-memory-constrained builds.
+On CPython's documentation this makes the build about 20 % faster and its
+peak memory about 17 % higher.  It is opt-in because some projects' output
+depends on when Python collects garbage: with duplicate labels or repeated
+generated ids, "last one wins" in Sphinx's environment follows object
+lifetimes (CPython's documentation changes in four pages, with docutils as
+with docodin).
 """
 
 from __future__ import annotations
@@ -53,7 +54,7 @@ def main(argv: list[str] | None = None) -> int:
     from docodin.shim import install_shim
 
     install_shim(force=True)  # before Sphinx imports docutils
-    if os.environ.get("DOCODIN_GC", "tuned") != "default":
+    if os.environ.get("DOCODIN_GC", "default") == "tuned":
         tune_garbage_collection()
     from sphinx.cmd.build import main as sphinx_main
 
