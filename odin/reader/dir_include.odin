@@ -453,3 +453,66 @@ expandtabs :: proc(s: string, tabsize: int) -> string {
 	}
 	return strings.to_string(b)
 }
+
+// ``urlopen(url).read()`` decoded (``io.StringInput``) for ``file:`` URLs;
+// the native reader fetches no other URLs.  On failure: the exception
+// class and ``str(error)``.
+read_url :: proc(c: ^Context, d: ^Directive, url: string) -> (text: string, class, err: string) {
+	file_path, local := file_url_path(c, url)
+	if !local do return "", "URLError", "<urlopen error the native reader fetches file: URLs only>"
+	switch {
+	case !os.exists(file_path):
+		return "", "URLError", concat(
+			"<urlopen error [Errno 2] No such file or directory: ", py_repr(file_path), ">",
+		)
+	case os.is_dir(file_path):
+		return "", "IsADirectoryError", concat("[Errno 21] Is a directory: ", py_repr(file_path))
+	}
+	data, read_err := os.read_entire_file(file_path, c.allocator)
+	if read_err != nil {
+		return "", "PermissionError", concat("[Errno 13] Permission denied: ", py_repr(file_path))
+	}
+	encoding := options_string(&d.options, "encoding")
+	if encoding == "" do encoding = c.doc.settings.input_encoding
+	decoded, detail := decode(c, data, encoding)
+	if detail != "" do return "", "UnicodeError", detail
+	return decoded, "", ""
+}
+
+// The local path of a ``file:`` URL (``url2pathname`` of its path).
+@(private = "file")
+file_url_path :: proc(c: ^Context, url: string) -> (string, bool) {
+	if !has_prefix(dt.py_lower(url, c.allocator), "file:") do return "", false
+	rest := url[5:]
+	if has_prefix(rest, "//") {
+		rest = rest[2:]
+		slash := strings.index_byte(rest, '/')
+		host := rest if slash < 0 else rest[:slash]
+		if host != "" && dt.py_lower(host, c.allocator) != "localhost" do return "", false
+		rest = rest[len(host):]
+	}
+	return percent_decode(c, rest), true
+}
+
+@(private = "file")
+percent_decode :: proc(c: ^Context, s: string) -> string {
+	if strings.index_byte(s, '%') < 0 do return s
+	b := strings.builder_make(0, len(s), c.allocator)
+	hexval :: proc(ch: u8) -> int {
+		switch ch {
+		case '0' ..= '9': return int(ch - '0')
+		case 'a' ..= 'f': return int(ch - 'a') + 10
+		case 'A' ..= 'F': return int(ch - 'A') + 10
+		}
+		return -1
+	}
+	for i := 0; i < len(s); i += 1 {
+		if s[i] == '%' && i + 2 < len(s) + 0 && hexval(s[i + 1]) >= 0 && hexval(s[i + 2]) >= 0 {
+			strings.write_byte(&b, u8(hexval(s[i + 1]) * 16 + hexval(s[i + 2])))
+			i += 2
+			continue
+		}
+		strings.write_byte(&b, s[i])
+	}
+	return strings.to_string(b)
+}

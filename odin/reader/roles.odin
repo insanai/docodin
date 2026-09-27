@@ -271,6 +271,9 @@ apply_options :: proc(c: ^Context, n: dt.Node, opts: ^Options) {
 		case []string:
 			l := dt.list_for_write(doc, n, o.name)
 			for s in v do append(l, dt.intern(doc, s))
+		case []int:
+			l := dt.list_for_write(doc, n, o.name)
+			for i in v do append(l, dt.intern(doc, itoa(i)))
 		case Opt_None:
 			dt.set_attr(doc, n, o.name, dt.Attr_None{})
 		}

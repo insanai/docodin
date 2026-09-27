@@ -1,5 +1,7 @@
 package reader
 
+import "core:fmt"
+
 import dt "../doctree"
 
 // Document part directives (``directives.parts``, ``directives.references``):
@@ -60,6 +62,8 @@ update_details :: proc(c: ^Context, pending: dt.Node, options: ^Options) {
 			value = v
 		case []string:
 			value = v
+		case []int:
+			value = fmt.aprint(v) // not used by these directives
 		case Opt_None:
 			value = dt.Detail_None{}
 		}

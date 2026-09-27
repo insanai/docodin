@@ -112,9 +112,12 @@ build_directive :: proc(
 		dt.append_child(doc, parent, dt.error(doc, text, {children = {lit}, line = lineno}))
 		return false
 	}
+	if d.num[0] != 0 do c.insert_mode = .Skip // the parser inserted the lines
+	removed := c.removed_lines // before the directive's nested parses
 	result := run_directive(c, &dir)
+	c.insert_mode = .Insert
 	extend(c, parent, result[:])
-	if c.removed_lines > 0 do note_directive_lines(c, result[:], spec, dir.content_offset)
+	if removed > 0 do note_directive_lines(c, result[:], spec, dir.content_offset, removed)
 	if sm.lines != nil && sl_len(sm.lines) != before {
 		process_inserted_input(c, sm, before)
 		return true
@@ -142,18 +145,19 @@ note_directive_lines :: proc(
 	result: []dt.Node,
 	spec: ^Directive_Spec,
 	content_offset: int,
+	removed: int,
 ) {
 	doc := c.doc
 	for node in result {
 		for n in dt.traverse(doc, node, dt.tags_of(.Element)) {
 			_, has_src := dt.source(doc, n)
 			_, has_line := dt.line(doc, n)
-			if !has_src && has_line do note_absolute_line(c, n)
+			if !has_src && has_line do note_absolute_line(c, n, removed)
 		}
 	}
 	if spec.parsed_literal && len(result) > 0 && dt.is(doc, result[0], {.literal_block}) {
 		if ln, ok := dt.line(doc, result[0]); ok && ln == content_offset + 1 {
-			note_absolute_line(c, result[0])
+			note_absolute_line(c, result[0], removed)
 		}
 	}
 }
@@ -161,7 +165,6 @@ note_directive_lines :: proc(
 // The directive block as a slice of the input lines (so that nested
 // parses and insertions reach the enclosing input), with the parser's
 // de-indented text.
-@(private = "file")
 block_lines :: proc(c: ^Context, sm: ^Machine, lines: []string, line_offset: int) -> ^String_List {
 	il := input_lines(c, sm)
 	// views (table cells, substitution definitions) number their lines
@@ -171,6 +174,7 @@ block_lines :: proc(c: ^Context, sm: ^Machine, lines: []string, line_offset: int
 	if 0 <= start && end <= sl_len(il) {
 		block := sl_slice(il, start, end)
 		copy(block.data[:], lines)
+		if sm.disconnected do block.parent = nil // insertions stay in the block
 		return block
 	}
 	return sl_make(lines, c.source, c.allocator)
@@ -192,9 +196,9 @@ parse_directive_block :: proc(
 		sl_trim_start(indented)
 		line_offset += 1
 	}
-	for sl_len(indented) > 0 && is_blank(indented.data[sl_len(indented) - 1]) do sl_trim_end(
-		indented,
-	)
+	for sl_len(indented) > 0 && is_blank(indented.data[sl_len(indented) - 1]) {
+		sl_trim_end(indented)
+	}
 	has_args := spec.required_arguments > 0 || spec.optional_arguments > 0
 	b := split_directive_block(indented, line_offset, has_args || len(spec.option_spec) > 0)
 	if len(spec.option_spec) > 0 {
@@ -376,9 +380,9 @@ parse_option_fields :: proc(
 		blank_finish = bf
 		body := make([dynamic]string, c.allocator)
 		append(&body, line[end:])
-		for ln in lines[i + 1:block_end] do append(
-			&body, cp_slice(ln, indent) if indent > 0 else ln,
-		)
+		for ln in lines[i + 1:block_end] {
+			append(&body, cp_slice(ln, indent) if indent > 0 else ln)
+		}
 		append(&fields, option_field(c, name, body[:], i + 1, container))
 		i = block_end
 	}
@@ -421,7 +425,9 @@ option_field :: proc(
 		name       = name,
 		paragraphs = make([dynamic]string, c.allocator),
 	}
-	if !is_simple_option_name(name) {
+	if !is_simple_option_name(name) && c.dry_run {
+		c.dry_run_failed = true // inline markup has side effects
+	} else if !is_simple_option_name(name) {
 		nodes, msgs := inline_text(c, name, lineno, container)
 		field_name := element(c, .field_name, name, nodes[:])
 		f.name = dt.astext(c.doc, field_name, c.allocator)
@@ -485,9 +491,9 @@ extract_extension_options :: proc(c: ^Context, d: ^Directive, fields: []Option_F
 	for name, i in names {
 		conv := find_converter(d.spec.option_spec, name)
 		if conv == nil do return concat("unknown option: \"", name, "\"")
-		if options_has(&options, name) do return concat(
-			"invalid option data: duplicate option \"", name, "\"",
-		)
+		if options_has(&options, name) {
+			return concat("invalid option data: duplicate option \"", name, "\"")
+		}
 		value, err := conv(c, values[i])
 		if err != "" {
 			return concat(

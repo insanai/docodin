@@ -1,5 +1,6 @@
 package reader
 
+import "core:strconv"
 import "core:strings"
 
 import dt "../doctree"
@@ -16,6 +17,7 @@ Option_Value :: union {
 	string,
 	int,
 	[]string,
+	[]int,
 	Opt_None,
 }
 
@@ -94,6 +96,13 @@ write_option_repr :: proc(b: ^strings.Builder, v: Option_Value) {
 		for s, i in x {
 			if i > 0 do strings.write_string(b, ", ")
 			dt.write_py_repr(b, s)
+		}
+		strings.write_byte(b, ']')
+	case []int:
+		strings.write_byte(b, '[')
+		for n, i in x {
+			if i > 0 do strings.write_string(b, ", ")
+			dt.write_int(b, n)
 		}
 		strings.write_byte(b, ']')
 	case Opt_None:
@@ -211,6 +220,29 @@ parser_name :: proc(c: ^Context, argument: Maybe(string)) -> (Option_Value, stri
 	return nil, concat("Parser \"", a, "\" not found. No module named '", a, "'")
 }
 
+// ``directives.choice(argument, values)``: the lower-cased value.
+choice :: proc(c: ^Context, argument: Maybe(string), values: []string) -> (Option_Value, string) {
+	b := strings.builder_make(c.allocator)
+	for v, i in values {
+		switch {
+		case i == 0:
+		case i == len(values) - 1:
+			strings.write_string(&b, ", or ")
+		case:
+			strings.write_string(&b, ", ")
+		}
+		strings.write_byte(&b, '"')
+		strings.write_string(&b, v)
+		strings.write_byte(&b, '"')
+	}
+	formatted := strings.to_string(b)
+	a, ok := argument.?
+	if !ok do return nil, concat("must supply an argument; choose from ", formatted)
+	value := strip(dt.py_lower(a, c.allocator))
+	if contains(values, value) do return value, ""
+	return nil, concat("\"", a, "\" unknown; choose from ", formatted)
+}
+
 // ``Contents.backlinks``: ``choice(arg, ('top', 'entry', 'none'))``.
 backlinks :: proc(c: ^Context, argument: Maybe(string)) -> (Option_Value, string) {
 	values := "\"top\", \"entry\", or \"none\""
@@ -224,6 +256,164 @@ backlinks :: proc(c: ^Context, argument: Maybe(string)) -> (Option_Value, string
 		return Opt_None{}, ""
 	}
 	return nil, concat("\"", a, "\" unknown; choose from ", values)
+}
+
+// --- measures -------------------------------------------------------------------------
+
+@(private = "file")
+CSS3_UNITS := [?]string {
+	"em", "ex", "ch", "rem", "vw", "vh", "vmin", "vmax", "cm", "mm", "Q", "in", "pt", "pc", "px",
+}
+
+// ``nodes.parse_measure``: ``(-?[0-9.]+) *([a-zA-Zµ]*|%?)`` fully matched;
+// the value as Python ``str()`` of the int or float.
+parse_measure :: proc(measure: string) -> (value: string, negative: bool, unit: string, ok: bool) {
+	number: string
+	number, unit = split_measure(measure)
+	if strings.trim_prefix(number, "-") == "" || !measure_unit(unit) do return
+	if n, is_int := dt.py_parse_int(number); is_int && strings.index_byte(number, '.') < 0 {
+		return itoa(n), n < 0, unit, true
+	}
+	f, is_float := strconv.parse_f64(number)
+	if !is_float || strings.count(number, ".") != 1 do return
+	return dt.py_float_repr(f), f < 0, unit, true
+}
+
+// ``-?[0-9.]+`` and the rest after spaces.
+@(private = "file")
+split_measure :: proc(measure: string) -> (number, unit: string) {
+	i := 0
+	if i < len(measure) && measure[i] == '-' do i += 1
+	for i < len(measure) && (is_digit(measure[i]) || measure[i] == '.') do i += 1
+	j := i
+	for j < len(measure) && measure[j] == ' ' do j += 1
+	return measure[:i], measure[j:]
+}
+
+@(private = "file")
+is_digit :: #force_inline proc "contextless" (b: u8) -> bool {
+	return b >= '0' && b <= '9'
+}
+
+@(private = "file")
+measure_unit :: proc(unit: string) -> bool {
+	if unit == "%" do return true
+	for r in unit {
+		if !((r >= 'a' && r <= 'z') || (r >= 'A' && r <= 'Z') || r == 0xB5) do return false
+	}
+	return true
+}
+
+// ``directives.get_measure(argument, units)``.
+get_measure :: proc(argument: string, units: []string) -> (string, string) {
+	value, negative, unit, ok := parse_measure(argument)
+	if !ok do return "", concat("\"", argument, "\" is no valid measure.")
+	if negative || !contains(units, unit) {
+		b := strings.builder_make(context.temp_allocator)
+		strings.write_string(
+			&b, "not a positive number or measure of one of the following units:\n",
+		)
+		k := 0
+		for u in units {
+			if u == "" do continue
+			if k > 0 do strings.write_string(&b, ", ")
+			strings.write_string(&b, u)
+			k += 1
+		}
+		return "", strings.to_string(b)
+	}
+	return concat(value, unit), ""
+}
+
+@(private = "file")
+NONE_TYPE_ERROR :: "expected string or bytes-like object, got 'NoneType'"
+
+length_or_unitless :: proc(c: ^Context, argument: Maybe(string)) -> (Option_Value, string) {
+	a, ok := argument.?
+	if !ok do return nil, NONE_TYPE_ERROR
+	units := make([dynamic]string, c.allocator)
+	append(&units, ..CSS3_UNITS[:])
+	append(&units, "")
+	v, err := get_measure(a, units[:])
+	if err != "" do return nil, err
+	return v, ""
+}
+
+// ``directives.length_or_percentage_or_unitless(argument, default)``.
+length_or_percentage :: proc(argument: Maybe(string), default := "") -> (Option_Value, string) {
+	a, ok := argument.?
+	if !ok do return nil, NONE_TYPE_ERROR
+	units := make([dynamic]string, context.temp_allocator)
+	append(&units, ..CSS3_UNITS[:])
+	append(&units, "%")
+	v, err := get_measure(a, units[:])
+	if err == "" do return v, ""
+	if unitless, err2 := get_measure(a, {""}); err2 == "" do return concat(unitless, default), ""
+	return nil, err
+}
+
+length_or_percentage_or_unitless :: proc(
+	c: ^Context,
+	argument: Maybe(string),
+) -> (Option_Value, string) {
+	return length_or_percentage(argument)
+}
+
+// ``directives.percentage``.
+percentage :: proc(c: ^Context, argument: Maybe(string)) -> (Option_Value, string) {
+	a, ok := argument.?
+	if !ok do return nonnegative_int(c, nil)
+	return nonnegative_int(c, strings.trim_right(a, " %"))
+}
+
+// ``directives.value_or(('auto', ...), directives.positive_int_list)``.
+widths_option :: proc(
+	c: ^Context,
+	argument: Maybe(string),
+	values: []string,
+) -> (Option_Value, string) {
+	a, ok := argument.?
+	if ok && contains(values, a) do return a, ""
+	if !ok do return nil, "argument of type 'NoneType' is not iterable"
+	entries: []string
+	if strings.index_byte(a, ',') >= 0 {
+		entries = strings.split(a, ",", c.allocator)
+	} else {
+		entries = dt.py_split(a, c.allocator)
+	}
+	out := make([dynamic]int, 0, len(entries), c.allocator)
+	for e in entries {
+		v, err := py_int_arg(e)
+		if err != "" do return nil, err
+		if v < 1 do return nil, "negative or zero value; must be positive"
+		append(&out, v)
+	}
+	return out[:], ""
+}
+
+// ``directives.single_char_or_unicode``.
+single_char_or_unicode :: proc(c: ^Context, argument: Maybe(string)) -> (Option_Value, string) {
+	a := argument.? or_else ""
+	char, err := unicode_code(c, a)
+	if err != "" do return nil, strings.trim_prefix(err, "ValueError: ")
+	if cp_len(char) > 1 do return nil, concat(
+		py_repr(char), " invalid; must be a single character or a Unicode code",
+	)
+	return char, ""
+}
+
+// ``directives.single_char_or_whitespace_or_unicode``.
+single_char_or_whitespace_or_unicode :: proc(
+	c: ^Context,
+	argument: Maybe(string),
+) -> (Option_Value, string) {
+	switch argument.? or_else "" {
+	case "tab":
+		return "\t", ""
+	case "space":
+		return " ", ""
+	}
+	return single_char_or_unicode(c, argument)
 }
 
 // The codec name of a Python encoding name ("" if unknown): the encodings

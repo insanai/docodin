@@ -166,7 +166,6 @@ strip_unicode_comment :: proc(text: string) -> string {
 
 // ``directives.unicode_code(code)``: the character, or the error text
 // (``io.error_string``) of the ``ValueError``.
-@(private = "file")
 unicode_code :: proc(c: ^Context, code: string) -> (string, string) {
 	digits := ""
 	base := 10
@@ -436,10 +435,20 @@ raw_text :: proc(
 		return
 	case has_url:
 		url := options_string(&d.options, "url")
-		msg := "\":\nURLError: <urlopen error the native reader does not fetch URLs>."
-		return "", "", directive_error(
-			.SEVERE, "Problems with \"", d.name, "\" directive URL \"", url, msg,
-		)
+		content, class, fetch_err := read_url(c, d, url)
+		if class == "UnicodeError" {
+			return "", "", directive_error(
+				.SEVERE, "Problem with \"", d.name, "\" directive:\n", fetch_err,
+			)
+		}
+		if class != "" {
+			return "", "", directive_error(
+				.SEVERE, "Problems with \"", d.name, "\" directive URL \"", url, "\":\n",
+				class, ": ",
+				fetch_err, ".",
+			)
+		}
+		return content, url, nil
 	}
 	return "", "", assert_has_content(d)
 }

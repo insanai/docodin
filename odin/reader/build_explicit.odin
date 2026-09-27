@@ -77,6 +77,7 @@ build_table :: proc(c: ^Context, t: ^rst.Tree, n: rst.Node, parent: dt.Node, sm:
 	// docutils nests the cells with a 1-based ``input_offset``: absolute
 	// lines run ahead of the source (see rst.build_table)
 	cell_sm := context_machine(sm, sm.node)
+	cell_sm.disconnected = true // docutils parses cells from disconnected blocks
 	cell_sm.line_delta = sm.line_delta + int(d.num[0])
 	for tg := d.first; tg != rst.NO_NODE; tg = rst.next_sibling(t, tg) {
 		tgroup := dt.new_element(doc, .tgroup)
@@ -254,6 +255,7 @@ build_substitution_definition :: proc(
 	alt := dt.whitespace_normalize_name(d.name)
 	dt.list_append(doc, node, dt.K_NAMES, alt)
 	sub_sm := context_machine(sm, node)
+	sub_sm.disconnected = true // ``block.disconnect()``
 	sub_sm.line_delta = sm.line_delta + int(d.num[0])
 	// where the SubstitutionDef state stopped (an embedded directive moves
 	// on from there while it runs)

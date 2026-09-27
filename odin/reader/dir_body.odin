@@ -347,7 +347,7 @@ number_lines_start :: proc(v: Option_Value) -> (int, bool) {
 		return dt.py_parse_int(x)
 	case int:
 		return x if x != 0 else 1, true
-	case Opt_None, []string:
+	case Opt_None, []string, []int:
 	}
 	return 1, true
 }

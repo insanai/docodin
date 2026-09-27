@@ -23,7 +23,7 @@ build_section_title :: proc(c: ^Context, t: ^rst.Tree, n: rst.Node, _: dt.Node, 
 		title_items = rst.first_child(t, title)
 		cur_line = int(rst.node_num(t, title)[1])
 		for m := rst.next_sibling(t, title); m != rst.NO_NODE; m = rst.next_sibling(t, m) {
-			append(&messages, message(c, t, m))
+			append(&messages, message(c, t, m, sm))
 		}
 	}
 	lineno := int(d.line)

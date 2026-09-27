@@ -40,6 +40,9 @@ Machine :: struct {
 	line_delta:           int,
 	// ``_linear_source`` is set: the input lines map 1:1 to the source
 	linear:               bool,
+	// the input is a disconnected block (substitution definitions, table
+	// cells): insertions into directive content do not reach its input
+	disconnected:         bool,
 }
 
 // An ``include`` insertion, for restoring docutils' view after the parse.
@@ -82,6 +85,12 @@ Context :: struct {
 	// ``roles._roles``: roles by local name ("" = the default role)
 	roles:            map[string]^Role,
 	include_log:      [dynamic]Include_Entry,
+	// ``include`` insertions the parser makes (see include.odin)
+	insert_mode:      Insert_Mode,
+	captured:         [dynamic]Captured_Insert,
+	dry_run:          bool, // an include dry run: no side effects
+	dry_run_failed:   bool, // the dry run would have had side effects
+	moved_cursor:     Moved_Cursor,
 	unported:         int, // registered directives not ported yet, seen
 }
 
@@ -126,6 +135,7 @@ parse_document :: proc(
 	}
 	start(&c, &top)
 	p := new_parser(&c, c.flags, int(doc.settings.line_length_limit))
+	setup_include_hook(&c, &top, &p)
 	tree_doc, count, final_offset := rst.parse_text(&p, text, 0, true)
 	c.line_count = count
 	build_items(&c, &p.tree, rst.first_child(&p.tree, tree_doc), 0, &top, true)
@@ -150,6 +160,7 @@ context_init :: proc(c: ^Context, doc: ^dt.Doc) {
 	c.title_styles = make([dynamic]string, a)
 	c.roles = make(map[string]^Role, 16, a)
 	c.include_log = make([dynamic]Include_Entry, a)
+	c.captured = make([dynamic]Captured_Insert, a)
 }
 
 // The parser flags of the settings (``builder.parse_flags``).
@@ -207,6 +218,8 @@ reporter_source_and_line :: proc(
 @(private = "file")
 finish :: proc(c: ^Context, sm: ^Machine, final_offset_in, count_in: int) {
 	final_offset, count := final_offset_in, count_in
+	// the input lines include the lines the parser inserted
+	if sm.lines != nil do count = sl_len(sm.lines)
 	if final_offset < 0 do final_offset = -1 // parse aborted (line-length limit)
 	if len(c.insertions) > 0 {
 		restore_insertions(c, sm)
@@ -294,36 +307,12 @@ final_source_and_line :: proc(
 	return nil, nil
 }
 
-// Give transforms docutils' view of the input after an ``include``: the
-// inserted blocks go back into the input lines (latest removal first) and
-// nodes that only carry an absolute line are renumbered.
-@(private = "file")
-restore_insertions :: proc(c: ^Context, sm: ^Machine) {
-	lines := input_lines(c, sm)
-	#reverse for ins in c.insertions do sl_insert_list(
-		lines, ins.offset - sm.input_offset, ins.lines,
-	)
-	for n, removed in c.absolute_lines {
-		if ln, ok := dt.line(c.doc, n); ok do dt.set_line(c.doc, n, ln + removed)
-	}
-	clear(&c.insertions)
-	clear(&c.absolute_lines)
-}
-
-// The last input line is the padding ``insert_input()`` puts after an
-// insertion.
-@(private = "file")
-ends_with_insertion :: proc(c: ^Context, sm: ^Machine) -> bool {
-	lines := input_lines(c, sm)
-	if sl_len(lines) == 0 do return false
-	info, _, _ := sl_info(lines, sl_len(lines) - 1)
-	return has_prefix(info.source, "internal padding after ")
-}
-
 // Record a node whose ``line`` is an absolute line number (docutils sets
 // it without source lookup), to be renumbered by ``restore_insertions``.
-note_absolute_line :: proc(c: ^Context, n: dt.Node) {
-	if c.removed_lines > 0 && n not_in c.absolute_lines do c.absolute_lines[n] = c.removed_lines
+// ``removed``: the lines removed when the node got its line (default: now).
+note_absolute_line :: proc(c: ^Context, n: dt.Node, removed := -1) {
+	count := removed if removed >= 0 else c.removed_lines
+	if count > 0 && n not_in c.absolute_lines do c.absolute_lines[n] = count
 }
 
 // --- machines -------------------------------------------------------------------
@@ -415,24 +404,20 @@ context_machine :: proc(sm: ^Machine, node: dt.Node) -> Machine {
 		parent = sm,
 		line_delta = sm.line_delta,
 		linear = sm.linear,
+		disconnected = sm.disconnected,
 	}
-}
-
-// ``state_machine.insert_input(lines, source)``.
-insert_input :: proc(c: ^Context, sm: ^Machine, lines: []string, source: string) {
-	il := input_lines(c, sm)
-	a := c.allocator
-	after := concat("internal padding after ", source, allocator = a)
-	before := concat("internal padding before ", source, allocator = a)
-	sl_insert_line(il, sm.line_offset + 1, "", {after, len(lines)})
-	sl_insert_line(il, sm.line_offset + 1, "", {before, -1})
-	sl_insert_list(il, sm.line_offset + 2, sl_make(lines, source, a))
 }
 
 // --- parsing --------------------------------------------------------------------------
 
-// Parse ``lines`` natively into ``sm.node`` (a nested parse).
-parse_lines :: proc(c: ^Context, sm: ^Machine, lines: ^String_List, match_titles: bool) {
+// Parse ``lines`` natively into ``sm.node`` (a nested parse); the include
+// hook state tells which lines the parser inserted.
+parse_lines :: proc(
+	c: ^Context,
+	sm: ^Machine,
+	lines: ^String_List,
+	match_titles: bool,
+) -> ^Include_State {
 	flags := c.flags
 	if !match_titles do flags -= {.Match_Titles}
 	root_line := 0
@@ -441,12 +426,14 @@ parse_lines :: proc(c: ^Context, sm: ^Machine, lines: ^String_List, match_titles
 	}
 	p := new_parser(c, flags, 0) // only Parser.parse (string input) checks line lengths
 	p.root_line = root_line
+	hook := setup_include_hook(c, sm, &p)
 	text := sl_join(lines, c.allocator)
 	tree_doc, _, _ := rst.parse_text(&p, text, sm.input_offset, match_titles, sl_len(lines))
 	build_items(c, &p.tree, rst.first_child(&p.tree, tree_doc), 0, sm, true)
 	sm.line_offset = sl_len(lines)
 	// where docutils' nested state machines left the document
 	set_current_line(c, sm, p.cur_line)
+	return hook
 }
 
 // ``RSTState.nested_parse(block, input_offset, node, match_titles)`` of a
@@ -475,7 +462,9 @@ nested_parse :: proc(
 		child.section_level_offset = l_start - l_node
 	}
 	block_length := sl_len(block)
-	parse_lines(c, &child, block, match_titles)
+	hook := parse_lines(c, &child, block, match_titles)
+	moved_past_insertions(c, sm, block, input_offset, hook)
+	remove_insertions(c, &child, hook)
 	if match_titles && node == sm.node {
 		for m := sm; m != nil; m = m.parent do m.node = child.node
 	}
@@ -484,36 +473,6 @@ nested_parse :: proc(
 		sm.line_offset += sl_len(block) - block_length
 	}
 	return new_offset
-}
-
-// Parse the lines ``insert_input()`` (``include``) put after the directive
-// that ``sm`` ran, then drop them again so that the absolute line offsets
-// of the remaining (already parsed) input stay valid.
-process_inserted_input :: proc(c: ^Context, sm: ^Machine, before: int) {
-	lines := input_lines(c, sm)
-	start := sm.line_offset + 1
-	count := sl_len(lines) - before
-	if count <= 0 do return
-	// A connected slice: nested insertions propagate to the parent lists,
-	// as in docutils, so reporter line lookups keep working.
-	inserted := sl_slice(lines, start, start + count)
-	child := Machine {
-		lines                = inserted,
-		input_offset         = sm.input_offset + start,
-		line_offset          = -1,
-		node                 = sm.node,
-		match_titles         = sm.match_titles,
-		parent               = sm.parent,
-		section_level_offset = sm.section_level_offset,
-	}
-	parse_lines(c, &child, inserted, sm.match_titles)
-	if sm.match_titles do sm.node = child.node
-	// recorded in removal order, without the (already removed) nested ones
-	saved := sl_make_items(inserted.data[:], inserted.items[:], c.allocator)
-	append(&c.insertions, Insertion{sm.input_offset + start, saved})
-	c.last_removal_top = sm == c.top
-	for _ in 0 ..< count do sl_delete(lines, start)
-	c.removed_lines += count
 }
 
 // ``RSTState.inline_text(text, lineno)`` with ``container`` as

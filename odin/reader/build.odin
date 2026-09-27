@@ -160,7 +160,7 @@ early_message :: proc(
 	if following == stop || rst.node_kind(t, following) != .System_Message do return 0
 	if !reported_early(t, n, following, sm.line_delta) do return 0
 	set_current_line(c, sm, rst.node_cur_line(t, following))
-	msg := message(c, t, following)
+	msg := message(c, t, following, sm)
 	if rst.node_kind(t, n) == .Enumerated_List do c.start_message = msg
 	return msg
 }
@@ -180,15 +180,13 @@ reported_early :: proc(t: ^rst.Tree, n, following: rst.Node, line_delta: int) ->
 		// ``Body.enumerator`` reports the start before the items
 		return has_prefix(text, "Enumerated list start value not ordinal-1")
 	case .Table:
-		// ``isolate_grid_table`` reports an indented line right after the
-		// table before the cells are parsed; ``table_top`` then reports
-		// the missing blank line (a table that failed has its "Malformed
-		// table." message in between)
+		// ``isolate_grid_table`` reports an indented line in the text block
+		// of the table before the cells are parsed; ``table_top`` then
+		// reports the missing blank line
 		if text != "Unexpected indentation." do return false
 		after := rst.next_sibling(t, following)
 		if after == rst.NO_NODE || rst.node_kind(t, after) != .System_Message do return false
-		same_line := rst.node_line(t, after) == rst.node_line(t, following)
-		return same_line && rst.node_text(t, after) == "Blank line required after table."
+		return rst.node_text(t, after) == "Blank line required after table."
 	}
 	return false
 }
@@ -202,9 +200,17 @@ count_newlines :: proc(s: string) -> int {
 
 // Set ``document.current_source``/``current_line`` from a native ``cur``
 // value (docutils ``note_source`` of the last cursor move): a line, 0
-// (None) or -1 (None, and no source).
+// (None), -1 (None, and no source) or past the end of an input (None, the
+// source of its last line; see ``rst.cur_past_end``).
 set_current_line :: proc(c: ^Context, sm: ^Machine, cur: int) {
 	doc := c.doc
+	if moved := c.moved_cursor; moved.set {
+		c.moved_cursor = {}
+		if cur == moved.cur { 	// the cursor was moved past inserted lines
+			doc.current_source, doc.current_line = moved.source, moved.line
+			return
+		}
+	}
 	switch {
 	case cur > 0:
 		if is_linear(c, sm) {
@@ -213,20 +219,19 @@ set_current_line :: proc(c: ^Context, sm: ^Machine, cur: int) {
 			set_current(c, sm, cur - sm.line_delta)
 		}
 	case cur == 0:
-		// just past the end of the input: the source of its last line
-		doc.current_source, doc.current_line = last_line_source(c, sm), nil
+		doc.current_line = nil
+	case cur < -1:
+		// just past the end of an input: the source of its last line
+		last, _ := rst.past_end_line(cur)
+		if is_linear(c, sm) {
+			doc.current_source = c.source
+		} else {
+			doc.current_source, _ = srcline(c, sm, last - sm.line_delta)
+		}
+		doc.current_line = nil
 	case:
 		doc.current_source, doc.current_line = nil, nil
 	}
-}
-
-// The source of the last input line of ``sm`` (``info(len(lines))``).
-@(private = "file")
-last_line_source :: proc(c: ^Context, sm: ^Machine) -> Maybe(string) {
-	if is_linear(c, sm) do return c.source
-	lines := input_lines(c, sm)
-	if sl_len(lines) == 0 do return nil
-	return lines.items[sl_len(lines) - 1].source
 }
 
 // Position the reporter's state machine like docutils' root machine
@@ -251,8 +256,9 @@ inline_nodes :: proc(
 
 // --- system messages -----------------------------------------------------------------
 
-// The ``system_message`` of a parse tree message.
-message :: proc(c: ^Context, t: ^rst.Tree, n: rst.Node) -> dt.Node {
+// The ``system_message`` of a parse tree message (``sm``: the machine of
+// the parse, for messages docutils reports with its (source, line)).
+message :: proc(c: ^Context, t: ^rst.Tree, n: rst.Node, sm: ^Machine) -> dt.Node {
 	d := rst.node_data(t, n)
 	kids := make([dynamic]dt.Node, 0, 2, c.allocator)
 	for ch := d.first; ch != rst.NO_NODE; ch = rst.next_sibling(t, ch) {
@@ -271,6 +277,10 @@ message :: proc(c: ^Context, t: ^rst.Tree, n: rst.Node) -> dt.Node {
 		children = kids[:],
 	}
 	if d.line != 0 do opts.line = int(d.line)
+	if d.num[1] != 0 { 	// ``rst.mark_source_line``
+		src, ln := srcline(c, sm, int(d.line) - sm.line_delta)
+		if src != nil do opts.source, opts.line = src, ln
+	}
 	return dt.system_message(c.doc, dt.Level(d.num[0]), d.text, opts)
 }
 
@@ -283,7 +293,7 @@ build_system_message :: proc(
 	sm: ^Machine,
 ) {
 	set_current_line(c, sm, rst.node_cur_line(t, n))
-	dt.append_child(c.doc, parent, message(c, t, n))
+	dt.append_child(c.doc, parent, message(c, t, n, sm))
 }
 
 // --- body elements ------------------------------------------------------------------
@@ -485,9 +495,8 @@ option_list_item :: proc(c: ^Context, t: ^rst.Tree, n: rst.Node, sm: ^Machine) -
 	group := dt.new_element(doc, .option_group)
 	for opt := rst.first_child(t, group_item); opt != rst.NO_NODE; opt = rst.next_sibling(t, opt) {
 		option := dt.new_element(doc, .option, rst.node_raw(t, opt))
-		for part := rst.first_child(t, opt); part != rst.NO_NODE; part = rst.next_sibling(
-			t, part,
-		) {
+		it := rst.children(t, opt)
+		for part in rst.iterate(&it) {
 			s := rst.node_text(t, part)
 			if rst.node_kind(t, part) == .Option_String {
 				dt.append_child(doc, option, dt.new_element(doc, .option_string, s, s))
