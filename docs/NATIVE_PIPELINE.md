@@ -14,7 +14,7 @@ The goal is the output of `docutils` 0.22 byte for byte, without Python. The Pyt
 2. **Struct of arrays for hot fields.** Traversals mostly read `kind` and the links. These live in an `#soa` array, so a walk touches a few dense arrays instead of whole 100-byte records. Cold data sits in side tables that only some nodes use: attributes, directive blocks, phrase-reference details.
 3. **Strings are views or interned ids.** Text refers to the source buffer or to one arena. Names, ids and classes are interned (`Str :: distinct u32`), so the registry compares and hashes integers.
 4. **One arena per document.** The whole pipeline allocates from one growing arena that is freed at once. Nothing is freed node by node, and there is no per-node heap traffic. Worker threads each own an arena (see `cmd/docodin-check`).
-5. **Explicit, bounded mutation.** Transforms mutate through the `doctree` procedures: `append`, `insert_before`, `replace`, `remove` and `set_attr`. These keep the links consistent. No code writes link fields directly.
+5. **Explicit, bounded mutation.** Transforms mutate through the `doctree` procedures: `append_child`, `insert_before`, `replace`, `remove_child` and `set_attr` (docutils' names with a suffix where they would shadow Odin builtins). These keep the links consistent. No code writes link fields directly.
 6. **Same order, same output.** Registration, transforms (by priority, then insertion order), message numbering and id generation follow docutils exactly. Every stage is tested differentially against docutils.
 
 ## Parse tree (`odin/rst`)
@@ -84,7 +84,7 @@ Doc :: struct {
 }
 ```
 
-The basic list attributes (`ids`, `classes`, `names`, `dupnames`, `backrefs`) take the `List` form. Attribute order follows docutils (`attlist()` sorts by name when printing). The node and registry procedures mirror `docutils.nodes`: `set_id`, `note_implicit_target`, `note_explicit_target`, `note_refname`, `make_id` and the others. `make_id` needs Unicode NFKD decomposition, so `scripts/gen_unicode_tables.py` generates those tables from Python's `unicodedata`.
+The basic list attributes (`ids`, `classes`, `names`, `dupnames`, `backrefs`) take the `List` form. Attribute order follows docutils (`attlist()` sorts by name when printing). The node and registry procedures mirror `docutils.nodes`: `set_id`, `note_implicit_target`, `note_explicit_target`, `note_refname`, `make_id` and the others. `make_id` needs Unicode NFKD decomposition and Python's `str.lower()`, so `scripts/gen_doctree_tables.py` generates those tables from Python's `unicodedata`.
 
 ## Stages
 
