@@ -26,9 +26,12 @@ echo "=== Building docodin native library ==="
 case "$(uname -s)" in
     Darwin*)
         LIB_NAME="libdocodin.dylib"
-        odin build "${ODIN_DIR}/lib" -build-mode:obj -use-single-module "${OPT[@]}" -out:"${BUILD_DIR}/docodin.o"
-        clang -shared -o "${BUILD_DIR}/${LIB_NAME}" "${BUILD_DIR}/docodin.o" \
-            -Wl,-init,_docodin_init -Wl,-dead_strip
+        # the oldest macOS the library supports (also the wheel's platform tag)
+        MIN_OS="${MACOSX_DEPLOYMENT_TARGET:-11.0}"
+        odin build "${ODIN_DIR}/lib" -build-mode:obj -use-single-module "${OPT[@]}" \
+            -minimum-os-version:"${MIN_OS}" -out:"${BUILD_DIR}/docodin.o"
+        clang -shared -mmacosx-version-min="${MIN_OS}" -o "${BUILD_DIR}/${LIB_NAME}" \
+            "${BUILD_DIR}/docodin.o" -Wl,-init,_docodin_init -Wl,-dead_strip
         ;;
     Linux*)
         LIB_NAME="libdocodin.so"
