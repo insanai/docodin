@@ -16,11 +16,10 @@ the same order docutils does it:
 
 from __future__ import annotations
 
-import re
 from types import FunctionType, MethodType
 from typing import Any
 
-from docutils import nodes, statemachine, utils
+from docutils import nodes, utils
 from docutils.nodes import fully_normalize_name as normalize_name
 from docutils.nodes import whitespace_normalize_name
 from docutils.parsers.rst import Directive, DirectiveError, directives, roles, states
@@ -30,6 +29,13 @@ from docutils.parsers.rst.states import Inliner, MarkupError, Struct
 from docutils.statemachine import StringList
 
 from docodin import _native
+from docodin._machine import (
+    OdinBody,
+    OdinInliner,
+    OdinStateMachine,
+    OdinSubstitutionDef,
+    _make_state,
+)
 
 # Node kinds, in the order of ``Node_Kind`` in odin/rst/node_kinds.odin.
 (K_DOCUMENT, K_SECTION, K_SECTION_TITLE, K_TITLE, K_PARAGRAPH, K_BULLET_LIST,
@@ -54,7 +60,6 @@ TARGET_REFURI, TARGET_REFNAME = range(2)
 
 Text = nodes.Text
 _EXPLICIT_UNINDENT = "Explicit markup ends without a blank line; unexpected unindent."
-_SIMPLE_OPTION_NAME = re.compile(r"[A-Za-z0-9_.+-]+\Z")
 
 
 # ---------------------------------------------------------------------------
@@ -167,315 +172,6 @@ def parse_flags(settings: Any, match_titles: bool = True, rfc2822: bool = False)
 
 
 # ---------------------------------------------------------------------------
-# docutils-compatible state machine, state and inliner
-# ---------------------------------------------------------------------------
-
-
-class OdinStateMachine(statemachine.StateMachineWS):
-    """A docutils state machine over a (nested) block of input lines.
-
-    It is not *run* line by line — the native parser did that — but it exposes
-    the full ``StateMachineWS`` interface to directives: ``input_lines``,
-    ``input_offset``, ``line_offset``, ``get_source_and_line()``,
-    ``insert_input()``, ``node``, ``memo``, ``match_titles`` ...
-    """
-
-    def __init__(self, ctx: DocumentContext, input_lines: StringList | None, input_offset: int,
-                 node: nodes.Element, match_titles: bool, parent_sm: Any = None,
-                 lazy_text: str | None = None, lines_owner: OdinStateMachine | None = None) -> None:
-        # Deliberately not calling StateMachine.__init__(): it instantiates and
-        # compiles every state class, which is the cost we avoid.
-        self.ctx = ctx
-        self._input_lines = input_lines
-        self._lazy_text = lazy_text
-        # Views of an enclosing parse (nested containers, table cells,
-        # substitution definitions) share its input lines.
-        self._lines_owner = lines_owner
-        self.input_offset = input_offset
-        self.line_offset = -1
-        self.line = None
-        self.node = node
-        self.memo = ctx.memo
-        self.document = ctx.document
-        self.reporter = ctx.reporter
-        self.language = ctx.language
-        self.match_titles = match_titles
-        self.parent_state_machine = parent_sm
-        self.section_level_offset = 0
-        # source line minus absolute line (docutils quirks: table cells -1,
-        # substitution definitions spanning lines); see odin/rst/statemachine.odin
-        self.line_delta = 0
-        self.debug = False
-        self.observers = []
-        self.states = {}
-        self.initial_state = "Body"
-        self.current_state = "Body"
-        self._state: Any = None
-        # Fast path for get_source_and_line when input_lines map 1:1 to a source.
-        self._linear_source = ctx.source if input_lines is None else None
-
-    # input_lines is materialized on first use for top-level string input
-    @property
-    def input_lines(self) -> StringList:
-        lines = self._input_lines
-        if lines is None:
-            owner = self._lines_owner
-            if owner is not None:
-                lines = owner.input_lines
-            else:
-                lines = self.ctx.make_input_lines(self._lazy_text)
-            self._input_lines = lines
-        return lines
-
-    @input_lines.setter
-    def input_lines(self, value: StringList) -> None:
-        if value is not self._input_lines:
-            self._linear_source = None
-        self._input_lines = value
-
-    def _is_linear(self) -> bool:
-        """Top-level string input whose lines map 1:1 to the source (no
-        pending ``insert_input`` lines)."""
-        if self._linear_source is None:
-            return False
-        lines = self._input_lines
-        if lines is None and self._lines_owner is not None:
-            lines = self._lines_owner._input_lines
-        return lines is None or len(lines) == self.ctx.line_count
-
-    def get_source_and_line(self, lineno: int | None = None):
-        # docutils looks the line up in the machine's own ``input_lines``,
-        # whose items carry source offsets: ``line_delta`` maps this machine's
-        # absolute numbering to those (table cells, substitution definitions)
-        if lineno is None:
-            lineno = self.line_offset + self.input_offset + 1
-        lineno += self.line_delta
-        if self._is_linear():
-            if 1 <= lineno <= self.ctx.line_count + 1:  # n + 1: just past the end
-                return self._linear_source, lineno
-            return None, None
-        return super().get_source_and_line(lineno)
-
-    def srcline(self, lineno: int):
-        """(source, line) for node attributes (``get_source_and_line``)."""
-        if self._is_linear():
-            return self._linear_source, lineno + self.line_delta
-        try:
-            return self.get_source_and_line(lineno)
-        except Exception:  # noqa: BLE001 - never fail node construction
-            return self.ctx.source, lineno + self.line_delta
-
-    def state(self) -> OdinBody:
-        st = self._state
-        if st is None:
-            st = self._state = _make_state(OdinBody, self)
-        return st
-
-    def run(self, *args: Any, **kwargs: Any) -> Any:  # pragma: no cover - not line-driven
-        raise NotImplementedError("OdinStateMachine is not run line by line")
-
-    def unlink(self) -> None:
-        self.observers = []
-
-
-def _make_state(cls: type, sm: OdinStateMachine) -> Any:
-    st = cls.__new__(cls)
-    st.state_machine = sm
-    st.debug = False
-    st.transitions = {}
-    st.transition_order = []
-    st.nested_sm = states.NestedStateMachine
-    st.nested_sm_kwargs = {"state_classes": states.state_classes, "initial_state": "Body"}
-    st.indent_sm = st.known_indent_sm = states.NestedStateMachine
-    st.indent_sm_kwargs = st.known_indent_sm_kwargs = st.nested_sm_kwargs
-    st.memo = sm.memo
-    st.document = sm.document
-    st.inliner = sm.memo.inliner
-    st.reporter = sm.reporter
-    st.blank_finish = True
-    return st
-
-
-class _OdinStateMixin:
-    """Overrides of ``RSTState`` methods that route parsing to the native parser."""
-
-    state_machine: OdinStateMachine
-
-    def nested_parse(self, block, input_offset, node=None, match_titles=False,
-                     state_machine_class=None, state_machine_kwargs=None):
-        sm = self.state_machine
-        ctx = getattr(sm, "ctx", None)
-        if ctx is None or state_machine_class is not None or state_machine_kwargs is not None:
-            return states.RSTState.nested_parse(self, block, input_offset, node, match_titles,
-                                                state_machine_class, state_machine_kwargs)
-        if node is None:
-            node = sm.node
-        if node is sm.node and not isinstance(node, (nodes.document, nodes.section)):
-            match_titles = False
-        if not isinstance(block, StringList):
-            block = StringList(list(block), source=ctx.source or "")
-        child = OdinStateMachine(ctx, block, input_offset, node, match_titles, parent_sm=sm)
-        if match_titles:
-            l_node = len(node.section_hierarchy())
-            l_start = min(len(sm.node.section_hierarchy()), len(self.memo.title_styles))
-            child.section_level_offset = l_start - l_node
-        block_length = len(block)
-        ctx.parse_lines(child, block, match_titles)
-        if match_titles and node is sm.node:
-            m = sm
-            while m is not None:
-                m.node = child.node
-                m = getattr(m, "parent_state_machine", None)
-        new_offset = child.input_offset + len(block)
-        if block.parent and (len(block) - block_length) != 0:
-            sm.next_line(len(block) - block_length)
-        return new_offset
-
-    def nested_list_parse(self, block, input_offset, node, initial_state, blank_finish,
-                          blank_finish_state=None, extra_settings={}, match_titles=False,  # noqa: B006
-                          state_machine_class=None, state_machine_kwargs=None):
-        # Custom list states (e.g. MetaBody) run on docutils' own machinery.
-        return states.RSTState.nested_list_parse(
-            self, block, input_offset, node, initial_state, blank_finish, blank_finish_state,
-            extra_settings, match_titles, state_machine_class, state_machine_kwargs)
-
-    def inline_text(self, text, lineno):
-        return self.state_machine.ctx.inline(text, lineno, self.state_machine.node)
-
-    def parse_extension_options(self, option_spec, datalines):
-        """Fast path of ``Body.parse_extension_options`` (``ExtensionOptions`` state)."""
-        parsed = _parse_option_fields(datalines)
-        if parsed is None:
-            return states.Body.parse_extension_options(self, option_spec, datalines)
-        node, complete, blank_finish, stop = parsed
-        # docutils parses the block in a nested state machine: it runs to the
-        # end of its input (the document's current line becomes undefined) or
-        # steps back from the first line that is not an option
-        document = self.state_machine.document
-        items = getattr(datalines, "items", None)
-        if items:
-            if complete:
-                document.current_source, document.current_line = items[-1][0], None
-            else:
-                source, offset = items[stop - 1]  # Python indexing, like info()
-                document.current_source, document.current_line = source, offset + 1
-        if not complete:
-            return 0, "invalid option block"
-        try:
-            options = utils.extract_extension_options(node, option_spec)
-        except KeyError as detail:
-            return 0, 'unknown option: "%s"' % detail.args[0]
-        except (ValueError, TypeError) as detail:
-            return 0, "invalid option value: %s" % " ".join(detail.args)
-        except utils.ExtensionOptionError as detail:
-            return 0, "invalid option data: %s" % " ".join(detail.args)
-        if blank_finish:
-            return 1, options
-        return 0, "option data incompletely parsed"
-
-
-class OdinBody(_OdinStateMixin, states.Body):
-    """``Body`` state used as ``self.state`` by directives."""
-
-
-class OdinSubstitutionDef(_OdinStateMixin, states.SubstitutionDef):
-    """``SubstitutionDef`` state for directives embedded in substitution definitions."""
-
-
-_FIELD_MARKER = re.compile(states.Body.patterns["field_marker"])
-
-
-def _parse_option_fields(datalines):
-    """Run the ``ExtensionOptions`` state over directive option lines.
-
-    Returns (field_list, parsed_completely, blank_finish, stop_index), or
-    ``None`` when a field name needs inline parsing (handled by the docutils
-    fallback).  ``stop_index`` is the first line not in the field list.
-    """
-    field_list = nodes.field_list()
-    lines = list(datalines)
-    n = len(lines)
-    i = 0
-    blank_finish = True
-    while i < n:
-        line = lines[i]
-        if not line.strip():
-            i += 1
-            continue
-        if line[0] == " ":
-            return field_list, False, blank_finish, i
-        match = _FIELD_MARKER.match(line)
-        if not match:
-            return field_list, False, blank_finish, i
-        name = match.group()[1:]
-        name = name[: name.rfind(":")]
-        if not _SIMPLE_OPTION_NAME.match(name):
-            return None
-        # get_first_known_indented(match.end())
-        end = i + 1
-        indent = None
-        while end < n:
-            ln = lines[end]
-            if ln and ln[0] != " ":
-                blank_finish = not lines[end - 1].strip()
-                break
-            stripped = ln.lstrip()
-            if stripped:
-                li = len(ln) - len(stripped)
-                indent = li if indent is None else min(indent, li)
-            end += 1
-        else:
-            blank_finish = True
-        body = [line[match.end():]] + [ln[indent:] if indent else ln for ln in lines[i + 1:end]]
-        while body and not body[0].strip():
-            body.pop(0)
-        field = nodes.field()
-        field += nodes.field_name(name, name)
-        field_body = nodes.field_body()
-        field += field_body
-        para: list[str] = []
-        for ln in body + [""]:
-            if ln.strip():
-                para.append(ln)
-            elif para:
-                text = "\n".join(para)
-                field_body += nodes.paragraph(text, text)
-                para = []
-        field_list += field
-        i = end
-    return field_list, True, blank_finish, n
-
-
-class OdinInliner(Inliner):
-    """docutils ``Inliner`` whose ``parse()`` uses the native inline parser.
-
-    ``interpreted()``/``problematic()``/``adjust_uri()`` are inherited, so roles
-    receive a genuine ``Inliner`` instance.
-    """
-
-    ctx: DocumentContext | None = None
-
-    def parse(self, text, lineno, memo, parent):
-        self.document = memo.document
-        self.language = memo.language
-        self.reporter = self.document.reporter
-        self.parent = parent
-        ctx = self.ctx
-        if ctx is None:
-            return super().parse(text, lineno, memo, parent)
-        return ctx.inline(text, lineno, parent)
-
-
-# ``Inliner.init_customizations`` formats its regular expressions with
-# ``vars(self.__class__)`` (the class' *own* namespace), so a subclass must
-# carry the pattern fragments of ``Inliner`` itself.
-for _name, _value in vars(Inliner).items():
-    if isinstance(_value, str) and not _name.startswith("__"):
-        setattr(OdinInliner, _name, _value)
-del _name, _value
-
-
-# ---------------------------------------------------------------------------
 # per-document context and tree builder
 # ---------------------------------------------------------------------------
 
@@ -484,7 +180,7 @@ class DocumentContext:
     """State shared by all (nested) parses of one document."""
 
     def __init__(self, document: nodes.document, inliner: Inliner | None = None,
-                 rfc2822: bool = False) -> None:
+                 rfc2822: bool = False, memo: Any = None) -> None:
         self.document = document
         self.reporter = document.reporter
         settings = self.settings = document.settings
@@ -500,9 +196,13 @@ class DocumentContext:
         inliner.reporter = document.reporter
         inliner.language = self.language
         self.inliner = inliner
-        self.memo = Struct(document=document, reporter=document.reporter, language=self.language,
-                           title_styles=[], section_level=0, section_bubble_up_kludge=False,
-                           inliner=inliner)
+        if memo is None:
+            memo = Struct(document=document, reporter=document.reporter, language=self.language,
+                          title_styles=[], section_level=0, section_bubble_up_kludge=False,
+                          inliner=inliner)
+        # nested parses started from Python state machines find the context here
+        memo.docodin_ctx = self
+        self.memo = memo
         self.flags = parse_flags(settings, True, rfc2822)
         self.inline_flags = self.flags & ~(_native.MATCH_TITLES | _native.RFC2822)
         self.tab_width = _setting_int(settings, "tab_width", 8)
@@ -1287,31 +987,40 @@ class TreeBuilder:
         directive_instance = directive_class(
             type_name, arguments, options, content, lineno,
             content_offset, block_text, state, sm)
-        try:
-            result = directive_instance.run()
-        except DirectiveError as error:
-            msg_node = self.reporter.system_message(error.level, error.msg, line=lineno)
-            msg_node += nodes.literal_block(block_text, block_text)
-            result = [msg_node]
-        assert isinstance(result, list), 'Directive "%s" must return a list of nodes.' % type_name
-        for i in range(len(result)):
-            assert isinstance(result[i], nodes.Node), (
-                'Directive "%s" returned non-Node object (index %s): %r' % (type_name, i, result[i]))
+        result = self._run_directive(directive_instance)
         parent += result
         if self.ctx.removed_lines:
-            # directive nodes without a source carry an absolute line, and so
-            # does ``parsed-literal``'s block (``content_offset + 1``)
-            for node in result:
-                for n in node.findall(nodes.Element):
-                    if n.source is None and n.line is not None:
-                        self.ctx.note_absolute_line(n)
-            if (issubclass(directive_class, _body_directives.ParsedLiteral) and result
-                    and result[0].line == content_offset + 1):
-                self.ctx.note_absolute_line(result[0])
+            self._note_directive_lines(result, directive_class, content_offset)
         if sm._input_lines is not None and len(sm._input_lines) != before:
             self._process_inserted_input(sm, before)
             return True
         return False
+
+    def _run_directive(self, directive: Directive) -> list:
+        try:
+            result = directive.run()
+        except DirectiveError as error:
+            msg_node = self.reporter.system_message(error.level, error.msg, line=directive.lineno)
+            msg_node += nodes.literal_block(directive.block_text, directive.block_text)
+            result = [msg_node]
+        type_name = directive.name
+        assert isinstance(result, list), 'Directive "%s" must return a list of nodes.' % type_name
+        for i, node in enumerate(result):
+            assert isinstance(node, nodes.Node), (
+                'Directive "%s" returned non-Node object (index %s): %r' % (type_name, i, node))
+        return result
+
+    def _note_directive_lines(self, result: list, directive_class: type,
+                              content_offset: int) -> None:
+        """Directive nodes without a source carry an absolute line, and so does
+        ``parsed-literal``'s block (``content_offset + 1``)."""
+        for node in result:
+            for n in node.findall(nodes.Element):
+                if n.source is None and n.line is not None:
+                    self.ctx.note_absolute_line(n)
+        if (issubclass(directive_class, _body_directives.ParsedLiteral) and result
+                and result[0].line == content_offset + 1):
+            self.ctx.note_absolute_line(result[0])
 
     def _cell_sm(self, sm: OdinStateMachine, delta: int) -> OdinStateMachine:
         """View of ``sm`` for table cells: docutils nests them with a 1-based
@@ -1546,6 +1255,42 @@ def parse_string_list(input_lines: StringList, document: nodes.document,
     return ctx
 
 
+def nested_parse(state: Any, block: Any, input_offset: int, node: nodes.Element | None = None,
+                 match_titles: bool = False) -> int:
+    """Parse `block` natively into `node` (``RSTState.nested_parse``).
+
+    `state` is any docutils state: a state of the native builder, or one of a Python state
+    machine (field lists, directive options, extension states) running inside a document.
+    Returns the new input offset.
+    """
+    sm = state.state_machine
+    ctx = getattr(sm, "ctx", None) or getattr(state.memo, "docodin_ctx", None)
+    if ctx is None:
+        ctx = DocumentContext(state.document, state.memo.inliner, memo=state.memo)
+    if node is None:
+        node = sm.node
+    if node is sm.node and not isinstance(node, (nodes.document, nodes.section)):
+        match_titles = False
+    if not isinstance(block, StringList):
+        block = StringList(list(block), source=ctx.source or "")
+    child = OdinStateMachine(ctx, block, input_offset, node, match_titles, parent_sm=sm)
+    if match_titles:
+        l_node = len(node.section_hierarchy())
+        l_start = min(len(sm.node.section_hierarchy()), len(state.memo.title_styles))
+        child.section_level_offset = l_start - l_node
+    block_length = len(block)
+    ctx.parse_lines(child, block, match_titles)
+    if match_titles and node is sm.node:
+        machine = sm
+        while machine is not None:
+            machine.node = child.node
+            machine = getattr(machine, "parent_state_machine", None)
+    new_offset = child.input_offset + len(block)
+    if block.parent and (len(block) - block_length) != 0:
+        sm.next_line(len(block) - block_length)
+    return new_offset
+
+
 __all__ = [
     "DocumentContext",
     "OdinBody",
@@ -1553,6 +1298,7 @@ __all__ = [
     "OdinStateMachine",
     "OdinSubstitutionDef",
     "TreeBuilder",
+    "nested_parse",
     "parse_string",
     "parse_string_list",
 ]
