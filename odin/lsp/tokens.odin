@@ -7,6 +7,8 @@ package lsp
 
 import "core:slice"
 
+import rst "../rst"
+
 Token_Type :: enum u8 {
 	Namespace,   // section titles
 	Operator,    // title adornments, transitions
@@ -55,74 +57,75 @@ TOKEN_MODIFIER_NAMES := [Token_Modifier]string {
 	.Declaration = "declaration",
 }
 
-// A single-line token in the parser's coordinates.
+// A token: a source span (possibly over several lines).
 Token :: struct {
-	line, col, length: i32,
-	type:              Token_Type,
-	mods:              Token_Modifiers,
-}
-
-// Add a token for ``span``; a span over several lines becomes one token
-// per line (each line's content).
-add_token_span :: proc(
-	a: ^Analysis,
-	ix: ^Line_Index,
 	span: Span,
 	type: Token_Type,
-	mods := Token_Modifiers{},
-) {
-	if type == .None || span.start.line < 0 do return
-	for l := span.start.line; l <= span.end.line; l += 1 {
-		text := expanded(ix, int(l))
-		indent := i32(len(text) - len(lstrip_spaces(text)))
-		start := span.start.col if l == span.start.line else indent
-		end := span.end.col if l == span.end.line else i32(len(text))
-		if end > start do append(&a.tokens, Token{l, start, end - start, type, mods})
-	}
-}
-
-@(private = "file")
-lstrip_spaces :: proc(s: string) -> string {
-	i := 0
-	for i < len(s) && s[i] == ' ' do i += 1
-	return s[i:]
+	mods: Token_Modifiers,
 }
 
 // The tokens in document order without overlaps (the first token wins).
 sorted_tokens :: proc(a: ^Analysis) -> []Token {
 	slice.stable_sort_by(a.tokens[:], proc(x, y: Token) -> bool {
-		return x.line < y.line || (x.line == y.line && x.col < y.col)
+		return x.span.start < y.span.start
 	})
 	out := make([dynamic]Token, 0, len(a.tokens))
 	for t in a.tokens {
-		if len(out) > 0 {
-			prev := out[len(out) - 1]
-			if prev.line == t.line && t.col < prev.col + prev.length do continue
-		}
+		if len(out) > 0 && t.span.start < out[len(out) - 1].span.end do continue
 		append(&out, t)
 	}
 	return out[:]
 }
 
 // The LSP encoding of the tokens: five integers per token, positions
-// relative to the previous token.
-encode_tokens :: proc(w: ^Json_Writer, ix: ^Line_Index, tokens: []Token, enc: Encoding) {
+// relative to the previous token.  A token over several lines becomes one
+// token per line: the line's text after its indentation.
+encode_tokens :: proc(w: ^Json_Writer, idx: ^rst.Line_Index, tokens: []Token) {
+	e := Token_Encoder{w = w}
 	arr_begin(w)
-	prev_line, prev_char := 0, 0
 	for t in tokens {
-		start := to_lsp(ix, {t.line, t.col}, enc)
-		end := to_lsp(ix, {t.line, t.col + t.length}, enc)
-		if end.character <= start.character do continue
-		delta_line := start.line - prev_line
-		delta_char := start.character - (prev_char if delta_line == 0 else 0)
-		int_value(w, delta_line)
-		int_value(w, delta_char)
-		int_value(w, end.character - start.character)
-		int_value(w, int(t.type))
-		int_value(w, int(transmute(u8)t.mods))
-		prev_line, prev_char = start.line, start.character
+		start, end := to_lsp(idx, t.span.start), to_lsp(idx, t.span.end)
+		for line in start.line ..= end.line {
+			first := start.character
+			if line > start.line do first = indentation(idx, line)
+			last := end.character
+			if line < end.line do last = to_lsp(idx, line_end(idx, line)).character
+			emit(&e, line, first, last, t)
+		}
 	}
 	arr_end(w)
+}
+
+@(private = "file")
+Token_Encoder :: struct {
+	w:                    ^Json_Writer,
+	prev_line, prev_char: int,
+}
+
+@(private = "file")
+emit :: proc(e: ^Token_Encoder, line, first, last: int, t: Token) {
+	if last <= first do return
+	delta_line := line - e.prev_line
+	int_value(e.w, delta_line)
+	int_value(e.w, first - (e.prev_char if delta_line == 0 else 0))
+	int_value(e.w, last - first)
+	int_value(e.w, int(t.type))
+	int_value(e.w, int(transmute(u8)t.mods))
+	e.prev_line, e.prev_char = line, first
+}
+
+// The offset of the end of an LSP line (before its line break).
+line_end :: proc(idx: ^rst.Line_Index, line: int) -> i32 {
+	return from_lsp(idx, {line, max(int)})
+}
+
+// The column after the indentation (spaces and tabs) of an LSP line.
+@(private = "file")
+indentation :: proc(idx: ^rst.Line_Index, line: int) -> int {
+	start := int(from_lsp(idx, {line, 0}))
+	at := start
+	for at < len(idx.text) && (idx.text[at] == ' ' || idx.text[at] == '\t') do at += 1
+	return at - start // spaces and tabs count one column in every encoding
 }
 
 // The ``SemanticTokensLegend``.

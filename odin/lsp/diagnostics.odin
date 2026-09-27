@@ -35,7 +35,7 @@ Fix_Kind :: enum u8 {
 	Single_Colon,        // "::" without a literal block becomes ":"
 }
 
-// A replacement of ``span`` (parser coordinates) by ``text``.
+// A replacement of ``span`` (byte offsets) by ``text``.
 Edit :: struct {
 	span: Span,
 	text: string,
@@ -133,7 +133,7 @@ build_diagnostics :: proc(s: ^Snapshot, cfg: ^Config) -> [dynamic]Diagnostic {
 	if s.reading.exception != "" {
 		text := strings.concatenate({"docutils stops with an exception: ", s.reading.exception})
 		d := Diagnostic {
-			span    = line_content_span(&s.ix, 0),
+			span    = content_span(&s.analysis.tree, 1),
 			level   = rst.SEVERE,
 			message = text,
 		}
@@ -157,18 +157,17 @@ match_problem :: proc(problems: []Problem, used: []bool, m: Docutils_Message) ->
 // names, or its line.
 @(private = "file")
 message_span :: proc(s: ^Snapshot, m: Docutils_Message, problem: ^Problem) -> Span {
-	ix := &s.ix
+	t := &s.analysis.tree
 	if m.source != "" && m.source != s.path {
 		// a message of an included file: the include directive
 		for item in s.analysis.items {
 			if item.kind == .Directive && item.name == "include" do return item.span
 		}
-		return line_content_span(ix, 0)
+		return content_span(t, 1)
 	}
 	if problem != nil do return problem.span
 	if span, ok := named_span(s, m); ok do return span
-	line := clamp(m.line - 1, 0, max(line_count(ix) - 1, 0))
-	return line_content_span(ix, line)
+	return content_span(t, clamp(m.line, 1, max(rst.line_count(t), 1)))
 }
 
 // Messages about a name ("Unknown target name: "x".", "Duplicate explicit
@@ -183,9 +182,10 @@ named_span :: proc(s: ^Snapshot, m: Docutils_Message) -> (Span, bool) {
 	quoted := m.first[open + 1:][:close]
 	name := dt.fully_normalize_name(quoted)
 	kinds := named_kinds(m.first)
-	from := i32(m.line - 1)
+	t := &s.analysis.tree
+	from := i32(t.line_starts[clamp(m.line - 1, 0, len(t.line_starts) - 1)])
 	for item in s.analysis.items {
-		if item.kind not_in kinds || item.span.start.line < from do continue
+		if item.kind not_in kinds || item.span.start < from do continue
 		if item.name == name || item.label == quoted do return item.span, true
 	}
 	return {}, false
@@ -212,44 +212,46 @@ named_kinds :: proc(text: string) -> Item_Kinds {
 
 @(private = "file")
 fix_for :: proc(s: ^Snapshot, d: Diagnostic, m: Docutils_Message, inline: bool) -> Fix {
+	t := &s.analysis.tree
 	switch d.code {
 	case "TITLE UNDERLINE TOO SHORT", "TITLE OVERLINE TOO SHORT":
-		return extend_adornment(&s.ix, m.line - 1)
+		return extend_adornment(t, m.line)
 	case "POSSIBLE TITLE":
 		if strings.has_prefix(m.first, "Possible title underline") {
-			return extend_adornment(&s.ix, m.line - 1)
+			return extend_adornment(t, m.line)
 		}
 	case "MISSING BLANK LINE", "UNEXPECTED INDENTATION":
-		return insert_blank_line(&s.ix, m.line - 1)
+		return insert_blank_line(t, m.line)
 	case "UNCLOSED EMPHASIS", "UNCLOSED STRONG EMPHASIS", "UNCLOSED INLINE LITERAL",
 	     "UNCLOSED INTERPRETED TEXT", "UNCLOSED SUBSTITUTION REFERENCE", "UNCLOSED INLINE TARGET":
-		if inline do return escape_start_string(&s.ix, d.span)
+		if inline do return escape_start_string(t, d.span)
 	case "MISSING LITERAL BLOCK":
-		return single_colon(&s.ix, m.line - 1)
+		return single_colon(t, m.line)
 	}
 	return {}
 }
 
 // The title near ``line`` (a title line followed by its underline).
 @(private = "file")
-find_title :: proc(ix: ^Line_Index, line: int) -> (title: int, ok: bool) {
-	for t in ([?]int{line - 1, line, line - 2, line + 1}) {
-		if t < 0 || t + 1 >= line_count(ix) do continue
-		text := expanded(ix, t)
+find_title :: proc(t: ^rst.Tree, line: int) -> (title: int, ok: bool) {
+	for l in ([?]int{line - 1, line, line - 2, line + 1}) {
+		if l < 1 || l + 1 > rst.line_count(t) do continue
+		text := line_text(t, l)
 		if is_blank(text) || is_adornment(text) do continue
-		if is_adornment(expanded(ix, t + 1)) do return t, true
+		if is_adornment(line_text(t, l + 1)) do return l, true
 	}
 	return 0, false
 }
 
+// Lengthen the underline (and the overline) of the title near ``line``.
 @(private = "file")
-extend_adornment :: proc(ix: ^Line_Index, line: int) -> Fix {
-	t, ok := find_title(ix, line)
+extend_adornment :: proc(t: ^rst.Tree, line: int) -> Fix {
+	title, ok := find_title(t, line)
 	if !ok do return {}
-	under := expanded(ix, t + 1)
-	over := expanded(ix, t - 1)
-	has_over := t > 0 && is_adornment(over) && over[0] == under[0]
-	width := max(rst.column_width(expanded(ix, t)), len(under))
+	under := line_text(t, title + 1)
+	over := line_text(t, title - 1)
+	has_over := title > 1 && is_adornment(over) && over[0] == under[0]
+	width := max(rst.column_width(line_text(t, title)), len(under))
 	if has_over do width = max(width, len(over))
 	adornment := strings.repeat(under[:1], width)
 	fix := Fix {
@@ -257,24 +259,18 @@ extend_adornment :: proc(ix: ^Line_Index, line: int) -> Fix {
 		title = "Extend the title adornment to the title's width",
 		count = 1,
 	}
-	fix.edits[0] = {whole_line(ix, t + 1), adornment}
+	fix.edits[0] = {whole_line(t, title + 1), adornment}
 	if has_over {
-		fix.edits[1] = {whole_line(ix, t - 1), adornment}
+		fix.edits[1] = {whole_line(t, title - 1), adornment}
 		fix.count = 2
 	}
 	return fix
 }
 
 @(private = "file")
-whole_line :: proc(ix: ^Line_Index, line: int) -> Span {
-	l := i32(line)
-	return {{l, 0}, {l, i32(len(expanded(ix, line)))}}
-}
-
-@(private = "file")
-insert_blank_line :: proc(ix: ^Line_Index, line: int) -> Fix {
-	if line <= 0 || line >= line_count(ix) do return {}
-	at := Pos{i32(line), 0}
+insert_blank_line :: proc(t: ^rst.Tree, line: int) -> Fix {
+	if line <= 1 || line > rst.line_count(t) do return {}
+	at := i32(t.line_starts[line - 1])
 	fix := Fix {
 		kind  = .Insert_Blank_Line,
 		title = "Insert a blank line",
@@ -285,10 +281,9 @@ insert_blank_line :: proc(ix: ^Line_Index, line: int) -> Fix {
 }
 
 @(private = "file")
-escape_start_string :: proc(ix: ^Line_Index, span: Span) -> Fix {
-	text := expanded(ix, int(span.start.line))
-	if span.start.line != span.end.line || int(span.end.col) > len(text) do return {}
-	start := text[span.start.col:span.end.col]
+escape_start_string :: proc(t: ^rst.Tree, span: Span) -> Fix {
+	start := t.text[span.start:span.end]
+	if strings.contains_any(start, "\r\n") || start == "" do return {}
 	b := strings.builder_make()
 	for c in start {
 		strings.write_byte(&b, '\\')
@@ -306,11 +301,12 @@ escape_start_string :: proc(ix: ^Line_Index, span: Span) -> Fix {
 // "Literal block expected; none found.": the paragraph before the message
 // line ends with "::".
 @(private = "file")
-single_colon :: proc(ix: ^Line_Index, line: int) -> Fix {
-	l := trim_blank_end(ix, line - 1, 0)
-	text := expanded(ix, l)
+single_colon :: proc(t: ^rst.Tree, line: int) -> Fix {
+	l := last_nonblank(t, line - 1, 0)
+	content := content_span(t, l)
+	text := t.text[content.start:content.end]
 	if !strings.has_suffix(text, "::") do return {}
-	start := len(text) - 2
+	start := content.end - 2
 	replacement := ":"
 	if strings.has_suffix(text, " ::") {
 		start -= 1
@@ -321,7 +317,7 @@ single_colon :: proc(ix: ^Line_Index, line: int) -> Fix {
 		title = "End the paragraph with a single colon",
 		count = 1,
 	}
-	fix.edits[0] = {{{i32(l), i32(start)}, {i32(l), i32(len(text))}}, replacement}
+	fix.edits[0] = {{start, content.end}, replacement}
 	return fix
 }
 

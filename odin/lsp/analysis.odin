@@ -1,18 +1,20 @@
 package lsp
 
-// Document analysis: one parse of the document with the native parser
-// (odin/rst), walked once into flat tables:
+// Document analysis: one walk of the parse tree (the reader's, which keeps
+// it with source spans) into flat tables:
 //
 // * ``items``: definitions (sections, targets, substitution definitions,
 //   footnotes, citations) and their uses (references), resolved by
 //   ``resolve`` with docutils' name normalisation;
 // * ``tokens``: semantic tokens;
-// * ``folds``: folding ranges.
+// * ``folds``: folding ranges;
+// * ``problems``: the inline markup the parser reports.
 //
-// The reST content of standard directives (admonitions, topics, tables,
-// figures, ...) is parsed as docutils' directives parse it
-// (``check.parse_directive_block``), so the constructs inside them are
-// found too.  Everything is allocated in the snapshot's arena.
+// Positions are the nodes' source spans.  The reST content of standard
+// directives (admonitions, topics, tables, figures, ...) is parsed into the
+// tree as docutils' directives parse it (``check.parse_directive_block``),
+// so the constructs inside them are found too.  Everything is allocated in
+// the snapshot's arena.
 
 import "base:runtime"
 import "core:strings"
@@ -59,16 +61,16 @@ USE_KINDS :: Item_Kinds {
 NO_ITEM :: i32(-1)
 
 Item :: struct {
-	kind:      Item_Kind,
-	span:      Span,   // definitions: the name; uses: the whole markup
-	name:      string, // normalised reference name or label ("" when anonymous)
-	label:     string, // as written: title text, target name, footnote label
-	value:     string, // URI, reference name (``indirect``) or definition text
-	indirect:  bool,   // ``value`` is a reference name
-	target:    i32,    // uses: the definition
-	parent:    i32,    // the enclosing section
-	level:     i32,    // sections: 1 for the top level
-	last_line: i32,    // the last line of the construct
+	kind:     Item_Kind,
+	span:     Span,   // definitions: the name; uses: the whole markup
+	full:     Span,   // the whole construct (a section: its title to its end)
+	name:     string, // normalised reference name or label ("" when anonymous)
+	label:    string, // as written: title text, target name, footnote label
+	value:    string, // URI, reference name (``indirect``) or definition text
+	indirect: bool,   // ``value`` is a reference name
+	target:   i32,    // uses: the definition
+	parent:   i32,    // the enclosing section
+	level:    i32,    // sections: 1 for the top level
 }
 
 Fold_Kind :: enum u8 {
@@ -76,6 +78,7 @@ Fold_Kind :: enum u8 {
 	Comment,
 }
 
+// Lines (LSP numbering) of a folding range.
 Fold :: struct {
 	start, end: i32,
 	kind:       Fold_Kind,
@@ -90,17 +93,19 @@ Problem :: struct {
 }
 
 Analysis :: struct {
+	tree:     rst.Tree, // the parse, with the directive content parsed into it
 	items:    [dynamic]Item,
 	tokens:   [dynamic]Token,
 	folds:    [dynamic]Fold,
 	problems: [dynamic]Problem,
 }
 
-// Analyse the document of ``ix``, from the reader's parse ``tree`` if it
-// kept one (else the document is parsed here).  The tree grows: the content
-// of directives is parsed into it.
+// Analyse ``text`` from the reader's parse ``tree`` if it kept one (else
+// the text is parsed here).  The tree grows: the content of directives is
+// parsed into it.
 analyze :: proc(
-	ix: ^Line_Index,
+	text: string,
+	idx: ^rst.Line_Index,
 	allocator: runtime.Allocator,
 	tree := rd.Parse_Tree{},
 ) -> Analysis {
@@ -114,25 +119,26 @@ analyze :: proc(
 	}
 	p := tree.parser
 	doc := tree.root
-	if doc == rst.NO_NODE {
+	if doc == rst.NO_NODE || !rst.has_spans(&p.tree) {
+		flags := rst.Parse_Flags{.Match_Titles, .Spans}
 		p = rst.Parser {
 			allocator = allocator,
-			settings  = rst.settings_from_flags({.Match_Titles}, ix.tab_width, 0),
+			settings  = rst.settings_from_flags(flags, TAB_WIDTH, 0),
 		}
-		doc, _, _ = rst.parse_text(&p, ix.text, 0, true)
+		doc, _, _ = rst.parse_text(&p, text, 0, true)
 	}
 	b := Builder {
-		ix       = ix,
+		idx      = idx,
 		p        = &p,
 		t        = &p.tree,
 		a        = &a,
 		section  = NO_ITEM,
 		sections = make([dynamic]i32, 0, 16),
 	}
-	last := trim_blank_end(ix, line_count(ix) - 1, 0)
-	walk_children(&b, doc, Walk{end = last})
-	finish_sections(&b, last)
+	walk_children(&b, doc, {})
+	finish_sections(&b)
 	resolve(&a)
+	a.tree = p.tree
 	return a
 }
 
@@ -146,7 +152,7 @@ Title_Style :: struct {
 
 @(private = "file")
 Builder :: struct {
-	ix:            ^Line_Index,
+	idx:           ^rst.Line_Index,
 	p:             ^rst.Parser,
 	t:             ^rst.Tree,
 	a:             ^Analysis,
@@ -159,9 +165,7 @@ Builder :: struct {
 // Context of a node during the walk.
 @(private = "file")
 Walk :: struct {
-	delta: int, // source line minus the tree's line (table cells, substitutions)
 	subst: bool, // inside a substitution definition
-	end:   int, // the last line of the node (0-based)
 }
 
 @(private = "file")
@@ -170,114 +174,50 @@ FOLDED_KINDS :: bit_set[rst.Node_Kind] {
 	.Literal_Block, .Doctest_Block, .Line_Block, .Table, .Block_Quote,
 }
 
-// Kinds of the parse tree that are inline markup.
-@(private = "file")
-INLINE_KINDS :: bit_set[rst.Node_Kind] {
-	.Text, .Emphasis, .Strong, .Literal, .Inline_Target, .Substitution_Reference, .Reference,
-	.Footnote_Reference, .Citation_Reference, .Interpreted, .Problematic,
-}
-
-// Walk the children of ``n`` (``w``: their context, ``w.end`` the last
-// line of ``n``).  A child ends where the next one starts.
 @(private = "file")
 walk_children :: proc(b: ^Builder, n: rst.Node, w: Walk) {
-	c := next_block(b.t, rst.first_child(b.t, n))
-	for c != rst.NO_NODE {
-		next := next_block(b.t, rst.next_sibling(b.t, c))
-		cw := w
-		start := start_line(b, c, w.delta)
-		if next != rst.NO_NODE {
-			if s := start_line(b, next, w.delta); s > start {
-				cw.end = trim_blank_end(b.ix, s - 1, max(start, 0))
-			}
-		}
-		walk(b, c, cw)
-		c = next
-	}
-}
-
-// ``n`` or the first sibling after it that is a block (messages are
-// reported apart and may carry other lines).
-@(private = "file")
-next_block :: proc(t: ^rst.Tree, n: rst.Node) -> rst.Node {
-	n := n
-	for n != rst.NO_NODE {
-		#partial switch rst.node_kind(t, n) {
-		case .System_Message, .Include_End:
-		case:
-			return n
-		}
-		n = rst.next_sibling(t, n)
-	}
-	return n
-}
-
-// The first line of ``n`` (0-based), -1 if unknown.
-@(private = "file")
-start_line :: proc(b: ^Builder, n: rst.Node, delta: int) -> int {
-	d := rst.node_data(b.t, n)
-	if d.line <= 0 {
-		first := next_block(b.t, d.first)
-		return start_line(b, first, delta) if first != rst.NO_NODE else -1
-	}
-	line := int(d.line) - 1 + delta
-	if d.kind == .Section_Title && len(d.name) == 2 do line -= 1 // the overline
-	return line
+	it := rst.children(b.t, n)
+	for c in rst.iterate(&it) do walk(b, c, w)
 }
 
 @(private = "file")
 walk :: proc(b: ^Builder, n: rst.Node, w: Walk) {
 	d := rst.node_data(b.t, n)
-	if construct(b, n, d, w) do return
-	if d.kind in FOLDED_KINDS do add_fold(b, start_line(b, n, w.delta), w.end, .Region)
-	first := rst.first_child(b.t, n)
-	if first != rst.NO_NODE && rst.node_kind(b.t, first) in INLINE_KINDS {
-		line := int(d.line) - 1 + w.delta
-		text_type: Token_Type = .Property if d.kind == .Field_Name else .None
-		last := line + strings.count(d.raw, "\n")
-		inline_chain(b, first, {i32(max(line, 0)), 0}, last, text_type)
-		return
-	}
-	cw := w
-	if d.kind == .Entry do cw.delta -= 1 // cells are nested-parsed with a 1-based offset
-	walk_children(b, n, cw)
-}
-
-// Sections, transitions and explicit markup: true when ``n`` is done.
-@(private = "file")
-construct :: proc(b: ^Builder, n: rst.Node, d: rst.Node_Data, w: Walk) -> bool {
-	line := int(d.line) - 1 + w.delta
+	span := node_span(b.t, n)
 	#partial switch d.kind {
 	case .Section_Title:
-		section_title(b, n, w)
+		section_title(b, n, span)
 	case .Directive:
-		directive(b, n, w)
+		directive(b, n, span, w)
 	case .Target:
-		target(b, n, line)
+		target(b, d, span)
 	case .Substitution_Definition:
-		substitution_definition(b, n, w)
+		substitution_definition(b, n, span)
 	case .Comment:
-		comment(b, line, w.end)
-	case .Footnote, .Citation:
-		footnote(b, n, line, w.end)
-		return false // the body is walked
+		add_token(b, span, .Comment)
+		add_fold(b, span, .Comment)
 	case .Transition:
-		add_token(b, line_content_span(b.ix, line), .Operator)
+		add_token(b, span, .Operator)
+	case .System_Message, .Include_End:
 	case:
-		return false
+		if d.kind == .Footnote || d.kind == .Citation do footnote(b, d, span)
+		if d.kind in FOLDED_KINDS do add_fold(b, span, .Region)
+		inline_item(b, d, n, span)
+		walk_children(b, n, w)
 	}
-	return true
 }
 
 @(private = "file")
 add_token :: proc(b: ^Builder, span: Span, type: Token_Type, mods := Token_Modifiers{}) {
-	add_token_span(b.a, b.ix, span, type, mods)
+	if type == .None || span.end <= span.start do return
+	append(&b.a.tokens, Token{span, type, mods})
 }
 
 @(private = "file")
-add_fold :: proc(b: ^Builder, start, end: int, kind: Fold_Kind) {
-	if start < 0 || end <= start do return
-	append(&b.a.folds, Fold{i32(start), i32(end), kind})
+add_fold :: proc(b: ^Builder, span: Span, kind: Fold_Kind) {
+	first := to_lsp(b.idx, span.start).line
+	last := to_lsp(b.idx, span.end).line
+	if last > first do append(&b.a.folds, Fold{i32(first), i32(last), kind})
 }
 
 @(private = "file")
@@ -285,6 +225,7 @@ add_item :: proc(b: ^Builder, item: Item) -> i32 {
 	it := item
 	it.target = NO_ITEM
 	if it.kind != .Section do it.parent = b.section
+	if it.full == {} do it.full = it.span
 	append(&b.a.items, it)
 	return i32(len(b.a.items) - 1)
 }
@@ -294,7 +235,7 @@ add_item :: proc(b: ^Builder, item: Item) -> i32 {
 // ``RSTState.check_subsection``: the level of the title style; a title
 // that skips a level makes no section.
 @(private = "file")
-section_title :: proc(b: ^Builder, n: rst.Node, w: Walk) {
+section_title :: proc(b: ^Builder, n: rst.Node, span: Span) {
 	d := rst.node_data(b.t, n)
 	style := Title_Style {
 		n = len(d.name),
@@ -307,36 +248,35 @@ section_title :: proc(b: ^Builder, n: rst.Node, w: Walk) {
 			break
 		}
 	}
-	line := int(d.line) - 1 + w.delta
-	add_token(b, line_content_span(b.ix, line + 1), .Operator)
-	if style.n == 2 do add_token(b, line_content_span(b.ix, line - 1), .Operator)
+	line := int(d.line)
+	add_token(b, content_span(b.t, line + 1), .Operator)
+	if style.n == 2 do add_token(b, content_span(b.t, line - 1), .Operator)
 	if level > b.section_level + 1 do return
 	b.section_level = level
 	if level > len(b.title_styles) do append(&b.title_styles, style)
 
 	title := rst.first_child(b.t, n)
 	label := title_text(b, title)
-	parent := NO_ITEM
-	for i := len(b.sections) - 1; i >= 0; i -= 1 {
-		if b.a.items[b.sections[i]].level < i32(level) {
-			parent = b.sections[i]
-			break
-		}
-	}
 	item := Item {
 		kind   = .Section,
-		span   = line_content_span(b.ix, line),
+		span   = node_span(b.t, title) if title != rst.NO_NODE else span,
+		full   = span,
 		name   = dt.fully_normalize_name(label),
 		label  = label,
-		parent = parent,
+		parent = section_parent(b, level),
 		level  = i32(level),
 	}
 	b.section = add_item(b, item)
 	append(&b.sections, b.section)
-	if title != rst.NO_NODE {
-		first := rst.first_child(b.t, title)
-		inline_chain(b, first, {i32(line), 0}, line, .Namespace)
+	if title != rst.NO_NODE do inline_children(b, title, .Namespace)
+}
+
+@(private = "file")
+section_parent :: proc(b: ^Builder, level: int) -> i32 {
+	for i := len(b.sections) - 1; i >= 0; i -= 1 {
+		if b.a.items[b.sections[i]].level < i32(level) do return b.sections[i]
 	}
+	return NO_ITEM
 }
 
 // The text of a title (``title.astext()``).
@@ -359,132 +299,95 @@ title_text :: proc(b: ^Builder, title: rst.Node) -> string {
 
 // A section ends before the next title of its level or a higher one.
 @(private = "file")
-finish_sections :: proc(b: ^Builder, last: int) {
+finish_sections :: proc(b: ^Builder) {
 	items := b.a.items[:]
+	last := last_nonblank(b.t, rst.line_count(b.t), 0)
 	for s, k in b.sections {
 		end := last
 		for j in k + 1 ..< len(b.sections) {
-			next := &items[b.sections[j]]
+			next := items[b.sections[j]]
 			if next.level > items[s].level do continue
-			start := int(next.span.start.line)
-			if is_overline(b, start) do start -= 1
-			end = trim_blank_end(b.ix, start - 1, int(items[s].span.start.line))
+			end = last_nonblank(b.t, line_of(b.t, next.full.start) - 1, 0)
 			break
 		}
-		items[s].last_line = i32(end)
-		first := int(items[s].span.start.line)
-		if is_overline(b, first) do first -= 1
-		add_fold(b, first, end, .Region)
+		items[s].full.end = max(content_span(b.t, end).end, items[s].full.end)
+		add_fold(b, items[s].full, .Region)
 	}
-}
-
-// Line ``line`` is a title with an overline above it.
-@(private = "file")
-is_overline :: proc(b: ^Builder, line: int) -> bool {
-	if line < 1 do return false
-	above := expanded(b.ix, line - 1)
-	below := expanded(b.ix, line + 1)
-	return is_adornment(above) && is_adornment(below) && len(above) > 0 && above[0] == below[0]
-}
-
-// A line of one repeated punctuation character.
-is_adornment :: proc(line: string) -> bool {
-	return rst.match_line(line)
 }
 
 // --- explicit markup -------------------------------------------------------------------
 
 @(private = "file")
-target :: proc(b: ^Builder, n: rst.Node, line: int) {
-	d := rst.node_data(b.t, n)
-	indirect := rst.Target_Type(d.num[0]) == .Refname
-	last := i32(line + strings.count(d.raw, "\n"))
+target :: proc(b: ^Builder, d: rst.Node_Data, span: Span) {
+	item := Item {
+		full     = span,
+		value    = d.text,
+		indirect = rst.Target_Type(d.num[0]) == .Refname,
+	}
 	if d.num[1] == 1 {
-		span, ok := locate_text(b.ix, {i32(line), 0}, line, "__")
-		if !ok do span = line_content_span(b.ix, line)
-		item := Item {
-			kind      = .Anonymous_Target,
-			span      = span,
-			value     = d.text,
-			indirect  = indirect,
-			last_line = last,
-		}
-		add_item(b, item)
-		add_token(b, span, .Decorator, {.Declaration})
-		return
-	}
-	span := name_span(b, line, "_", d.name)
-	item := Item {
-		kind      = .Target,
-		span      = span,
-		name      = dt.fully_normalize_name(d.name),
-		label     = d.name,
-		value     = d.text,
-		indirect  = indirect,
-		last_line = last,
+		item.kind = .Anonymous_Target
+		item.span = find_in(b.t, span, "__") or_else first_line(b, span)
+	} else {
+		item.kind = .Target
+		item.span = name_after(b, span, "_", d.name)
+		item.name = dt.fully_normalize_name(d.name)
+		item.label = d.name
 	}
 	add_item(b, item)
-	add_token(b, span, .Decorator, {.Declaration})
+	add_token(b, item.span, .Decorator, {.Declaration})
 }
 
-// The span of ``name`` after ``marker`` on ``line`` (the line's content
-// if it cannot be found).
+// The span of ``name`` after ``marker`` on the first line of ``span`` (the
+// line if it cannot be found).
 @(private = "file")
-name_span :: proc(b: ^Builder, line: int, marker, name: string) -> Span {
-	from := Pos{i32(line), 0}
-	if m, ok := locate_text(b.ix, from, line, marker); ok do from = m.end
-	if name != "" {
-		if s, ok := locate_text(b.ix, from, line, name); ok do return s
-	}
-	return line_content_span(b.ix, line)
+name_after :: proc(b: ^Builder, span: Span, marker, name: string) -> Span {
+	from := span
+	if m, ok := find_in(b.t, span, marker); ok do from.start = m.end
+	return find_in(b.t, from, name) or_else first_line(b, span)
 }
 
 @(private = "file")
-substitution_definition :: proc(b: ^Builder, n: rst.Node, w: Walk) {
+first_line :: proc(b: ^Builder, span: Span) -> Span {
+	return content_span(b.t, line_of(b.t, span.start))
+}
+
+@(private = "file")
+substitution_definition :: proc(b: ^Builder, n: rst.Node, span: Span) {
 	d := rst.node_data(b.t, n)
-	line := int(d.line) - 1 + w.delta
-	span := name_span(b, line, "|", d.name)
+	name := name_after(b, span, "|", d.name)
 	item := Item {
-		kind      = .Substitution_Definition,
-		span      = span,
-		name      = dt.whitespace_normalize_name(d.name),
-		label     = d.name,
-		value     = strings.trim_right_space(d.raw),
-		last_line = i32(w.end),
+		kind  = .Substitution_Definition,
+		span  = name,
+		full  = span,
+		name  = dt.whitespace_normalize_name(d.name),
+		label = d.name,
+		value = strings.trim_right_space(d.raw),
 	}
 	add_item(b, item)
-	add_token(b, widen(span), .Variable, {.Declaration})
-	cw := w
-	cw.delta += int(d.num[0])
-	cw.subst = true
-	walk_children(b, n, cw)
+	add_token(b, widen(name), .Variable, {.Declaration})
+	walk_children(b, n, {subst = true})
 }
 
 // A name span with its delimiters ("|name|", "[label]").
 @(private = "file")
 widen :: proc(span: Span) -> Span {
-	s := span
-	s.start.col = max(s.start.col - 1, 0)
-	s.end.col += 1
-	return s
+	return {max(span.start - 1, 0), span.end + 1}
 }
 
 @(private = "file")
-footnote :: proc(b: ^Builder, n: rst.Node, line, end: int) {
-	d := rst.node_data(b.t, n)
-	label := d.name
-	span := name_span(b, line, "[", label)
+footnote :: proc(b: ^Builder, d: rst.Node_Data, span: Span) {
+	label := name_after(b, span, "[", d.name)
 	item := Item {
-		kind      = .Footnote if d.kind == .Footnote else .Citation,
-		span      = span,
-		name      = footnote_name(label, d.kind == .Citation),
-		label     = label,
-		value     = strings.trim_right_space(d.raw),
-		last_line = i32(end),
+		kind  = .Footnote if d.kind == .Footnote else .Citation,
+		span  = label,
+		full  = span,
+		name  = footnote_name(d.name, d.kind == .Citation),
+		label = d.name,
+		value = strings.trim_right_space(d.raw),
 	}
 	add_item(b, item)
-	add_token(b, widen(span), .Enum_Member, {.Declaration})
-	add_fold(b, line, end, .Region)
+	add_token(b, widen(label), .Enum_Member, {.Declaration})
+	add_fold(b, span, .Region)
 }
 
 // The reference name of a footnote or citation label: "" for the
@@ -496,110 +399,93 @@ footnote_name :: proc(label: string, citation: bool) -> string {
 	return label
 }
 
-@(private = "file")
-comment :: proc(b: ^Builder, line, end: int) {
-	if line < 0 do return
-	for l in line ..= max(line, end) {
-		if !is_blank(expanded(b.ix, l)) do add_token(b, line_content_span(b.ix, l), .Comment)
-	}
-	add_fold(b, line, end, .Comment)
-}
-
 // --- directives ------------------------------------------------------------------------
 
 @(private = "file")
-directive :: proc(b: ^Builder, n: rst.Node, w: Walk) {
+directive :: proc(b: ^Builder, n: rst.Node, span: Span, w: Walk) {
 	d := rst.node_data(b.t, n)
-	line := int(d.line) - 1 + w.delta
-	span, found := locate_text(b.ix, {i32(line), 0}, line, strings.concatenate({d.name, "::"}))
+	name, found := find_in(b.t, span, strings.concatenate({d.name, "::"}))
 	if found {
-		span.end.col -= 2
-		add_token(b, span, .Function)
+		name.end -= 2
+		add_token(b, name, .Function)
 	} else {
-		span = line_content_span(b.ix, line)
+		name = first_line(b, span)
 	}
 	item := Item {
 		kind  = .Directive,
-		span  = span,
+		span  = name,
+		full  = span,
 		name  = strings.to_lower(d.name),
 		label = d.name,
 	}
 	add_item(b, item)
 	info, has_info := rst.directive_info(b.t, n)
 	if !has_info do return
-	end := min(w.end, trim_blank_end(b.ix, info.end_offset + w.delta, line))
-	if !w.subst do add_fold(b, line, end, .Region)
-	arguments_and_options(b, d.name, info, w.delta, span.end)
-	cw := w
-	cw.end = end
-	directive_content(b, d.name, info, line, cw)
+	if !w.subst do add_fold(b, span, .Region)
+	_, inline_argument := check.directive_spec(d.name)
+	arguments_and_options(b, d.name, info, !inline_argument)
+	directive_content(b, d.name, info, w)
 }
 
-// Tokens of the arguments and options (the first block of lines).
+// Tokens of the arguments and options (the first block of lines).  The
+// arguments of directives that parse them as inline text get their tokens
+// from that parse (``directive_content``).
 @(private = "file")
 arguments_and_options :: proc(
 	b: ^Builder,
 	name: string,
 	info: rst.Directive_Info,
-	delta: int,
-	name_end: Pos,
+	args: bool,
 ) {
 	entry, known := find_directive(name)
-	takes_args := known && entry.spec.required_arguments + entry.spec.optional_arguments > 0
+	spec := entry.spec
+	takes_args := args && known && spec.required_arguments + spec.optional_arguments > 0
 	for text, i in info.lines {
 		if is_blank(text) {
 			if i > 0 do break
 			continue
 		}
-		line := info.line_offset + i + delta
-		from := Pos{i32(line), 0} if i > 0 else Pos{i32(line), name_end.col}
-		span, ok := locate_text(b.ix, from, line, rst.strip(text))
-		if !ok do continue
-		fname, fend, is_field := rst.match_field_marker(rst.strip(text))
+		body := rst.strip(text)
+		at := view_offset(b.t, body)
+		if at < 0 do continue // a line whose tabs were expanded
+		span := Span{i32(at), i32(at + len(body))}
+		fname, fend, is_field := rst.match_field_marker(body)
 		if !is_field {
 			if takes_args do add_token(b, span, .Parameter)
 			continue
 		}
-		marker := Span{span.start, {span.start.line, span.start.col + i32(len(fname) + 2)}}
-		add_token(b, marker, .Property)
-		value := rst.strip(rst.strip(text)[fend:])
+		add_token(b, {span.start, span.start + i32(len(fname) + 2)}, .Property)
+		value := rst.strip(body[fend:])
 		if strings.to_lower(fname) == "name" && value != "" {
-			vspan, vok := locate_text(b.ix, marker.end, line, value)
-			if !vok do continue
-			item := Item {
+			vat := view_offset(b.t, value)
+			if vat < 0 do continue
+			vspan := Span{i32(vat), i32(vat + len(value))}
+			option := Item {
 				kind  = .Name_Option,
 				span  = vspan,
 				name  = dt.fully_normalize_name(value),
 				label = value,
 			}
-			add_item(b, item)
+			add_item(b, option)
 			add_token(b, vspan, .Decorator, {.Declaration})
 		}
 	}
 }
 
-// Parse the reST parts of a standard directive as the directive does.
+// Parse the reST parts of a standard directive into the tree as the
+// directive does.
 @(private = "file")
-directive_content :: proc(
-	b: ^Builder,
-	name: string,
-	info: rst.Directive_Info,
-	line: int,
-	w: Walk,
-) {
+directive_content :: proc(b: ^Builder, name: string, info: rst.Directive_Info, w: Walk) {
 	spec, known := check.directive_spec(name)
 	if !known do return
 	blk, ok := check.parse_directive_block(info, spec)
 	if !ok do return
 	switch spec.kind {
-	case .Generic_Admonition, .Topic, .Sidebar, .Rubric, .Table:
-		if len(blk.arguments) > 0 do inline_text(b, blk.arguments[0], line, line)
-	case .Contents:
-		if len(blk.arguments) > 0 do inline_text(b, blk.arguments[0], line, line)
-		return
+	case .Generic_Admonition, .Topic, .Sidebar, .Rubric, .Table, .Contents:
+		if len(blk.arguments) > 0 do inline_lines(b, argument_lines(info), .Parameter)
+		if spec.kind == .Contents do return
 	case .Parsed_Literal:
-		start := blk.content_offset + w.delta
-		inline_text(b, strings.join(blk.content, "\n"), start, w.end)
+		inline_lines(b, blk.content, .None)
 		return
 	case .Admonition, .Block_Quote, .Body, .Class, .Figure, .Replace:
 	}
@@ -607,68 +493,72 @@ directive_content :: proc(
 	if spec.kind == .Replace && !w.subst do return
 	container := rst.new_node(b.t, .Block_Quote, 0)
 	sm := rst.make_state_machine(b.p, nil, 0, container)
-	sm.line_delta = w.delta
 	rst.nested_parse(&sm, blk.content, blk.content_offset, container)
 	walk_children(b, container, w)
 }
 
-// Inline markup of a directive argument or content (``inline_text``).
+// The lines of a directive's arguments: its first block, up to the options.
 @(private = "file")
-inline_text :: proc(b: ^Builder, text: string, line, last: int) {
-	nodes := rst.parse_inline(b.p, text, line + 1)
-	inline_chain(b, nodes.first, {i32(line), 0}, last, .None)
+argument_lines :: proc(info: rst.Directive_Info) -> []string {
+	lines := info.lines
+	if len(lines) > 0 && is_blank(lines[0]) do lines = lines[1:]
+	n := 0
+	for n < len(lines) && !is_blank(lines[n]) {
+		if _, _, is_field := rst.match_field_marker(lines[n]); is_field do break
+		n += 1
+	}
+	return lines[:n]
+}
+
+// Inline markup of lines of the source (``inline_text`` of a directive's
+// argument or content): parsed into the tree, located through the lines;
+// the text gets ``text_type`` tokens.
+@(private = "file")
+inline_lines :: proc(b: ^Builder, lines: []string, text_type: Token_Type) {
+	if len(lines) == 0 do return
+	// one line: the text is a view of the source; more: the lines map it
+	text := lines[0]
+	if len(lines) > 1 {
+		if b.p.spans != nil do b.p.spans.inline_lines = lines
+		text = strings.join(lines, "\n")
+	}
+	nodes := rst.parse_inline(b.p, text, 0)
+	inline_chain(b, nodes.first, text_type)
 }
 
 // --- inline markup ---------------------------------------------------------------------
 
-// Locate the inline nodes of the chain ``first`` in order from ``from``.
-// Text nodes get ``text_type`` tokens (titles, field names).
+// The inline children of ``n``: their tokens and items; the text has
+// ``text_type`` tokens (titles).
 @(private = "file")
-inline_chain :: proc(b: ^Builder, first: rst.Node, from: Pos, last: int, text_type: Token_Type) {
-	cur := from
+inline_children :: proc(b: ^Builder, n: rst.Node, text_type: Token_Type) {
+	inline_chain(b, rst.first_child(b.t, n), text_type)
+}
+
+@(private = "file")
+inline_chain :: proc(b: ^Builder, first: rst.Node, text_type: Token_Type) {
 	for c := first; c != rst.NO_NODE; c = rst.next_sibling(b.t, c) {
 		d := rst.node_data(b.t, c)
-		needle := source_form(d)
-		if needle == "" do continue
-		span, ok := locate_text(b.ix, cur, last, needle)
-		if !ok do continue
-		cur = span.end
-		inline_item(b, d, c, span, text_type)
+		span := node_span(b.t, c)
+		if d.kind == .Text {
+			add_token(b, span, text_type, {.Declaration})
+		} else {
+			inline_item(b, d, c, span)
+		}
 	}
 }
 
-// The source text of an inline node.
 @(private = "file")
-source_form :: proc(d: rst.Node_Data) -> string {
+inline_item :: proc(b: ^Builder, d: rst.Node_Data, n: rst.Node, span: Span) {
 	#partial switch d.kind {
-	case .Text:
-		// backslash escapes are NUL-escaped in the text
-		out, _ := strings.replace_all(d.text, "\x00", "\\")
-		return out
-	case .Footnote_Reference, .Citation_Reference:
-		return strings.concatenate({"[", d.text, "]_"})
-	}
-	out, _ := strings.replace_all(d.raw, "\x00", "\\")
-	return out
-}
-
-@(private = "file")
-inline_item :: proc(
-	b: ^Builder,
-	d: rst.Node_Data,
-	n: rst.Node,
-	span: Span,
-	text_type: Token_Type,
-) {
-	#partial switch d.kind {
-	case .Text:
-		if text_type != .None do add_token(b, span, text_type, {.Declaration})
 	case .Emphasis:
 		add_token(b, span, .Emphasis)
 	case .Strong:
 		add_token(b, span, .Strong)
 	case .Literal:
 		add_token(b, span, .String)
+	case .Field_Name:
+		add_token(b, span, .Property)
 	case .Interpreted:
 		interpreted(b, d, span)
 	case .Inline_Target:
@@ -698,9 +588,9 @@ interpreted :: proc(b: ^Builder, d: rst.Node_Data, span: Span) {
 	role := span
 	width := i32(len(d.name) + 2)
 	if strings.has_prefix(d.raw, ":") {
-		role.end = {span.start.line, span.start.col + width}
+		role.end = span.start + width
 	} else {
-		role.start = {span.end.line, span.end.col - width}
+		role.start = span.end - width
 	}
 	add_item(b, Item{kind = .Role, span = role, name = strings.to_lower(d.name), label = d.name})
 	add_token(b, role, .Macro)

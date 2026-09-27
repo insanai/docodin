@@ -14,6 +14,8 @@ import "core:mem/virtual"
 import "core:strings"
 import "core:time"
 
+import rst "../rst"
+
 VERSION :: "0.2.0"
 
 // JSON-RPC and LSP error codes.
@@ -183,39 +185,38 @@ document_request :: proc(method: string) -> (Document_Request, bool) {
 	switch method {
 	case "textDocument/documentSymbol":
 		return proc(s: ^Server, d: ^Document, _: json.Value, w: ^Json_Writer) {
-			document_symbols(w, snapshot(d), s.encoding)
+			document_symbols(w, snapshot(d, s.encoding))
 		}, true
 	case "textDocument/foldingRange":
-		return proc(_: ^Server, d: ^Document, _: json.Value, w: ^Json_Writer) {
-			folding_ranges(w, snapshot(d))
+		return proc(s: ^Server, d: ^Document, _: json.Value, w: ^Json_Writer) {
+			folding_ranges(w, snapshot(d, s.encoding))
 		}, true
 	case "textDocument/semanticTokens/full":
 		return semantic_tokens, true
 	case "textDocument/definition":
 		return proc(s: ^Server, d: ^Document, params: json.Value, w: ^Json_Writer) {
-			snap := snapshot(d)
-			definition(w, snap, d.uri, request_pos(snap, params, s.encoding), s.encoding)
+			snap := snapshot(d, s.encoding)
+			definition(w, snap, d.uri, request_pos(snap, params))
 		}, true
 	case "textDocument/references":
 		return proc(s: ^Server, d: ^Document, params: json.Value, w: ^Json_Writer) {
-			snap := snapshot(d)
+			snap := snapshot(d, s.encoding)
 			decl := get_bool(get(params, "context"), "includeDeclaration")
-			p := request_pos(snap, params, s.encoding)
-			references(w, snap, d.uri, p, decl, s.encoding)
+			references(w, snap, d.uri, request_pos(snap, params), decl)
 		}, true
 	case "textDocument/hover":
 		return proc(s: ^Server, d: ^Document, params: json.Value, w: ^Json_Writer) {
-			snap := snapshot(d)
-			hover(w, snap, request_pos(snap, params, s.encoding), s.encoding)
+			snap := snapshot(d, s.encoding)
+			hover(w, snap, request_pos(snap, params))
 		}, true
 	case "textDocument/completion":
 		return proc(s: ^Server, d: ^Document, params: json.Value, w: ^Json_Writer) {
-			snap := snapshot(d)
-			completion(w, snap, request_pos(snap, params, s.encoding), s.encoding)
+			snap := snapshot(d, s.encoding)
+			completion(w, snap, request_pos(snap, params))
 		}, true
 	case "textDocument/codeAction":
 		return proc(s: ^Server, d: ^Document, params: json.Value, w: ^Json_Writer) {
-			code_actions(w, snapshot(d), d.uri, params, &s.config, s.encoding)
+			code_actions(w, snapshot(d, s.encoding), d.uri, params, &s.config)
 		}, true
 	case "textDocument/diagnostic":
 		return pull_diagnostics, true
@@ -225,20 +226,20 @@ document_request :: proc(method: string) -> (Document_Request, bool) {
 
 @(private = "file")
 semantic_tokens :: proc(s: ^Server, d: ^Document, _: json.Value, w: ^Json_Writer) {
-	snap := snapshot(d)
+	snap := snapshot(d, s.encoding)
 	obj_begin(w)
 	key(w, "data")
-	encode_tokens(w, &snap.ix, sorted_tokens(&snap.analysis), s.encoding)
+	encode_tokens(w, &snap.idx, sorted_tokens(&snap.analysis))
 	obj_end(w)
 }
 
 @(private = "file")
 pull_diagnostics :: proc(s: ^Server, d: ^Document, _: json.Value, w: ^Json_Writer) {
-	snap := snapshot(d)
+	snap := snapshot(d, s.encoding)
 	obj_begin(w)
 	key_str(w, "kind", "full")
 	key(w, "items")
-	write_diagnostics(w, &snap.ix, snapshot_diagnostics(snap, &s.config), s.encoding)
+	write_diagnostics(w, &snap.idx, snapshot_diagnostics(snap, &s.config))
 	obj_end(w)
 }
 
@@ -247,9 +248,9 @@ pull_diagnostics :: proc(s: ^Server, d: ^Document, _: json.Value, w: ^Json_Write
 @(private = "file")
 initialize :: proc(s: ^Server, params: json.Value, w: ^Json_Writer) {
 	caps := get(params, "capabilities")
-	s.encoding = .Utf16
+	s.encoding = .UTF16
 	for e in get_array(get(caps, "general"), "positionEncodings") {
-		if name, _ := e.(json.String); name == "utf-8" do s.encoding = .Utf8
+		if name, _ := e.(json.String); name == "utf-8" do s.encoding = .UTF8
 	}
 	s.pull_diagnostics = has(get(caps, "textDocument"), "diagnostic")
 	configure(s, get(params, "initializationOptions"))
@@ -268,7 +269,7 @@ initialize :: proc(s: ^Server, params: json.Value, w: ^Json_Writer) {
 @(private = "file")
 write_capabilities :: proc(s: ^Server, w: ^Json_Writer) {
 	obj_begin(w)
-	key_str(w, "positionEncoding", "utf-8" if s.encoding == .Utf8 else "utf-16")
+	key_str(w, "positionEncoding", "utf-8" if s.encoding == .UTF8 else "utf-16")
 	key(w, "textDocumentSync")
 	obj_begin(w)
 	key_bool(w, "openClose", true)
@@ -377,9 +378,9 @@ publish_due :: proc(s: ^Server, force := false) {
 	for _, d in s.docs {
 		if !d.dirty || (!force && time.tick_diff(now, d.publish_at) > 0) do continue
 		d.dirty = false
-		snap := snapshot(d)
+		snap := snapshot(d, s.encoding)
 		diags := snapshot_diagnostics(snap, &s.config)
-		send_diagnostics(s, d.uri, d.version, &snap.ix, diags)
+		send_diagnostics(s, d.uri, d.version, &snap.idx, diags)
 	}
 }
 
@@ -388,7 +389,7 @@ send_diagnostics :: proc(
 	s: ^Server,
 	uri: string,
 	version: int,
-	ix: ^Line_Index,
+	idx: ^rst.Line_Index,
 	diags: []Diagnostic,
 ) {
 	// not the scratch arena: this runs while a message is handled, too
@@ -402,10 +403,10 @@ send_diagnostics :: proc(
 	key_str(&w, "uri", uri)
 	if version >= 0 do key_int(&w, "version", version)
 	key(&w, "diagnostics")
-	if ix == nil {
+	if idx == nil {
 		raw_value(&w, "[]")
 	} else {
-		write_diagnostics(&w, ix, diags, s.encoding)
+		write_diagnostics(&w, idx, diags)
 	}
 	obj_end(&w)
 	obj_end(&w)

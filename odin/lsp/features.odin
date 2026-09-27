@@ -7,6 +7,8 @@ package lsp
 import "core:encoding/json"
 import "core:strings"
 
+import rst "../rst"
+
 // LSP ``SymbolKind`` values.
 @(private = "file")
 Symbol_Kind :: enum int {
@@ -16,14 +18,12 @@ Symbol_Kind :: enum int {
 	Enum_Member = 22,
 }
 
-write_range :: proc(w: ^Json_Writer, ix: ^Line_Index, span: Span, enc: Encoding) {
-	start := to_lsp(ix, span.start, enc)
-	end := to_lsp(ix, span.end, enc)
+write_range :: proc(w: ^Json_Writer, idx: ^rst.Line_Index, span: Span) {
 	obj_begin(w)
 	key(w, "start")
-	write_position(w, start)
+	write_position(w, to_lsp(idx, span.start))
 	key(w, "end")
-	write_position(w, end)
+	write_position(w, to_lsp(idx, span.end))
 	obj_end(w)
 }
 
@@ -34,11 +34,11 @@ write_position :: proc(w: ^Json_Writer, p: Lsp_Pos) {
 	obj_end(w)
 }
 
-write_location :: proc(w: ^Json_Writer, uri: string, ix: ^Line_Index, span: Span, enc: Encoding) {
+write_location :: proc(w: ^Json_Writer, uri: string, idx: ^rst.Line_Index, span: Span) {
 	obj_begin(w)
 	key_str(w, "uri", uri)
 	key(w, "range")
-	write_range(w, ix, span, enc)
+	write_range(w, idx, span)
 	obj_end(w)
 }
 
@@ -52,14 +52,14 @@ SYMBOL_KINDS :: Item_Kinds {
 
 // ``textDocument/documentSymbol``: the section hierarchy, with the targets,
 // substitution definitions, footnotes and citations of each section.
-document_symbols :: proc(w: ^Json_Writer, s: ^Snapshot, enc: Encoding) {
+document_symbols :: proc(w: ^Json_Writer, s: ^Snapshot) {
 	items := s.analysis.items[:]
 	children := make([][dynamic]i32, len(items) + 1)
 	for item, i in items {
 		if item.kind not_in SYMBOL_KINDS do continue
 		append(&children[item.parent + 1], i32(i))
 	}
-	write_symbols(w, s, children, NO_ITEM, enc)
+	write_symbols(w, s, children, NO_ITEM)
 }
 
 @(private = "file")
@@ -68,7 +68,6 @@ write_symbols :: proc(
 	s: ^Snapshot,
 	children: [][dynamic]i32,
 	parent: i32,
-	enc: Encoding,
 ) {
 	arr_begin(w)
 	for idx in children[parent + 1] {
@@ -77,21 +76,16 @@ write_symbols :: proc(
 		key_str(w, "name", symbol_name(item))
 		if detail := symbol_detail(item); detail != "" do key_str(w, "detail", detail)
 		key_int(w, "kind", int(symbol_kind(item.kind)))
-		full := item.span
-		full.start.col = 0
-		if item.last_line > full.end.line {
-			full.end = {item.last_line, i32(len(expanded(&s.ix, int(item.last_line))))}
-		}
-		if item.kind == .Section && is_adornment(expanded(&s.ix, int(full.start.line) - 1)) {
-			full.start.line -= 1
-		}
+		// the range starts at the start of its line
+		full := item.full
+		full.start = from_lsp(&s.idx, {to_lsp(&s.idx, full.start).line, 0})
 		key(w, "range")
-		write_range(w, &s.ix, full, enc)
+		write_range(w, &s.idx, full)
 		key(w, "selectionRange")
-		write_range(w, &s.ix, item.span, enc)
+		write_range(w, &s.idx, item.span)
 		if len(children[idx + 1]) > 0 {
 			key(w, "children")
-			write_symbols(w, s, children, idx, enc)
+			write_symbols(w, s, children, idx)
 		}
 		obj_end(w)
 	}
@@ -155,13 +149,13 @@ folding_ranges :: proc(w: ^Json_Writer, s: ^Snapshot) {
 // --- definitions and references ------------------------------------------------------------
 
 // ``textDocument/definition``: the definition of the name at ``p``.
-definition :: proc(w: ^Json_Writer, s: ^Snapshot, uri: string, p: Pos, enc: Encoding) {
+definition :: proc(w: ^Json_Writer, s: ^Snapshot, uri: string, p: i32) {
 	def := definition_of(&s.analysis, item_at(&s.analysis, p))
 	if def == NO_ITEM {
 		null_value(w)
 		return
 	}
-	write_location(w, uri, &s.ix, s.analysis.items[def].span, enc)
+	write_location(w, uri, &s.idx, s.analysis.items[def].span)
 }
 
 // ``textDocument/references``: the uses of the name at ``p`` (and its
@@ -170,23 +164,22 @@ references :: proc(
 	w: ^Json_Writer,
 	s: ^Snapshot,
 	uri: string,
-	p: Pos,
+	p: i32,
 	include_declaration: bool,
-	enc: Encoding,
 ) {
 	a := &s.analysis
 	def := definition_of(a, item_at(a, p))
 	arr_begin(w)
 	if def != NO_ITEM {
-		if include_declaration do write_location(w, uri, &s.ix, a.items[def].span, enc)
-		for r in references_of(a, def) do write_location(w, uri, &s.ix, a.items[r].span, enc)
+		if include_declaration do write_location(w, uri, &s.idx, a.items[def].span)
+		for r in references_of(a, def) do write_location(w, uri, &s.idx, a.items[r].span)
 	}
 	arr_end(w)
 }
 
 // --- hover ---------------------------------------------------------------------------------
 
-hover :: proc(w: ^Json_Writer, s: ^Snapshot, p: Pos, enc: Encoding) {
+hover :: proc(w: ^Json_Writer, s: ^Snapshot, p: i32) {
 	a := &s.analysis
 	idx := item_at(a, p)
 	text := hover_text(a, idx)
@@ -201,7 +194,7 @@ hover :: proc(w: ^Json_Writer, s: ^Snapshot, p: Pos, enc: Encoding) {
 	key_str(w, "value", text)
 	obj_end(w)
 	key(w, "range")
-	write_range(w, &s.ix, a.items[idx].span, enc)
+	write_range(w, &s.idx, a.items[idx].span)
 	obj_end(w)
 }
 
@@ -258,7 +251,7 @@ definition_hover :: proc(item: Item) -> string {
 	return ""
 }
 
-// The request's position in parser coordinates.
-request_pos :: proc(s: ^Snapshot, params: json.Value, enc: Encoding) -> Pos {
-	return from_lsp(&s.ix, lsp_pos(get(params, "position")), enc)
+// The request's position: a byte offset.
+request_pos :: proc(s: ^Snapshot, params: json.Value) -> i32 {
+	return from_lsp(&s.idx, lsp_pos(get(params, "position")))
 }

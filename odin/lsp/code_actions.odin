@@ -11,10 +11,12 @@ package lsp
 
 import "core:encoding/json"
 
-write_diagnostic :: proc(w: ^Json_Writer, ix: ^Line_Index, d: Diagnostic, enc: Encoding) {
+import rst "../rst"
+
+write_diagnostic :: proc(w: ^Json_Writer, idx: ^rst.Line_Index, d: Diagnostic) {
 	obj_begin(w)
 	key(w, "range")
-	write_range(w, ix, d.span, enc)
+	write_range(w, idx, d.span)
 	key_int(w, "severity", severity(d.level))
 	if d.code != "" do key_str(w, "code", d.code)
 	key_str(w, "source", "docutils")
@@ -29,9 +31,9 @@ write_diagnostic :: proc(w: ^Json_Writer, ix: ^Line_Index, d: Diagnostic, enc: E
 	obj_end(w)
 }
 
-write_diagnostics :: proc(w: ^Json_Writer, ix: ^Line_Index, diags: []Diagnostic, enc: Encoding) {
+write_diagnostics :: proc(w: ^Json_Writer, idx: ^rst.Line_Index, diags: []Diagnostic) {
 	arr_begin(w)
-	for d in diags do write_diagnostic(w, ix, d, enc)
+	for d in diags do write_diagnostic(w, idx, d)
 	arr_end(w)
 }
 
@@ -43,19 +45,16 @@ code_actions :: proc(
 	uri: string,
 	params: json.Value,
 	cfg: ^Config,
-	enc: Encoding,
 ) {
 	r := get(params, "range")
-	first := from_lsp(&s.ix, lsp_pos(get(r, "start")), enc)
-	last := from_lsp(&s.ix, lsp_pos(get(r, "end")), enc)
+	first := from_lsp(&s.idx, lsp_pos(get(r, "start")))
+	last := from_lsp(&s.idx, lsp_pos(get(r, "end")))
 	only := get_array(get(params, "context"), "only")
 	arr_begin(w)
 	if wants_quickfix(only) {
 		for d in snapshot_diagnostics(s, cfg) {
-			if d.fix.kind == .None || pos_less(d.span.end, first) || pos_less(last, d.span.start) {
-				continue
-			}
-			write_action(w, s, uri, d, enc)
+			if d.fix.kind == .None || d.span.end < first || last < d.span.start do continue
+			write_action(w, s, uri, d)
 		}
 	}
 	arr_end(w)
@@ -72,14 +71,14 @@ wants_quickfix :: proc(only: json.Array) -> bool {
 }
 
 @(private = "file")
-write_action :: proc(w: ^Json_Writer, s: ^Snapshot, uri: string, d: Diagnostic, enc: Encoding) {
+write_action :: proc(w: ^Json_Writer, s: ^Snapshot, uri: string, d: Diagnostic) {
 	obj_begin(w)
 	key_str(w, "title", d.fix.title)
 	key_str(w, "kind", "quickfix")
 	key_bool(w, "isPreferred", true)
 	key(w, "diagnostics")
 	arr_begin(w)
-	write_diagnostic(w, &s.ix, d, enc)
+	write_diagnostic(w, &s.idx, d)
 	arr_end(w)
 	key(w, "edit")
 	obj_begin(w)
@@ -91,7 +90,7 @@ write_action :: proc(w: ^Json_Writer, s: ^Snapshot, uri: string, d: Diagnostic, 
 	for e in edits[:d.fix.count] {
 		obj_begin(w)
 		key(w, "range")
-		write_range(w, &s.ix, e.span, enc)
+		write_range(w, &s.idx, e.span)
 		key_str(w, "newText", e.text)
 		obj_end(w)
 	}

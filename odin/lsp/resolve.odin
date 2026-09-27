@@ -120,7 +120,7 @@ take :: proc(list: []i32, next: ^int) -> i32 {
 
 // The item at ``p``: a use before a definition with the same span (an
 // embedded URI), else the smallest span.
-item_at :: proc(a: ^Analysis, p: Pos) -> i32 {
+item_at :: proc(a: ^Analysis, p: i32) -> i32 {
 	best := NO_ITEM
 	for item, i in a.items {
 		if !span_contains(item.span, p) do continue
@@ -132,7 +132,7 @@ item_at :: proc(a: ^Analysis, p: Pos) -> i32 {
 @(private = "file")
 better_item :: proc(x, y: Item) -> bool {
 	if x.span == y.span do return x.kind in USE_KINDS && y.kind not_in USE_KINDS
-	return pos_less(y.span.start, x.span.start) || pos_less(x.span.end, y.span.end)
+	return y.span.start < x.span.start || x.span.end < y.span.end
 }
 
 // The definition an item stands for: the target of a use, the item itself

@@ -9,6 +9,7 @@ import "core:strings"
 import "core:testing"
 
 import lsp ".."
+import rst "../../rst"
 
 // --- a client session over ``lsp.handle`` ----------------------------------------------
 
@@ -244,7 +245,7 @@ test_utf8_negotiation :: proc(t: ^testing.T) {
 	ss: Session
 	session_start(&ss, `{"general":{"positionEncodings":["utf-8","utf-16"]}}`)
 	defer session_end(&ss)
-	testing.expect_value(t, ss.server.encoding, lsp.Encoding.Utf8)
+	testing.expect_value(t, ss.server.encoding, lsp.Encoding.UTF8)
 }
 
 // --- text synchronisation --------------------------------------------------------------
@@ -308,27 +309,27 @@ test_uri_to_path :: proc(t: ^testing.T) {
 @(test)
 test_positions :: proc(t: ^testing.T) {
 	text := "a\tb😀c\r\nx\ry\n"
-	ix := lsp.line_index_make(text, 8, context.temp_allocator)
-	testing.expect_value(t, lsp.line_count(&ix), 4)
-	testing.expect_value(t, ix.expanded[0], "a       b😀c")
-	// expanded column of "c": 8 + 1 + 4 bytes
-	c := lsp.Pos{0, 13}
-	testing.expect_value(t, lsp.to_lsp(&ix, c, .Utf16), lsp.Lsp_Pos{0, 5})
-	testing.expect_value(t, lsp.to_lsp(&ix, c, .Utf8), lsp.Lsp_Pos{0, 7})
-	testing.expect_value(t, lsp.from_lsp(&ix, {0, 5}, .Utf16), c)
-	testing.expect_value(t, lsp.from_lsp(&ix, {0, 2}, .Utf16), lsp.Pos{0, 8})
-	testing.expect_value(t, lsp.to_lsp(&ix, {2, 0}, .Utf16), lsp.Lsp_Pos{2, 0})
-	starts := lsp.line_starts(text, context.temp_allocator)
-	testing.expect_value(t, lsp.lsp_offset(text, starts, {1, 1}, .Utf16), 11)
-	testing.expect_value(t, lsp.lsp_offset(text, starts, {9, 0}, .Utf16), len(text))
+	utf16 := rst.line_index_make(text, .UTF16, context.temp_allocator)
+	utf8 := rst.line_index_make(text, .UTF8, context.temp_allocator)
+	c := i32(strings.index(text, "c"))
+	testing.expect_value(t, lsp.to_lsp(&utf16, c), lsp.Lsp_Pos{0, 5})
+	testing.expect_value(t, lsp.to_lsp(&utf8, c), lsp.Lsp_Pos{0, 7})
+	testing.expect_value(t, lsp.from_lsp(&utf16, {0, 5}), c)
+	testing.expect_value(t, lsp.from_lsp(&utf16, {1, 1}), 11)
+	testing.expect_value(t, lsp.from_lsp(&utf16, {9, 0}), i32(len(text)))
+	testing.expect_value(t, lsp.line_end(&utf16, 0), i32(8))
 }
 
 @(test)
-test_locate_text :: proc(t: ^testing.T) {
-	ix := lsp.line_index_make("A `phrase\n  reference`_ here\n", 8, context.temp_allocator)
-	span, ok := lsp.locate_text(&ix, {0, 0}, 1, "`phrase\nreference`_")
-	testing.expect(t, ok)
-	testing.expect_value(t, span, lsp.Span{{0, 2}, {1, 13}})
-	_, ok = lsp.locate_text(&ix, {0, 3}, 1, "`phrase")
-	testing.expect(t, !ok)
+test_spans_of_the_parse :: proc(t: ^testing.T) {
+	text := "Title\n=====\n\nA `phrase\nreference`_ here.\n"
+	idx := rst.line_index_make(text, .UTF16, context.temp_allocator)
+	a := lsp.analyze(text, &idx, context.temp_allocator)
+	ref := lsp.item_at(&a, i32(strings.index(text, "`phrase")) + 1)
+	testing.expect(t, ref != lsp.NO_ITEM)
+	if ref == lsp.NO_ITEM do return
+	span := a.items[ref].span
+	testing.expect_value(t, text[span.start:span.end], "`phrase\nreference`_")
+	testing.expect_value(t, lsp.content_span(&a.tree, 2), lsp.Span{6, 11})
+	testing.expect_value(t, lsp.last_nonblank(&a.tree, 3, 0), 2)
 }

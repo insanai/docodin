@@ -13,6 +13,7 @@ package lsp
 import "core:strings"
 
 import rd "../reader"
+import rst "../rst"
 
 Directive_Entry :: struct {
 	name: string,
@@ -156,19 +157,20 @@ Candidate :: struct {
 }
 
 // ``textDocument/completion`` at ``p``: a ``CompletionList``.
-completion :: proc(w: ^Json_Writer, s: ^Snapshot, p: Pos, enc: Encoding) {
+completion :: proc(w: ^Json_Writer, s: ^Snapshot, p: i32) {
 	out := make([dynamic]Candidate, 0, 32)
-	line := expanded(&s.ix, int(p.line))
-	col := min(int(p.col), len(line))
-	before := line[:col]
+	t := &s.analysis.tree
+	line := line_of(t, p)
+	line_start := i32(t.line_starts[line - 1]) if line >= 1 else 0
+	before := s.text[min(line_start, p):p]
 	switch {
 	case complete_directive(&out, before):
-	case complete_option(&out, &s.ix, int(p.line), before):
+	case complete_option(&out, t, line, before):
 	case complete_names(&out, &s.analysis, before):
 	case complete_role(&out, before):
 	}
 	// the candidates replace the word before the cursor
-	replaced := Span{{p.line, i32(word_start(before))}, {p.line, i32(col)}}
+	replaced := Span{p - i32(len(before) - word_start(before)), p}
 	obj_begin(w)
 	key_bool(w, "isIncomplete", false)
 	key(w, "items")
@@ -181,7 +183,7 @@ completion :: proc(w: ^Json_Writer, s: ^Snapshot, p: Pos, enc: Encoding) {
 		key(w, "textEdit")
 		obj_begin(w)
 		key(w, "range")
-		write_range(w, &s.ix, replaced, enc)
+		write_range(w, &s.idx, replaced)
 		key_str(w, "newText", c.insert)
 		obj_end(w)
 		obj_end(w)
@@ -223,7 +225,7 @@ complete_directive :: proc(out: ^[dynamic]Candidate, before: string) -> bool {
 @(private = "file")
 complete_option :: proc(
 	out: ^[dynamic]Candidate,
-	ix: ^Line_Index,
+	t: ^rst.Tree,
 	line: int,
 	before: string,
 ) -> bool {
@@ -231,8 +233,8 @@ complete_option :: proc(
 	head := before[:start]
 	if !strings.has_suffix(head, ":") || strings.trim_space(head) != ":" do return false
 	indent := len(head) - 1
-	for l := line - 1; l >= 0; l -= 1 {
-		text := expanded(ix, l)
+	for l := line - 1; l >= 1; l -= 1 {
+		text := line_text(t, l)
 		if is_blank(text) do return false
 		body := strings.trim_left(text, " ")
 		lindent := len(text) - len(body)

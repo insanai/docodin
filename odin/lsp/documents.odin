@@ -13,6 +13,8 @@ import "core:strconv"
 import "core:strings"
 import "core:time"
 
+import rst "../rst"
+
 TAB_WIDTH :: 8
 
 Document :: struct {
@@ -32,7 +34,7 @@ Snapshot :: struct {
 	version:     int,
 	path:        string,
 	text:        string,
-	ix:          Line_Index,
+	idx:         rst.Line_Index, // LSP positions (the server's encoding)
 	reading:     Reading, // docutils' messages
 	analysis:    Analysis,
 	diagnostics: [dynamic]Diagnostic,
@@ -60,8 +62,8 @@ document_destroy :: proc(d: ^Document) {
 	free(d, heap)
 }
 
-// The snapshot of the document's current text.
-snapshot :: proc(d: ^Document) -> ^Snapshot {
+// The snapshot of the document's current text (positions in ``enc``).
+snapshot :: proc(d: ^Document, enc: Encoding) -> ^Snapshot {
 	if d.snapshot != nil do return d.snapshot
 	s := new(Snapshot, runtime.heap_allocator())
 	if virtual.arena_init_growing(&s.arena) != nil do panic("docodin-lsp: cannot reserve arena")
@@ -69,10 +71,10 @@ snapshot :: proc(d: ^Document) -> ^Snapshot {
 	s.version = d.version
 	s.path = strings.clone(d.path, s.allocator)
 	s.text = strings.clone(d.text, s.allocator)
-	s.ix = line_index_make(s.text, TAB_WIDTH, s.allocator)
+	s.idx = rst.line_index_make(s.text, enc, s.allocator)
 	// one parse: the reader's tree is analysed
 	s.reading = read_with_docutils(s.text, s.path, s.allocator)
-	s.analysis = analyze(&s.ix, s.allocator, s.reading.tree)
+	s.analysis = analyze(s.text, &s.idx, s.allocator, s.reading.tree)
 	d.snapshot = s
 	return s
 }
@@ -110,10 +112,10 @@ apply_changes :: proc(d: ^Document, changes: json.Array, enc: Encoding) {
 			set_text(d, strings.clone(text, runtime.heap_allocator()))
 			continue
 		}
-		starts := line_starts(d.text, context.temp_allocator)
+		idx := rst.line_index_make(d.text, enc, context.temp_allocator)
 		r := get(change, "range")
-		a := lsp_offset(d.text, starts, lsp_pos(get(r, "start")), enc)
-		b := lsp_offset(d.text, starts, lsp_pos(get(r, "end")), enc)
+		a := int(from_lsp(&idx, lsp_pos(get(r, "start"))))
+		b := int(from_lsp(&idx, lsp_pos(get(r, "end"))))
 		if b < a do a, b = b, a
 		set_text(d, strings.concatenate({d.text[:a], text, d.text[b:]}, runtime.heap_allocator()))
 	}

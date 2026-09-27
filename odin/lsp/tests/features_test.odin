@@ -8,6 +8,7 @@ import "core:strings"
 import "core:testing"
 
 import lsp ".."
+import rst "../../rst"
 
 @(private = "file")
 DOC :: `Title
@@ -41,38 +42,50 @@ Other Section
      literal
 `
 
+// A document's analysis, with its LSP line index.
 @(private = "file")
-analyse :: proc(text: string) -> (lsp.Line_Index, lsp.Analysis) {
-	ix := lsp.line_index_make(text, 8, context.temp_allocator)
-	a := lsp.analyze(&ix, context.temp_allocator)
-	return ix, a
+Analysed :: struct {
+	text: string,
+	idx:  rst.Line_Index,
+	a:    lsp.Analysis,
 }
 
-// The column of the ``nth`` occurrence of ``needle`` on line ``line``.
 @(private = "file")
-col_of :: proc(ix: ^lsp.Line_Index, line: int, needle: string, nth := 0) -> int {
-	text := ix.expanded[line]
-	at := 0
-	for _ in 0 ..= nth {
-		i := strings.index(text[at:], needle)
-		if i < 0 do return -1
-		at += i + (1 if nth > 0 else 0)
+analyse :: proc(text: string) -> Analysed {
+	out := Analysed {
+		text = text,
+		idx  = rst.line_index_make(text, .UTF16, context.temp_allocator),
 	}
-	return at - (1 if nth > 0 else 0)
+	out.a = lsp.analyze(text, &out.idx, context.temp_allocator)
+	return out
+}
+
+// The offset of ``needle`` on (0-based) ``line`` (-1 if absent).
+@(private = "file")
+offset_of :: proc(x: ^Analysed, line: int, needle: string) -> i32 {
+	start := lsp.from_lsp(&x.idx, {line, 0})
+	end := lsp.line_end(&x.idx, line)
+	at := strings.index(x.text[start:end], needle)
+	return -1 if at < 0 else start + i32(at)
+}
+
+// The item at ``needle`` (its second character) on ``line``.
+@(private = "file")
+item_at :: proc(x: ^Analysed, line: int, needle: string) -> i32 {
+	at := offset_of(x, line, needle)
+	return lsp.NO_ITEM if at < 0 else lsp.item_at(&x.a, at + 1)
 }
 
 // The line of the definition of the name at ``needle`` on ``line``.
 @(private = "file")
-definition_line :: proc(ix: ^lsp.Line_Index, a: ^lsp.Analysis, line: int, needle: string) -> int {
-	col := col_of(ix, line, needle)
-	if col < 0 do return -2
-	def := lsp.definition_of(a, lsp.item_at(a, {i32(line), i32(col + 1)}))
-	return -1 if def == lsp.NO_ITEM else int(a.items[def].span.start.line)
+definition_line :: proc(x: ^Analysed, line: int, needle: string) -> int {
+	def := lsp.definition_of(&x.a, item_at(x, line, needle))
+	return -1 if def == lsp.NO_ITEM else lsp.to_lsp(&x.idx, x.a.items[def].span.start).line
 }
 
 @(test)
 test_resolution :: proc(t: ^testing.T) {
-	ix, a := analyse(DOC)
+	x := analyse(DOC)
 	cases := []struct {
 		line:   int,
 		needle: string,
@@ -96,38 +109,38 @@ test_resolution :: proc(t: ^testing.T) {
 		{6, "link", 6}, // a definition is its own definition
 	}
 	for c in cases {
-		testing.expectf(t, definition_line(&ix, &a, c.line, c.needle) == c.want, "%v", c)
+		testing.expectf(t, definition_line(&x, c.line, c.needle) == c.want, "%v", c)
 	}
-	link := lsp.definition_of(&a, lsp.item_at(&a, {6, 5}))
-	refs := lsp.references_of(&a, link, context.temp_allocator)
+	link := lsp.definition_of(&x.a, item_at(&x, 6, "link"))
+	refs := lsp.references_of(&x.a, link, context.temp_allocator)
 	testing.expect_value(t, len(refs), 3)
 }
 
 @(test)
 test_name_normalisation :: proc(t: ^testing.T) {
-	ix, a := analyse("A `Mixed   CASE\nname`_.\n\n.. _mixed case NAME: http://x\n")
-	testing.expect_value(t, definition_line(&ix, &a, 0, "`Mixed"), 3)
-	idx := lsp.item_at(&a, {0, 3})
+	x := analyse("A `Mixed   CASE\nname`_.\n\n.. _mixed case NAME: http://x\n")
+	testing.expect_value(t, definition_line(&x, 0, "`Mixed"), 3)
+	idx := item_at(&x, 0, "`Mixed")
 	testing.expect(t, idx != lsp.NO_ITEM)
-	if idx != lsp.NO_ITEM do testing.expect_value(t, a.items[idx].span, lsp.Span{{0, 2}, {1, 6}})
+	if idx != lsp.NO_ITEM do testing.expect_value(t, x.a.items[idx].span, lsp.Span{2, 22})
 }
 
 @(test)
 test_hover_texts :: proc(t: ^testing.T) {
 	context.allocator = context.temp_allocator
-	ix, a := analyse(DOC)
-	hover :: proc(ix: ^lsp.Line_Index, a: ^lsp.Analysis, line: int, needle: string) -> string {
-		return lsp.hover_text(a, lsp.item_at(a, {i32(line), i32(col_of(ix, line, needle) + 1)}))
+	x := analyse(DOC)
+	hover :: proc(x: ^Analysed, line: int, needle: string) -> string {
+		return lsp.hover_text(&x.a, item_at(x, line, needle))
 	}
-	testing.expect(t, strings.contains(hover(&ix, &a, 4, "|sub|"), "replace:: text"))
-	testing.expect(t, strings.contains(hover(&ix, &a, 4, "[1]_"), "one"))
-	testing.expect(t, strings.contains(hover(&ix, &a, 3, "link_"), "<http://example.com>"))
-	testing.expect_value(t, hover(&ix, &a, 16, "`Other"), "**Section** Other Section")
-	testing.expect(t, strings.contains(hover(&ix, &a, 21, "note"), "`:class:`"))
-	_, b := analyse("A `x <http://y>`_ and `missing`_.\n")
-	embedded := lsp.hover_text(&b, lsp.item_at(&b, {0, 3}))
+	testing.expect(t, strings.contains(hover(&x, 4, "|sub|"), "replace:: text"))
+	testing.expect(t, strings.contains(hover(&x, 4, "[1]_"), "one"))
+	testing.expect(t, strings.contains(hover(&x, 3, "link_"), "<http://example.com>"))
+	testing.expect_value(t, hover(&x, 16, "`Other"), "**Section** Other Section")
+	testing.expect(t, strings.contains(hover(&x, 21, "note"), "`:class:`"))
+	y := analyse("A `x <http://y>`_ and `missing`_.\n")
+	embedded := lsp.hover_text(&y.a, lsp.item_at(&y.a, 3))
 	testing.expect_value(t, embedded, "**Hyperlink** → <http://y>")
-	unknown := lsp.hover_text(&b, lsp.item_at(&b, {0, 23}))
+	unknown := lsp.hover_text(&y.a, lsp.item_at(&y.a, 23))
 	testing.expect(t, strings.contains(unknown, "Unknown target"))
 }
 
@@ -156,7 +169,8 @@ test_symbols :: proc(t: ^testing.T) {
 
 @(test)
 test_folding :: proc(t: ^testing.T) {
-	_, a := analyse(DOC)
+	x := analyse(DOC)
+	a := x.a
 	has :: proc(a: ^lsp.Analysis, start, end: i32) -> bool {
 		for f in a.folds do if f.start == start && f.end == end do return true
 		return false
@@ -200,7 +214,7 @@ test_semantic_tokens :: proc(t: ^testing.T) {
 		{0, 0, 6, int(lsp.Token_Type.Namespace)},
 		{0, 6, 3, int(lsp.Token_Type.Emphasis)},
 		{1, 0, 9, int(lsp.Token_Type.Operator)},
-		{3, 1, 5, int(lsp.Token_Type.Property)},
+		{3, 0, 7, int(lsp.Token_Type.Property)}, // :field:
 		{3, 8, 3, int(lsp.Token_Type.Emphasis)},
 		{3, 12, 5, int(lsp.Token_Type.Strong)},
 		{3, 18, 5, int(lsp.Token_Type.String)},
