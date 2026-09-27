@@ -87,15 +87,18 @@ CHANGELOG.md):
 
 | Workload | docutils | docodin |
 |----------|----------|---------|
-| Sphinx, CPython documentation (599 pages, `-j1`) | 64.3 s | 48.3 s (1.33×) |
-| Sphinx, CPython documentation (`-j auto`) | 32.5 s wall, 99 s CPU | 29.1 s wall, 74 s CPU |
-| Publish the docutils documentation to HTML5 (60 files, in process) | 1.98 s | 0.90 s (shim), 0.20 s (`publish_native`) |
-| The same, one command per file | 7.48 s (`python -m docutils`) | 0.23 s (`docodin`) |
-| Check the docutils and Sphinx documentation for markup errors | 2.83 s | 0.05 s (`docodin-check -j1`) |
+| Sphinx, CPython documentation (599 pages, `-j1`) | 65.6 s, 895 MB | 47.6 s (1.38×), 883 MB |
+| The same with `DOCODIN_GC=tuned` (see below) | – | 38.4 s (1.71×), 1034 MB |
+| Sphinx, CPython documentation (`-j auto`) | 32.7 s wall, 99.7 s CPU | 29.1 s wall, 74.7 s CPU |
+| Publish the docutils documentation to HTML5 (60 files, in process) | 2.21 s | 0.96 s (shim), 0.20 s (`publish_native`) |
+| The same, one command per file | 7.37 s (`python -m docutils`) | 0.22 s (`docodin`) |
+| Check the docutils and Sphinx documentation for markup errors | 2.81 s | 0.03 s (`docodin-check -j1`) |
 
-In Sphinx builds the output is identical, and the remaining time is mostly
-Sphinx's own processing. Peak memory of the single-process build is higher
-(999 MB against 890 MB); the memory held after reading is the same.
+Sphinx output is identical. `DOCODIN_GC=tuned` (for `docodin-sphinx-build`,
+or `docodin_gc_tuning = True` with the `docodin.sphinx` extension) tunes
+Python's garbage collector. It is opt-in: projects whose output depends on
+when objects are collected (duplicate labels, repeated generated ids) can
+change, with docutils as with docodin.
 
 ## Native publishing
 

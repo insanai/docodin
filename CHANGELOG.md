@@ -1,5 +1,69 @@
 # Changelog
 
+## 0.2.0
+
+Faster parsing, lower memory, and editor support, following the research in
+[docs/design/0.2.0.md](docs/design/0.2.0.md). Output is unchanged: docutils'
+and Sphinx's test suites, and all differential tests, give the same results
+as with docutils.
+
+### Performance
+
+- **Parser, 2.8× faster** (3.1× fewer instructions on a 21 MB corpus):
+  - SIMD line splitting;
+  - a candidate scanner that jumps between bytes that can start inline markup;
+  - URI and e-mail searches only before `:` and `@`;
+  - reference matching without large struct copies;
+  - line joins as views of the input;
+  - tab expansion over plain-ASCII runs (tab-indented documents 2.7–5×
+    faster).
+- **A quadratic case removed.** Positioning problematic inline markup used to
+  rescan the text for every error, for example on a long line of `|x`
+  (600 KB: from minutes to 27 ms).
+- **Lower peak memory.**
+  - Parse results are decoded from the native buffer without a copy, and
+    large results item by item.
+  - The per-thread arena maps its blocks from the OS and keeps at most 4 MB
+    between calls.
+  - A Sphinx build of CPython's documentation now peaks below stock docutils:
+    883 MB against 895 MB.
+- **Faster Python tree code.** Visitor dispatch and `walkabout` no longer
+  format debug messages that are not shown.
+- **Opt-in collector tuning.** Garbage-collector tuning in
+  `docodin-sphinx-build` and the `docodin.sphinx` extension is now opt-in
+  (`DOCODIN_GC=tuned`, `docodin_gc_tuning = True`). It is about 20 % faster,
+  but some projects' output depends on when Python collects garbage (CPython's
+  documentation changes in four pages, with docutils as with docodin). In
+  0.1.0 it was on by default.
+
+| Workload (Linux x86-64, 32 cores, Python 3.13) | docutils | docodin 0.2.0 |
+|---|---|---|
+| Sphinx, CPython documentation (599 pages, `-j1`) | 65.6 s, 895 MB | 47.6 s (1.38×), 883 MB; identical HTML |
+| The same with `DOCODIN_GC=tuned` | – | 38.4 s (1.71×), 1034 MB |
+| Sphinx, CPython documentation, `-j auto` | 32.7 s wall, 99.7 s CPU | 29.1 s wall, 74.7 s CPU |
+| Publish the docutils documentation to HTML5 (60 files, in process) | 2.21 s | 0.96 s (shim), 0.20 s (`publish_native`) |
+| The same, one command per file | 7.37 s | 0.22 s (`docodin`) |
+| Check the docutils and Sphinx documentation | 2.81 s | 0.03 s (`docodin-check -j1`) |
+
+### Editor support
+
+- **`docodin-lsp`**, a native language server for reStructuredText:
+  - diagnostics identical to docutils' messages, with the Elm-style hints and
+    quick fixes (title underlines, missing blank lines, unmatched inline
+    markup, `::` without a literal block);
+  - document symbols, folding ranges and semantic tokens;
+  - go to definition and references for targets, sections, substitutions,
+    footnotes and citations;
+  - hover and completion (directives, options, roles, targets, substitutions).
+
+  It parses each change once and answers in about 6 ms for a 124 KB document.
+  Setup for Zed, VS Code and Neovim is in the README.
+- **Source positions.** Every parse node can carry its byte span
+  (`Parse_Flag.Spans`), with a line table and a UTF-16-aware line index for
+  LSP positions. Spans cost about 10 % when on and nothing when off.
+- **`publish.read_document`** runs the native reader and transforms and
+  returns the document and its messages as records.
+
 ## 0.1.0
 
 The first release: docodin replaces docutils 0.22.4, for Sphinx and every
@@ -43,7 +107,7 @@ other docutils user, with a native reStructuredText engine written in Odin.
   garbage collector: moderately raised thresholds, and the long-lived objects
   are frozen after the extensions are loaded and after reading. This saves
   about 18 % on the CPython documentation, for about 17 % more peak memory.
-  Set `DOCODIN_GC=default` or `docodin_gc_tuning = False` to turn it off.
+  (Opt-in since 0.2.0: see there.)
 
 ### Performance
 
