@@ -1,0 +1,189 @@
+$head_prefix
+% The docodin book: docs/theme/book.tex, filled by `docodin book build`
+% with the parts of the native xetex writer ($generator).
+\usepackage{fontspec}
+% straight double quotes (defined in T1 but missing in TU)
+\ifdefined\XeTeXrevision
+  \DeclareTextCommand{\textquotedbl}{\UnicodeEncodingName}{%
+    {\addfontfeatures{RawFeature=-tlig,Mapping=}\char34}}%
+\fi
+$requirements
+\setcounter{secnumdepth}{$secnumdepth}
+\setcounter{tocdepth}{$tocdepth}
+
+%%% Page, colours and fonts
+\usepackage[a4paper,top=25mm,bottom=27mm,inner=27mm,outer=24mm,
+  headheight=15pt,headsep=10mm,footskip=12mm]{geometry}
+\usepackage{xcolor}
+\definecolor{dodInk}{HTML}{141B2D}
+\definecolor{dodInkSoft}{HTML}{3A4358}
+\definecolor{dodMuted}{HTML}{667085}
+\definecolor{dodAccent}{HTML}{2F5BEA}
+\definecolor{dodAccentDeep}{HTML}{1B2A55}
+\definecolor{dodAccentLight}{HTML}{9FC0FF}
+\definecolor{dodRule}{HTML}{D6DBE6}
+\definecolor{dodCode}{HTML}{F4F6FA}
+\definecolor{dodTip}{HTML}{0F8A5F}
+\definecolor{dodWarn}{HTML}{C77700}
+\definecolor{dodDanger}{HTML}{C62F3E}
+\definecolor{dodSee}{HTML}{5B6478}
+\setmainfont{SourceSerif4}[Extension=.otf, UprightFont=*-Regular,
+  ItalicFont=*-RegularIt, BoldFont=*-Semibold, BoldItalicFont=*-SemiboldIt]
+\setsansfont{SourceSans3}[Extension=.otf, UprightFont=*-Regular,
+  ItalicFont=*-RegularIt, BoldFont=*-Semibold, BoldItalicFont=*-SemiboldIt]
+\setmonofont{SourceCodePro}[Extension=.otf, UprightFont=*-Regular,
+  ItalicFont=*-RegularIt, BoldFont=*-Semibold, BoldItalicFont=*-SemiboldIt, Scale=0.86]
+\usepackage{microtype}
+\linespread{1.08}
+\setlength{\emergencystretch}{3em}
+\setlength{\parskip}{0.45em plus 0.1em}
+\setlength{\parindent}{0pt}
+\color{dodInk}
+
+%%% Headings
+\usepackage{titlesec}
+\titleformat{\part}[display]
+  {\centering\sffamily}
+  {\large\bfseries\color{dodAccent}\MakeUppercase{\partname}\ \thepart}
+  {1.4em}
+  {\fontsize{30}{36}\selectfont\bfseries\color{dodInk}}
+  [\vspace{1.2em}{\color{dodAccent}\rule{5em}{2.5pt}}]
+\titleformat{name=\part,numberless}[display]
+  {\centering\sffamily}{}{0pt}
+  {\fontsize{30}{36}\selectfont\bfseries\color{dodInk}}
+  [\vspace{1.2em}{\color{dodAccent}\rule{5em}{2.5pt}}]
+\titleformat{\chapter}[display]
+  {\sffamily\color{dodInk}}
+  {\normalsize\bfseries\color{dodAccent}\MakeUppercase{\chaptertitlename}\ \thechapter}
+  {0.5em}
+  {\fontsize{26}{31}\selectfont\bfseries}
+  [\vspace{0.5em}{\color{dodRule}\titlerule[0.8pt]}]
+\titleformat{name=\chapter,numberless}[display]
+  {\sffamily\color{dodInk}}{}{0pt}
+  {\fontsize{26}{31}\selectfont\bfseries}
+  [\vspace{0.5em}{\color{dodRule}\titlerule[0.8pt]}]
+\titlespacing*{\chapter}{0pt}{0pt}{2.2em}
+\titleformat{\section}
+  {\sffamily\Large\bfseries\color{dodInk}}{\color{dodAccent}\thesection}{0.75em}{}
+\titleformat{\subsection}
+  {\sffamily\large\bfseries\color{dodInk}}{\color{dodAccent}\thesubsection}{0.7em}{}
+\titleformat{\subsubsection}
+  {\sffamily\normalsize\bfseries\color{dodInkSoft}}{\thesubsubsection}{0.6em}{}
+\titlespacing*{\section}{0pt}{1.8em}{0.6em}
+\titlespacing*{\subsection}{0pt}{1.4em}{0.4em}
+\titlespacing*{\subsubsection}{0pt}{1.2em}{0.3em}
+
+%%% Running heads
+\usepackage{fancyhdr}
+\pagestyle{fancy}
+\fancyhf{}
+\renewcommand{\headrulewidth}{0.4pt}
+\renewcommand{\headrule}{{\color{dodRule}\hrule width\headwidth height\headrulewidth}}
+\fancyhead[LE]{\sffamily\small\color{dodMuted}\leftmark}
+\fancyhead[RO]{\sffamily\small\color{dodMuted}\rightmark}
+\fancyfoot[LE,RO]{\sffamily\small\bfseries\color{dodAccent}\thepage}
+\fancyfoot[RE,LO]{\sffamily\footnotesize\color{dodMuted}$title}
+\fancypagestyle{plain}{\fancyhf{}\renewcommand{\headrulewidth}{0pt}%
+  \fancyfoot[LE,RO]{\sffamily\small\bfseries\color{dodAccent}\thepage}}
+
+%%% Table of contents
+\usepackage{tocloft}
+\renewcommand{\cfttoctitlefont}{\sffamily\fontsize{26}{31}\selectfont\bfseries\color{dodInk}}
+\renewcommand{\cftpartfont}{\sffamily\large\bfseries\color{dodAccent}}
+\renewcommand{\cftpartpagefont}{\sffamily\large\bfseries\color{dodAccent}}
+\renewcommand{\cftchapfont}{\sffamily\bfseries}
+\renewcommand{\cftchappagefont}{\sffamily\bfseries}
+\renewcommand{\cftsecfont}{\sffamily}
+\renewcommand{\cftsecpagefont}{\sffamily\color{dodMuted}}
+\setlength{\cftbeforechapskip}{0.55em}
+\setlength{\cftbeforepartskip}{1.4em}
+
+%%% Boxes: code, admonitions
+\usepackage[most]{tcolorbox}
+\newtcolorbox{dodcode}{enhanced, breakable, colback=dodCode, colframe=dodRule,
+  boxrule=0.5pt, arc=3pt, left=8pt, right=8pt, top=5pt, bottom=5pt,
+  before skip=0.7em, after skip=0.9em, fontupper=\small}
+\newcommand{\dodadmcolor}{dodAccent}
+\newenvironment{DUadmonition}
+  {\begin{tcolorbox}[enhanced, breakable, colback=\dodadmcolor!6!white,
+     colframe=\dodadmcolor, boxrule=0pt, leftrule=3pt, arc=2pt, outer arc=2pt,
+     left=10pt, right=10pt, top=6pt, bottom=6pt, before skip=0.8em, after skip=0.9em]}
+  {\end{tcolorbox}}
+\newcommand{\DUtitle}[1]{\noindent{\sffamily\bfseries\color{\dodadmcolor}#1}\par\smallskip}
+\newcommand{\dodadmonition}[2]{%
+  \expandafter\def\csname DUCLASS#1\endcsname{\renewcommand{\dodadmcolor}{#2}}%
+  \expandafter\def\csname endDUCLASS#1\endcsname{}}
+\dodadmonition{note}{dodAccent}
+\dodadmonition{hint}{dodTip}
+\dodadmonition{tip}{dodTip}
+\dodadmonition{important}{dodAccentDeep}
+\dodadmonition{attention}{dodWarn}
+\dodadmonition{caution}{dodWarn}
+\dodadmonition{warning}{dodWarn}
+\dodadmonition{danger}{dodDanger}
+\dodadmonition{error}{dodDanger}
+\dodadmonition{seealso}{dodSee}
+% code blocks (the literal blocks of code-block and code have the class "code")
+\newenvironment{DUCLASScode}
+  {\begin{dodcode}\renewenvironment{quote}{\par\raggedright}{\par}}
+  {\end{dodcode}}
+\newcommand{\DUroleln}[1]{{\color{dodMuted}\footnotesize #1}}
+\newcommand{\DUrolehll}[1]{{\color{dodAccentDeep}\bfseries #1}}
+\newcommand{\DUrolekbd}[1]{\fcolorbox{dodRule}{dodCode}{\ttfamily\footnotesize #1}}
+\newcommand{\DUroleguilabel}[1]{{\sffamily\bfseries #1}}
+\newcommand{\DUrolemenuselection}[1]{{\sffamily\bfseries #1}}
+\newcommand{\DUroleaccelerator}[1]{\underline{#1}}
+\newcommand{\DUrolecommand}[1]{{\bfseries #1}}
+\newcommand{\DUroleprogram}[1]{{\bfseries #1}}
+\newcommand{\DUroleversionmodified}[1]{{\sffamily\bfseries\color{dodAccentDeep}#1}}
+\newcommand{\DUrubric}[1]{\par\medskip{\sffamily\bfseries\color{dodAccent}#1}\par}
+\def\DUCLASScentered{\centering}
+\def\endDUCLASScentered{}
+\newcommand{\DUrolecaption}[1]{{\sffamily\small\bfseries\color{dodInkSoft}#1}}
+
+%%% Docutils' definitions not given above
+$fallbacks
+$pdfsetup
+\hypersetup{colorlinks=true, linkcolor=dodAccentDeep, urlcolor=dodAccent,
+  citecolor=dodAccentDeep, pdftitle={$title}, pdfauthor={$author},
+  pdfsubject={$tagline}, pdfcreator={$generator}}
+
+\begin{document}
+\frontmatter
+%%% Title page
+\begin{titlepage}
+\begin{tikzpicture}[remember picture, overlay]
+  \fill[dodInk] (current page.north west) rectangle
+    ([yshift=-0.46\paperheight]current page.north east);
+  \fill[dodAccent] ([yshift=-0.46\paperheight]current page.north west) rectangle
+    ([yshift=-0.46\paperheight-5pt]current page.north east);
+  \node[anchor=south west, inner sep=0pt, text width=0.74\paperwidth]
+    at ([xshift=0.13\paperwidth, yshift=-0.40\paperheight]current page.north west)
+    {\sffamily\color{white}%
+     {\fontsize{12}{14}\selectfont\bfseries\color{dodAccentLight}%
+      \MakeUppercase{Version $version}}\par\vspace{10pt}%
+     {\fontsize{44}{50}\selectfont\bfseries $title}\par\vspace{14pt}%
+     {\fontsize{17}{22}\selectfont\color{dodAccentLight} $tagline}};
+  \node[anchor=north west, inner sep=0pt, text width=0.74\paperwidth]
+    at ([xshift=0.13\paperwidth, yshift=-0.53\paperheight]current page.north west)
+    {\sffamily\color{dodInk}%
+     {\fontsize{16}{20}\selectfont\bfseries $author}\par\vspace{6pt}%
+     {\fontsize{12}{15}\selectfont\color{dodMuted} $date}};
+  \node[anchor=south west, inner sep=0pt]
+    at ([xshift=0.13\paperwidth, yshift=0.06\paperheight]current page.south west)
+    {\sffamily\small\color{dodMuted}Typeset from reStructuredText by $generator};
+\end{tikzpicture}
+\end{titlepage}
+%%% Copyright page
+\thispagestyle{empty}
+\null\vfill
+{\sffamily\small\color{dodInkSoft}
+\textbf{$title}\quad Version $version\par\medskip
+Copyright \textcopyright\ $copyright.\par\medskip
+Built on $date with $generator, the native reStructuredText toolchain:
+the documents were read, cross-referenced and written in Odin, and
+typeset with \LaTeX; no Python was involved.\par}
+\cleardoublepage
+\tableofcontents
+$body
+\end{document}
