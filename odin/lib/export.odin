@@ -110,6 +110,77 @@ docodin_split_lines :: proc "c" (input: [^]u8, input_len: int, tab_width: i32, o
 	return finish(w, out_len)
 }
 
+// Render reST directly to semantic HTML5 using the native Odin emitter.
+@(export)
+docodin_render_html :: proc "c" (
+	input: [^]u8,
+	input_len: int,
+	title: [^]u8,
+	title_len: int,
+	author: [^]u8,
+	author_len: int,
+	standalone: bool,
+	embed_css: bool,
+	out_len: ^int,
+) -> [^]u8 {
+	context = call_context()
+	defer bump_reset(&tl_arena)
+	p := rst.Parser {
+		allocator = context.allocator,
+		settings  = rst.DEFAULT_SETTINGS,
+	}
+	text := string(input[:max(input_len, 0)])
+	doc, _, _ := rst.parse_text(&p, text, 0, true, -1)
+	cfg := rst.Html_Config {
+		title      = string(title[:max(title_len, 0)]) if title != nil else "",
+		author     = string(author[:max(author_len, 0)]) if author != nil else "",
+		standalone = standalone,
+		embed_css  = embed_css,
+	}
+	html_str := rst.write_html(doc, &p, cfg)
+
+	buf := make([]u8, len(html_str), runtime.heap_allocator())
+	copy(buf, html_str)
+	if out_len != nil do out_len^ = len(buf)
+	return raw_data(buf)
+}
+
+// Render reST directly to LaTeX 2e using the native Odin emitter.
+@(export)
+docodin_render_latex :: proc "c" (
+	input: [^]u8,
+	input_len: int,
+	title: [^]u8,
+	title_len: int,
+	author: [^]u8,
+	author_len: int,
+	date: [^]u8,
+	date_len: int,
+	standalone: bool,
+	out_len: ^int,
+) -> [^]u8 {
+	context = call_context()
+	defer bump_reset(&tl_arena)
+	p := rst.Parser {
+		allocator = context.allocator,
+		settings  = rst.DEFAULT_SETTINGS,
+	}
+	text := string(input[:max(input_len, 0)])
+	doc, _, _ := rst.parse_text(&p, text, 0, true, -1)
+	cfg := rst.Latex_Config {
+		title      = string(title[:max(title_len, 0)]) if title != nil else "",
+		author     = string(author[:max(author_len, 0)]) if author != nil else "",
+		date       = string(date[:max(date_len, 0)]) if date != nil else "",
+		standalone = standalone,
+	}
+	latex_str := rst.write_latex(doc, &p, cfg)
+
+	buf := make([]u8, len(latex_str), runtime.heap_allocator())
+	copy(buf, latex_str)
+	if out_len != nil do out_len^ = len(buf)
+	return raw_data(buf)
+}
+
 // Release a result buffer.  Results are allocated with
 // ``runtime.heap_allocator()`` (which keeps an alignment header), so they
 // must be released through the same allocator.

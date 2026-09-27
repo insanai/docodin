@@ -217,7 +217,9 @@ extract_conf_py_metadata :: proc(cfg: ^Config) {
 		if err == nil {
 			content := string(data)
 			if len(cfg.title) == 0 {
-				if proj := extract_py_string_var(content, "project"); len(proj) > 0 {
+				if ht := extract_py_string_var(content, "html_title"); len(ht) > 0 {
+					cfg.title = ht
+				} else if proj := extract_py_string_var(content, "project"); len(proj) > 0 {
 					cfg.title = proj
 				}
 			}
