@@ -5,8 +5,11 @@ docodin and Sphinx
 ==================
 
 Sphinx is built on docutils, and docodin was built to make Sphinx faster without
-changing its output.  This chapter shows the ways to run Sphinx on docodin, the optional
-collector tuning, and how to confirm that nothing changed.
+changing its output.  Sphinx's test suite and those of the extensions and themes listed
+below give the same results on docodin as on docutils; full parity with every extension
+is a goal, not a promise (:doc:`../reference/limits`).  This chapter shows the ways to
+run Sphinx on docodin, the optional collector tuning, and how to confirm that nothing
+changed for your project.
 
 Four ways to run Sphinx on docodin
 ==================================
@@ -50,19 +53,23 @@ The ``docodin.sphinx`` extension
 The extension replaces Sphinx's reStructuredText parser with one that parses through
 docodin's native engine, on whichever docutils is loaded, including an installed
 docutils.  It honours ``rst_prolog`` and ``rst_epilog``, and it hands a document back to
-Sphinx's own parser when the parser's state classes or inliner are not the stock ones.
-It is marked safe for parallel reading and writing.
+Sphinx's own parser when the parser's state classes or inliner are not the stock ones,
+when an extension patched a stock state, and with ``DOCODIN_NATIVE=0`` (DOD 7).  It is
+marked safe for parallel reading and writing.
 
-``python -m docodin sphinx``
-----------------------------
+``docodin sphinx``
+------------------
 
 .. code-block:: console
 
+   $ docodin sphinx -b html docs docs/_build/html
    $ python -m docodin sphinx -b html docs docs/_build/html
 
-The Python ``docodin`` command's ``sphinx`` subcommand patches the loaded docutils'
-parser (``docodin.patch_docutils``) and runs ``sphinx-build`` with the remaining
-arguments.
+The Python front end's ``sphinx`` subcommand patches the loaded docutils' parser
+(``docodin.patch_docutils``) and runs ``sphinx-build`` with the remaining arguments.
+Where no docutils is installed, the loaded docutils is docodin's.  The native
+``docodin sphinx`` runs ``python -m docodin sphinx`` with the Python of its own
+environment (:doc:`command-line`).
 
 Which to use
 ------------
@@ -97,7 +104,10 @@ configuration value for the extension:
    docodin_gc_tuning = True
 
 On CPython's documentation it saves about 20 % of the build time (47.6 s to 38.4 s) for
-about 17 % more peak memory (883 MB to 1034 MB).
+about 17 % more peak memory (883 MB to 1034 MB).  These numbers come from 0.2.0, whose
+``docodin-sphinx-build`` missed the freeze after the extensions are loaded (it waited for
+an event Sphinx had already emitted); 1.0.0b1 freezes right after Sphinx starts, and the
+numbers have not been measured again.
 
 .. warning::
 
@@ -111,15 +121,16 @@ about 17 % more peak memory (883 MB to 1034 MB).
 Parallel builds
 ===============
 
-docodin's native library keeps no shared mutable state, and each thread parses in its
-own arena, so ``-j auto`` works as with docutils.  On CPython's documentation with 32
+Each thread parses in its own arena, and docodin's native library shares nothing
+between threads except a small, locked cache of arena blocks, so ``-j auto`` works as
+with docutils.  On CPython's documentation with 32
 cores, the build takes 29.1 s instead of 32.7 s of wall time, and 74.7 s instead of
 99.7 s of CPU time.
 
 Confirming identical output
 ===========================
 
-docodin's promise is identical output, and you can check it on your own project:
+docodin aims at identical output, and you can check it on your own project:
 
 .. code-block:: console
 

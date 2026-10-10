@@ -9,10 +9,11 @@ docodin replaces docutils 0.22 in two ways:
 - **Inside Python.**  ``python/docodin/shim/docutils`` is a complete docutils package:
   nodes, frontend, io, readers, parser, directives, roles, transforms, writers and
   utilities.  It is served under the name ``docutils``, so Sphinx and its extensions run
-  on it unchanged.  Its reStructuredText parser is docodin's native engine.
+  on it without changes, within the bounds of :doc:`../reference/limits`.  Its
+  reStructuredText parser is docodin's native engine.
 - **Without Python.**  A native Odin pipeline (reader, transforms, writers) publishes
-  documents byte for byte like docutils.  It powers the ``docodin`` command,
-  ``docodin-check``, ``docodin-lsp`` and ``docodin.publish_native``.  Where docutils
+  documents byte for byte like docutils.  It powers the ``docodin`` command and its
+  book builder, ``docodin-check``, ``docodin-lsp`` and ``docodin.publish_native``.  Where docutils
   would use a Python library, the pipeline reports that the document needs Python, and
   the tools publish it with docutils instead.
 
@@ -169,8 +170,9 @@ When Sphinx parses a document on the Python path:
 6. Sphinx applies its transforms and writers, which are Python code working on ordinary
    docutils nodes.
 
-The C ABI is versioned (``docodin_abi_version``), and so is the wire format.  The library
-has no shared mutable state, so Sphinx's parallel readers call it from several threads.
+The C ABI is versioned (``docodin_abi_version``), and so is the wire format.  The
+library's only shared mutable state is a locked cache of arena blocks (:doc:`storage`),
+so it can be called from several threads at once.
 
 Where to read next
 ==================
