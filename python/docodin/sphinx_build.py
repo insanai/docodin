@@ -44,7 +44,9 @@ def tune_garbage_collection() -> None:
 
     def init(self: Any, *args: Any, **kwargs: Any) -> None:
         sphinx_init(self, *args, **kwargs)
-        self.connect("builder-inited", _collect_and_freeze)
+        # the extensions are loaded and the builder is initialized
+        # ("builder-inited" was emitted inside ``Sphinx.__init__``)
+        _collect_and_freeze()
         self.connect("env-updated", _collect_and_freeze)
 
     sphinx.application.Sphinx.__init__ = init
