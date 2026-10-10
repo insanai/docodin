@@ -5,7 +5,8 @@
 #   1. the native engine and programs (scripts/build_odin.sh)
 #   2. the Odin test groups and the Python tests
 #   3. the source distribution, and the wheel built from it (as an installer
-#      would: in a temporary directory that is gone afterwards)
+#      would: in a temporary directory that is gone afterwards); on Linux,
+#      auditwheel checks its manylinux tag
 #   4. the wheel installed into a new environment outside the checkout: the
 #      programs, the Python package, Sphinx, and the documentation builds
 #   5. the PDF books, when a TeX engine is installed (skipped, and said so,
@@ -61,6 +62,9 @@ rm -rf "${WORK}"/docodin-*/   # the installed programs must not need their build
 WHEEL="$(ls "${OUT}"/dist/*.whl)"
 echo "${SDIST}"
 echo "${WHEEL}"
+if [[ "$(uname -s)" == Linux* ]]; then
+    uvx auditwheel show "${WHEEL}"   # the manylinux tag matches the glibc symbols used
+fi
 
 step "install outside the checkout"
 VENV="${WORK}/venv"
