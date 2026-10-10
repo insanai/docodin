@@ -52,7 +52,19 @@ jobs:
             librsvg2-bin poppler-utils
           echo "TEXMFHOME=$RUNNER_TEMP/texmf" >> "$GITHUB_ENV"
           uv run --no-project python scripts/install_pdf_fonts.py "$RUNNER_TEMP/texmf"
+      - name: Install Graphviz
+        shell: bash
+        run: |
+          if ! command -v dot >/dev/null; then
+            if [[ "$RUNNER_OS" == Linux ]]; then
+              sudo apt-get update
+              sudo apt-get install -y --no-install-recommends graphviz
+            else
+              brew install graphviz
+            fi
+          fi
       - name: Qualify the source and installed platform wheel
+        # The documented inline DOT diagrams are rendered by the installed CLI.
         run: scripts/release_gate.sh
       - name: Check package metadata
         run: uvx twine check build/release-gate/${{ github.sha }}/dist/*

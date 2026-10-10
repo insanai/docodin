@@ -48,6 +48,17 @@ jobs:
             librsvg2-bin poppler-utils
           echo "TEXMFHOME=$RUNNER_TEMP/texmf" >> "$GITHUB_ENV"
           uv run --no-project python scripts/install_pdf_fonts.py "$RUNNER_TEMP/texmf"
+      - name: Install Graphviz
+        shell: bash
+        run: |
+          if ! command -v dot >/dev/null; then
+            if [[ "$RUNNER_OS" == Linux ]]; then
+              sudo apt-get update
+              sudo apt-get install -y --no-install-recommends graphviz
+            else
+              brew install graphviz
+            fi
+          fi
       - name: Python style
         if: matrix.pdf
         run: uvx ruff==0.17.0 check python tests scripts hatch_build.py

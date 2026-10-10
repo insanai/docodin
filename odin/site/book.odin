@@ -28,7 +28,7 @@ Book :: struct {
 
 // Write the book's LaTeX source to ``tex``; false on failure (warned).
 write_book_tex :: proc(s: ^Site, latex_dir, tex: string) -> bool {
-	b := build_make(s, .Latex)
+	b := build_make(s, .Latex, join(latex_dir, "_graphviz"))
 	defer build_destroy(b)
 	context.allocator = b.allocator
 	b.outdir = latex_dir

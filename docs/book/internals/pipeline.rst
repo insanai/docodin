@@ -10,11 +10,35 @@ the transforms and the writers, with docutils' output, messages and exit status,
 for byte (DOD 8).  It serves the ``docodin`` command, ``docodin-check``'s sibling
 ``docodin check``, ``docodin.publish_native`` and the language server.
 
-.. code-block:: text
+.. graphviz::
+   :class: adaptive-diagram
+   :align: center
+   :caption: The publisher coordinates settings, reporting and failures across the native stages.
+   :alt: Source and settings flow through parser, reader, ordered transforms and writer into output bytes, messages and an exit status; dependency needs are reported to the host.
 
-   text --rst.parse_text--> rst.Tree --reader--> doctree.Doc --transforms--> doctree.Doc
-        --writers.write--> output, parts
-   (publish.publish drives the stages: settings, reporter, halting, exit status, needs)
+   digraph native_pipeline {
+   graph [bgcolor="white", pad="0.28", nodesep="0.4", ranksep="0.6", fontname="Helvetica", fontsize=17, fontcolor="#425574", color="#CBD5E1"];
+   node [shape=box, style="rounded,filled", fontname="Helvetica", fontsize=16, margin="0.22,0.16", fillcolor="#EFF4FF", color="#B3C6F7", fontcolor="#18243D", penwidth=1.2];
+   edge [fontname="Helvetica", fontsize=12, color="#526B97", fontcolor="#425574", arrowsize=0.75, penwidth=1.4];
+   rankdir=TB;
+   source [label="1  Source\nText + settings", group="left", fillcolor="#F4F6FA", color="#CDD5E2"];
+   parse [label="2  rst.parse_text\nParse tree", group="middle"];
+   reader [label="3  Native reader\ndoctree.Doc\nDocument registry", group="right"];
+   transforms [label="4  Transforms\nResolve + validate", group="right"];
+   writer [label="5  Writer\nOutput + parts", group="middle"];
+   output [label="6  Publish result\nBytes + messages\nExit status", group="left", fillcolor="#E5F5EE", color="#8DC9B0"];
+   {rank=same; source; parse; reader;}
+   {rank=same; output; writer; transforms;}
+   source -> parse -> reader;
+   reader -> transforms;
+   output -> writer -> transforms [style=invis, weight=100];
+   transforms -> writer [constraint=false];
+   writer -> output [constraint=false];
+   source -> output [style=invis, weight=100];
+   parse -> writer [style=invis, weight=100];
+   needs [label="Python needs collected\nHost may publish with Python", fillcolor="#FFF3E6", color="#E3BB86"];
+   output -> needs [style=dashed, label="dependency needed"];
+   }
 
 Stage 1: the reader
 ===================

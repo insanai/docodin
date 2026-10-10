@@ -12,6 +12,41 @@ decision.
 Principles
 ==========
 
+.. graphviz::
+   :class: adaptive-diagram
+   :align: center
+   :caption: Handles select dense hot arrays; optional data lives in side tables owned by the document.
+   :alt: A tree-local node handle indexes kind, links and location arrays, with optional attributes and directive details in arena-owned side tables.
+
+   digraph storage {
+   graph [bgcolor="white", pad="0.28", nodesep="0.4", ranksep="0.6", fontname="Helvetica", fontsize=17, fontcolor="#425574", color="#CBD5E1"];
+   node [shape=box, style="rounded,filled", fontname="Helvetica", fontsize=16, margin="0.22,0.16", fillcolor="#EFF4FF", color="#B3C6F7", fontcolor="#18243D", penwidth=1.2];
+   edge [fontname="Helvetica", fontsize=12, color="#526B97", fontcolor="#425574", arrowsize=0.75, penwidth=1.4];
+   rankdir=TB;
+   owner [label="Document arena\nOwns arrays and temporary text", fillcolor="#DBE7FF", color="#7DA1ED"];
+   handle [label="Node handle: 7\ndistinct u32", fillcolor="#E5F5EE", color="#8DC9B0"];
+   subgraph cluster_hot {
+    label="HOT FIELDS / STRUCT OF ARRAYS"; style="rounded"; bgcolor="#F7FAFF";
+    kinds [label="kind[]\nsection | title | text\n..."];
+    links [label="parent[]\nfirst[] / next[]\nInteger handles"];
+    lines [label="line[] / spans[]\nSource locations"];
+   }
+   subgraph cluster_cold {
+    label="COLD DATA / SIDE TABLES"; style="rounded"; bgcolor="#FAF8FF";
+    attrs [label="Attributes / registry\nInterned strings", fillcolor="#EEE9FB", color="#C0AEE7"];
+    details [label="Directive details\nPhrase references\nOnly when needed", fillcolor="#EEE9FB", color="#C0AEE7"];
+   }
+   source [label="Source buffer\nBorrowed text views", fillcolor="#F4F6FA", color="#CDD5E2"];
+   owner -> handle [label="tree-local access"];
+   handle -> kinds [label="checked index"];
+   handle -> links [label="checked index"];
+   handle -> lines [label="checked index"];
+   kinds -> attrs [label="side-table index", style=dashed];
+   links -> details [style=dashed];
+   source -> details [label="text view", style=dashed];
+   }
+
+
 1. **Handles, not pointers.**  A node is a ``distinct u32`` index into its tree's arrays,
    and ``0`` is the null handle.  Parents, siblings and children are handles as well.
    Every access is bounds-checked, handles stay valid when arrays grow, and a handle

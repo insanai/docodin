@@ -271,6 +271,15 @@ resolve_images :: proc(r: ^Resolver, from: Doc_Id) {
 	b := r.b
 	for n in dt.traverse(doc, doc.root, dt.Tag_Set{.image}) {
 		uri := dt.get_string(doc, n, "uri")
+		if dt.has_attr(doc, n, "docodin_graphviz") {
+			dt.delete_attr(doc, n, "docodin_graphviz")
+			if b.format == .Html {
+				dst := join("_images", filepath.base(uri))
+				append(&b.assets, Asset{uri, dst})
+				dt.set_attr(doc, n, "uri", relative_path(b.site.docs[r.from].name, dst))
+			}
+			continue
+		}
 		if uri == "" || strings.contains(uri, "://") || strings.has_prefix(uri, "data:") {
 			continue
 		}

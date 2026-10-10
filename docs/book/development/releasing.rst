@@ -11,6 +11,36 @@ what users run, and keeps the results.  DOD 19 records why.
 The release gate
 ================
 
+.. graphviz::
+   :class: adaptive-diagram
+   :align: center
+   :caption: Publishing a reviewed GitHub draft triggers PyPI; qualified packages are not rebuilt.
+   :alt: A verified main revision is tagged, gated on Linux and macOS, assembled with checksums, reviewed as a draft and published; PyPI uploads the same two wheels and source distribution.
+
+   digraph release_flow {
+   graph [bgcolor="white", pad="0.28", nodesep="0.4", ranksep="0.28", fontname="Helvetica", fontsize=17, fontcolor="#425574", color="#CBD5E1"];
+   node [shape=box, style="rounded,filled", fontname="Helvetica", fontsize=16, margin="0.22,0.16", fillcolor="#EFF4FF", color="#B3C6F7", fontcolor="#18243D", penwidth=1.2];
+   edge [fontname="Helvetica", fontsize=12, color="#526B97", fontcolor="#425574", arrowsize=0.75, penwidth=1.4];
+   rankdir=TB;
+   source [label="Working branch -> main\nReviewed source revision", fillcolor="#F4F6FA", color="#CDD5E2"];
+   verify [label="Verify\nOdin + Python + CLI checks"];
+   tag [label="Version tag\nv1.0.0b1", fillcolor="#DBE7FF", color="#7DA1ED"];
+   linux [label="Linux gate\nsdist -> wheel -> fresh install\nHTML + all PDFs"];
+   mac [label="macOS gate\nsdist -> wheel -> fresh install\nNative + Sphinx smoke"];
+   assemble [label="Assemble exact tested artifacts\nVersion, revision, SHA256 checks"];
+   draft [label="Draft GitHub prerelease\nReview assets and notes", fillcolor="#FFF3E6", color="#E3BB86"];
+   published [label="Publish GitHub release\nNative archives + PDFs", fillcolor="#E5F5EE", color="#8DC9B0"];
+   pypi [label="PyPI workflow\nVerify and upload the same\n2 wheels + sdist", fillcolor="#E5F5EE", color="#8DC9B0"];
+   source -> verify -> tag;
+   tag -> linux;
+   tag -> mac;
+   {rank=same; linux; mac;}
+   linux -> assemble;
+   mac -> assemble;
+   assemble -> draft -> published -> pypi;
+   }
+
+
 .. code-block:: console
 
    $ scripts/release_gate.sh                 # on a clean tree
@@ -33,9 +63,10 @@ The script stops at the first failure.  On a clean tree it runs these steps:
    the library from Python, and builds a small Sphinx project with ``docodin sphinx`` and
    with ``docodin-sphinx-build``.
 5. **The documentation**: the installed ``docodin`` builds ``docs/book`` and ``docs/dod``
-   with ``-W``, with the PDF books when ``lualatex`` is on the ``PATH`` or in
-   ``/Library/TeX/texbin``.  Without it the gate builds HTML only and prints ``PDF books:
-   SKIPPED``.
+   with ``-W``. With ``lualatex`` on the ``PATH`` or in ``/Library/TeX/texbin``, it
+   also builds both PDF books and a standalone PDF for every DOD except the template.
+   Without TeX the gate builds HTML only and prints ``PDF books: SKIPPED``. The Linux
+   release job requires the complete PDF collection before assembling the release.
 
 With changes in the working tree, the gate refuses to start (status 2) unless
 ``--allow-dirty`` is given: a gate result names a revision, and it is only meaningful for
@@ -62,6 +93,7 @@ commit hash:
      dist/           the sdist and the wheel that were tested
      docs/book/      the book built by the installed docodin (html/, latex/)
      docs/dod/       the design records, likewise
+     docs/pdf/       both books and the individual DOD PDFs
 
 ``gate.log`` ends with ``all gate steps passed`` when every step passed.  Keep the
 directory with the release: the tested artifacts are the ones to publish.
@@ -141,7 +173,7 @@ same qualified files without rebuilding them.
       $ git push origin v1.0.0b1
 
 5. Release runs Verify, then the full gate for Linux x86-64 and macOS arm64. Linux also
-   runs the PDF regressions and compiles both documentation books. The Odin compiler,
+   runs the PDF regressions and compiles both books and each standalone DOD. The Odin compiler,
    Source fonts and action revisions are pinned; downloads are checked against SHA256.
 6. The workflow checks metadata and versions, produces native archives from the tested
    wheels, and adds ``RELEASE.json`` and ``SHA256SUMS``. A tag creates a **draft** GitHub
@@ -149,13 +181,15 @@ same qualified files without rebuilding them.
    publish it when the token is configured.
 7. Publish to PyPI downloads the published assets, verifies hashes and the tag's commit,
    checks the wheel and source metadata, and uploads only the two wheels and sdist.
-   Native archives and PDF books remain GitHub release downloads. A failed publishing
+   Native archives and the PDF collection remain GitHub release downloads. A failed publishing
    run can be retried with the workflow's ``tag`` input after correcting the failure.
 
 The repository workflows are ``ci.yml``, ``pages.yml``, ``release.yml`` and ``publish.yml``
 under ``.github/workflows``. PyPI publishing happens only for a published release,
 not a normal push to ``main``. The Website workflow deploys the docodin-built site to
-GitHub Pages after main's Verify workflow succeeds.
+GitHub Pages after main's Verify workflow succeeds. It builds light and dark HTML and
+the light PDF collection, adding a book download on every manual page and an individual
+PDF download on each DOD page.
 
 The README is embedded in each distribution's package metadata. PyPI displays that
 release's README; editing ``README.rst`` on GitHub later does not update an existing

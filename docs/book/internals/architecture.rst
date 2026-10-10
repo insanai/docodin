@@ -20,28 +20,44 @@ docodin replaces docutils 0.22 in two ways:
 The picture
 ===========
 
-.. code-block:: text
+.. graphviz::
+   :class: adaptive-diagram
+   :align: center
+   :caption: One parser feeds two toolchains; the Sphinx path still builds and processes Python nodes.
+   :alt: The Odin parser feeds the native reader, transforms and writers, or a marshal bridge into Python nodes and Sphinx.
 
-                              reST text
-                                  |
-                   +--------------v--------------+    odin/rst: the parser
-                   |  string2lines . states      |    (data-oriented parse tree,
-                   |  body . explicit . tables   |     every parser message)
-                   |  lists . inline             |
-                   +------+---------------+------+
-          C ABI (marshal) |               | Odin API
-                          v               v
-   python/docodin --------------+    +------------------------------- odin/reader
-   builder.py: docutils.nodes,  |    | doctree.Doc, registry, directives, roles
-   registry, sections, the      |    +---------------+----------------
-   directives and roles of      |                    v              odin/transforms
-   docutils, Sphinx, extensions |       Transformer and every standard transform
-              |                 |                    v              odin/writers, odin/math
-              v                 |       pseudoxml . xml . html5 . latex . xetex
-   the shim's (or Sphinx's)     |                    v              odin/publish
-   transforms and writers       |       publish(): output, parts, messages, exit status
-                                |
-   fallback: the pure-Python parser states when an extension changes the grammar
+   digraph architecture {
+   newrank=true;
+   graph [bgcolor="white", pad="0.28", nodesep="0.4", ranksep="0.6", fontname="Helvetica", fontsize=17, fontcolor="#425574", color="#CBD5E1"];
+   node [shape=box, style="rounded,filled", fontname="Helvetica", fontsize=16, margin="0.22,0.16", fillcolor="#EFF4FF", color="#B3C6F7", fontcolor="#18243D", penwidth=1.2];
+   edge [fontname="Helvetica", fontsize=12, color="#526B97", fontcolor="#425574", arrowsize=0.75, penwidth=1.4];
+   rankdir=TB;
+   source [label="reStructuredText source", fillcolor="#F4F6FA", color="#CDD5E2"];
+   parser [label="Odin parser\nodin/rst\nFlat parse tree + messages", fillcolor="#DBE7FF", color="#7DA1ED"];
+   source -> parser;
+   subgraph cluster_native {
+     label="NATIVE TOOLCHAIN"; style="rounded"; bgcolor="#F7FAFF";
+     reader [label="Native reader\ndoctree + registry" ];
+     transform [label="Native transforms\nReferences, contents, validation"];
+     writer [label="Native writers\nHTML, LaTeX, XML"];
+     native_out [label="Native output\nHTML / PDF / XML", fillcolor="#E5F5EE", color="#8DC9B0"];
+     reader -> transform -> writer -> native_out;
+   }
+   subgraph cluster_python {
+     label="PYTHON / SPHINX"; style="rounded"; bgcolor="#FAF8FF";
+     wire [label="C ABI / marshal\nNative result buffer", fillcolor="#EEE9FB", color="#C0AEE7"];
+     builder [label="Python builder\nOrdinary docutils nodes", fillcolor="#EEE9FB", color="#C0AEE7"];
+     sphinx [label="Python transforms + writers\nSphinx and extensions", fillcolor="#EEE9FB", color="#C0AEE7"];
+     python_out [label="Sphinx outputs\nWithin measured support", fillcolor="#E5F5EE", color="#8DC9B0"];
+     wire -> builder -> sphinx -> python_out;
+   }
+   parser -> reader [label="Odin API"];
+   parser -> wire [label="C ABI"];
+   {rank=same; reader; wire;}
+   {rank=same; transform; builder;}
+   {rank=same; writer; sphinx;}
+   {rank=same; native_out; python_out;}
+   }
 
 The left side is the Python path: the native parser feeds docodin's docutils package,
 where everything else is docutils' Python code (and Sphinx's, and the extensions').  The

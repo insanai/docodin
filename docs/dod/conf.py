@@ -25,7 +25,8 @@ docodin_pdf_filename = "docodin-dod.pdf"
 
 # --- Sphinx ------------------------------------------------------------------------------
 
-extensions = []
+extensions = ["sphinx.ext.graphviz"]
+graphviz_output_format = "svg"
 smartquotes = True
 highlight_language = "text"
 pygments_style = "friendly"

@@ -51,6 +51,9 @@ Learn and contribute
 * `Source code <https://github.com/insanai/docodin>`__ and
   `issues <https://github.com/insanai/docodin/issues>`__.
 
+Read the HTML in light or dark mode. Download print-friendly light PDFs of the whole
+book, all design records or an individual DOD using the links on each page.
+
 Native tooling is the main focus. Differential checks target docutils 0.22.4; complete
 compatibility with every Sphinx project or extension is outside this beta's promise.
 See the `performance chapter <book/internals/performance.html>`__ for measured results,

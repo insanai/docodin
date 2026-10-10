@@ -113,6 +113,7 @@ Build :: struct {
 	extension: rd.Extension,
 	assets:    [dynamic]Asset, // files the output needs
 	outdir:    string, // the output directory of the format
+	graphviz_directory: string, // assets must live until TeX has compiled the book
 }
 
 Fig_Key :: struct {
@@ -121,9 +122,10 @@ Fig_Key :: struct {
 }
 
 // Read every document of ``s`` for ``format`` and collect the environment.
-build_make :: proc(s: ^Site, format: Format) -> ^Build {
+build_make :: proc(s: ^Site, format: Format, graphviz_directory := "_graphviz") -> ^Build {
 	b := new(Build, s.allocator)
 	b.site, b.format = s, format
+	b.graphviz_directory = graphviz_directory
 	if virtual.arena_init_growing(&b.arena) != nil do panic("site: cannot reserve arena")
 	b.allocator = virtual.arena_allocator(&b.arena)
 	context.allocator = b.allocator
