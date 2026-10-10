@@ -16,7 +16,8 @@ The path of a parse result
 1. **The arena.**  The parser works in a per-thread bump arena.  Blocks are mapped from
    the operating system, start at 1 MB and double up to 64 MB; after a call,
    ``bump_reset`` keeps the largest block of at most 4 MB and returns the rest to the
-   operating system at once.
+   operating system at once.  The kept block goes to a process-wide cache of at most 8
+   blocks until the next call on any thread (:doc:`storage`).
 2. **The wire.**  The parse tree is serialised in ``marshal`` format into the arena.  It
    is about 2.9 times the size of the input.
 3. **Decoding without a copy.**  ``docodin._native`` wraps the native buffer in a

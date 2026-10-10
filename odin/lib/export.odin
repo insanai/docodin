@@ -7,18 +7,20 @@ import "core:strings"
 import publish "../publish"
 import rst "../rst"
 import text "../text"
+import "../version"
 
 // C ABI of the shared library.
 //
 // * Buffers are passed with explicit lengths (NUL bytes are legal input).
-// * Each call works in the calling thread's arena, which is reset before the
-//   call returns: nothing leaks between calls and no global state is shared,
-//   so the library is safe to use from multiple threads.
+// * Each call works in the calling thread's arena, which is emptied before
+//   the call returns (its block goes to a small shared cache, see bump.odin):
+//   nothing leaks between calls or when a thread exits, and the library is
+//   safe to use from multiple threads.
 // * Results are heap buffers owned by the caller; release with
 //   ``docodin_free``.
 
 ABI_VERSION :: 6
-VERSION :: "0.2.0"
+VERSION :: version.VERSION
 
 @(thread_local, private = "file")
 tl_arena: Bump_Arena
@@ -32,6 +34,7 @@ tl_depth: int
 @(private = "file")
 call_context :: proc "contextless" () -> runtime.Context {
 	tl_depth += 1
+	if tl_depth == 1 do bump_unpark(&tl_arena)
 	ctx := runtime.default_context()
 	a := bump_allocator(&tl_arena)
 	ctx.allocator = a
@@ -42,7 +45,7 @@ call_context :: proc "contextless" () -> runtime.Context {
 @(private = "file")
 leave_call :: proc "contextless" () {
 	tl_depth -= 1
-	if tl_depth == 0 do bump_reset(&tl_arena)
+	if tl_depth == 0 do bump_park(&tl_arena)
 }
 
 @(private = "file")

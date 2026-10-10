@@ -1,26 +1,40 @@
 [build-system]
-requires = ["hatchling>=1.24", "packaging"]
+requires = ["hatchling>=1.27", "packaging"]
 build-backend = "hatchling.build"
 
 [project]
 name = "docodin"
-version = "0.2.0"
+version = "1.0.0b1"
 description = "Fast reStructuredText parser written in Odin: a drop-in parser for docutils and Sphinx"
 readme = "README.rst"
 requires-python = ">=3.12"
-license = { text = "MIT" }
+authors = [
+    {name = "Vikrant Rathore"},
+    {name = "Ronak Rathore"},
+    {name = "Kanak Rathore"},
+]
+license = "MIT"
+license-files = ["LICENSE", "NOTICE.rst", "LICENSES/*"]
 dependencies = []
+
+[project.urls]
+Homepage = "https://insanai.github.io/docodin/"
+Documentation = "https://insanai.github.io/docodin/book/"
+Source = "https://github.com/insanai/docodin"
+Issues = "https://github.com/insanai/docodin/issues"
+Changelog = "https://github.com/insanai/docodin/blob/main/CHANGELOG.rst"
 
 [project.optional-dependencies]
 sphinx = ["sphinx>=8.0"]
-test = ["pytest>=8.0", "sphinx>=8.0", "docutils>=0.22"]
+test = ["pytest>=8.0", "sphinx>=8.0", "docutils>=0.22", "pillow>=10.0"]
 
 [dependency-groups]
 # the documentation (docs/book, docs/dod) with Sphinx: uv run --group docs sphinx-build ...
 docs = ["sphinx>=8.0", "furo>=2024.8.6"]
 
+# The wheel also installs the native programs docodin, docodin-check and docodin-lsp
+# (hatch_build.py); docodin runs ``python -m docodin`` for what needs Python.
 [project.scripts]
-docodin = "docodin.__main__:main"
 docodin-sphinx-build = "docodin.sphinx_build:main"
 
 [tool.hatch.build.targets.wheel]
@@ -35,7 +49,7 @@ packages = ["python/docodin"]
 
 [tool.hatch.build.targets.sdist]
 include = ["/python", "/odin", "/cmd", "/scripts", "/tests", "/docs", "/hatch_build.py",
-           "/README.rst", "/CHANGELOG.rst"]
+           "/README.rst", "/AUTHORS.rst", "/CHANGELOG.rst", "/LICENSE", "/NOTICE.rst", "/LICENSES"]
 exclude = ["*.dylib", "*.so", "*.dll", "__pycache__"]
 
 [tool.pytest.ini_options]

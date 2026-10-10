@@ -93,7 +93,7 @@ subtree_has_toctree :: proc(b: ^Build, first: Toc_Id) -> bool {
 // The xetex writer's settings for the book.
 @(private = "file")
 book_settings :: proc(parts: bool) -> dt.Settings {
-	settings := pb.default_settings(.Xetex, DOCUTILS_DIR)
+	settings := pb.default_settings(.Xetex, pb.tools_docutils_dir())
 	overrides := []pb.Override {
 		{"documentclass", "book"},
 		{"documentoptions", "11pt,a4paper,openany"},
@@ -129,7 +129,10 @@ assemble_book :: proc(bk: ^Book) {
 	if opening {
 		title := tex_escape(b.pages[root].title)
 		add_raw(bk.doc, bk.doc.root, strings.concatenate({"\\chapter*{", title,
-			"}\\addcontentsline{toc}{chapter}{", title, "}\\markboth{", title, "}{", title, "}",
+			"}\\addcontentsline{toc}{chapter}{", title, "}",
+			// minitoc counts the ToC entry even though chapter* does not
+			// increment its chapter counter.  Keep the local ToCs aligned.
+			"\\ifdefined\\adjustmtc\\adjustmtc\\fi\\markboth{", title, "}{", title, "}",
 			strings.to_string(labels)}))
 		for n in nodes[:k] do import_node(bk, root, n, bk.doc.root)
 		add_raw(bk.doc, bk.doc.root, "\\mainmatter")

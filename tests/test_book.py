@@ -245,6 +245,59 @@ def test_warnings_in_elm_style(tmp_path: Path) -> None:
     assert "8| See :ref:`nowhere`." in result.stderr
 
 
+def test_invalid_utf8_source_stops_the_build(tmp_path: Path) -> None:
+    project = tmp_path / "project"
+    shutil.copytree(FIXTURE, project)
+    (project / "bad.rst").write_bytes(b"Bad\n===\n\ncaf\xff\n")
+    result = docodin("book", "build", project, "--html", "-W", "--error-format=docutils",
+                     "-o", tmp_path / "out")
+    assert result.returncode == 1
+    assert "bad.rst:4: (SEVERE/4) Cannot decode the document: 'utf-8' codec can't decode " \
+        "byte 0xff in position 12: invalid start byte." in result.stderr
+    assert not (tmp_path / "out" / "html").exists()
+
+
+def test_root_document_that_is_not_utf8(tmp_path: Path) -> None:
+    project = tmp_path / "project"
+    project.mkdir()
+    (project / "conf.py").write_text("project = 'P'\n", encoding="utf-8")
+    (project / "index.rst").write_bytes(b"Root\n====\n\n\xff\n")
+    result = docodin("book", "build", project, "--html", "--error-format=docutils")
+    assert result.returncode == 1
+    assert "index.rst:4: (SEVERE/4) Cannot decode the document" in result.stderr
+
+
+def test_dod_new_without_an_author(tmp_path: Path) -> None:
+    dod_dir = tmp_path / "dod"
+    dod_dir.mkdir()
+    env = dict(os.environ, NO_COLOR="1", GIT_CONFIG_GLOBAL=os.devnull, GIT_CONFIG_NOSYSTEM="1",
+               HOME=str(tmp_path))
+    result = subprocess.run([str(BINARY), "dod", "new", "A record", f"--dir={dod_dir}"],
+                            capture_output=True, text=True, env=env, cwd=tmp_path, check=False)
+    assert result.returncode == 2
+    assert "-- NO AUTHOR" in result.stderr and "--author=" in result.stderr
+    assert not list(dod_dir.glob("*.rst"))
+
+
+def test_dod_new_uses_git_name_without_email(tmp_path: Path) -> None:
+    if not shutil.which("git"):
+        pytest.skip("git not installed")
+    env = dict(os.environ, GIT_CONFIG_GLOBAL=os.devnull, GIT_CONFIG_NOSYSTEM="1")
+    for args in (("init", "-q"), ("config", "user.name", "Example Author"),
+                 ("config", "user.email", "private@example.invalid")):
+        subprocess.run(["git", "-C", str(tmp_path), *args], env=env, check=True,
+                       capture_output=True)
+    dod_dir = tmp_path / "dod"
+    dod_dir.mkdir()
+    result = subprocess.run([str(BINARY), "dod", "new", "Private author",
+                             f"--dir={dod_dir}"], env=env, capture_output=True, text=True,
+                            check=False)
+    assert result.returncode == 0, result.stderr
+    text = next(dod_dir.glob("*.rst")).read_text(encoding="utf-8")
+    assert ":Authors: Example Author\n" in text
+    assert "private@example.invalid" not in text
+
+
 def test_usage_errors(tmp_path: Path) -> None:
     result = docodin("book", "build", tmp_path / "nothere")
     assert result.returncode == 2
@@ -270,12 +323,14 @@ def test_dod_commands(tmp_path: Path) -> None:
     assert check.returncode == 0, check.stderr
     records = sorted(dod_dir.glob("[0-9][0-9][0-9][0-9]-*.rst"))
     last = max(int(p.name[:4]) for p in records)
-    new = docodin("dod", "new", "A test record", "--labels=tooling", f"--dir={dod_dir}")
+    new = docodin("dod", "new", "A test record", "--labels=tooling",
+                  "--author=Test Author <test@example.com>", f"--dir={dod_dir}")
     assert new.returncode == 0, new.stderr
     created = dod_dir / f"{last + 1:04d}-a-test-record.rst"
     text = created.read_text(encoding="utf-8")
     assert f"DOD {last + 1}: A test record" in text
     assert ":State: prediscussion" in text and ":Labels: tooling" in text
+    assert ":Authors: Test Author <test@example.com>" in text
     assert ":orphan:" not in text
     listing = docodin("dod", "list", "--state=prediscussion", f"--dir={dod_dir}").stdout
     assert "A test record" in listing

@@ -215,6 +215,8 @@ FALLBACK_CASES = {
     "pygments exit status": ["--exit-status=warning", "--report=info", "code.rst"],
     "configuration file": ["--writer=pseudoxml", "--config=my.conf", "plain.rst"],
     "other writer": ["--writer=manpage", "plain.rst"],
+    "rst2man command": ["rst2man", "plain.rst"],
+    "rst2xml command": ["rst2xml", "plain.rst"],  # native, as python -m docodin rst2xml
     "latin-9 source": ["--writer=pseudoxml", "--input-encoding=iso-8859-15", "latin9.rst"],
 }
 
@@ -291,3 +293,17 @@ def test_python_without_docodin(tmp_path: Path) -> None:
     env = {**without_python(tmp_path), "DOCODIN_PYTHON": str(fake)}
     _, err, status, _ = run_with([str(BINARY), "code.rst"], d, env)
     assert status == 1 and err.startswith(b"-- NEEDS PYTHON ")
+
+
+@pytest.mark.parametrize("format", ("PNG", "JPEG", "GIF", "BMP", "TIFF", "WEBP"))
+def test_raster_size_without_python(tmp_path: Path, format: str) -> None:
+    image = pytest.importorskip("PIL.Image")
+    image.new("RGB", (41, 31)).save(tmp_path / "pic.dat", format=format)
+    (tmp_path / "doc.rst").write_text(".. image:: pic.dat\n   :scale: 50\n\n"
+                                     ".. figure:: pic.dat\n   :figwidth: image\n\n   Caption.\n",
+                                     encoding="utf-8")
+    out, err, status, _ = run_with([str(BINARY), "doc.rst"], tmp_path,
+                                   without_python(tmp_path))
+    assert status == 0 and err == b""
+    assert b'height="16"' in out and b'width="20"' in out
+    assert b'width: 41px' in out

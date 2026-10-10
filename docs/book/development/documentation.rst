@@ -50,8 +50,17 @@ With Sphinx, in the ``docs`` dependency group (Sphinx and furo):
 The same commands build ``docs/dod``; its LaTeX file is ``docodin-dod.tex``.  Both
 builders must succeed without warnings.  ``_build`` directories are not versioned.
 
-The PDF uses TeX Gyre Pagella, Fira Sans and DejaVu Sans Mono, which TeX Live and MacTeX
-include.
+The native PDF uses Source Serif 4, Source Sans 3 and Source Code Pro
+(``docs/theme/book.tex``).  A current TeX Live or MacTeX includes these fonts.  Older
+distribution packages can contain only Source Serif Pro and Source Sans Pro; those names
+do not satisfy the native template.  Install the current CTAN ``sourceserif`` and
+``sourcesans`` OpenType fonts into ``~/texmf/fonts/opentype``, then run ``mktexlsr ~/texmf``
+and ``luaotfload-tool --update``.  Check them with ``kpsewhich SourceSerif4-Regular.otf``,
+``kpsewhich SourceSans3-Regular.otf`` and ``kpsewhich SourceCodePro-Regular.otf``.
+
+The Sphinx PDF uses TeX Gyre Pagella, Fira Sans and DejaVu Sans Mono.  Books containing
+SVG images also need ``rsvg-convert`` (``librsvg2-bin`` on Debian) or Inkscape to convert
+them to PDF.
 
 The markup subset
 =================
@@ -128,7 +137,7 @@ The book is organised in parts by reader:
 - **Reference**: complete and exact lists: commands, options, settings, environment
   variables, the Python API, compatibility, limits.
 - **Internals**: how docodin works.
-- **Development**: how to build, test and change docodin.
+- **Development**: how to build, test, change and release docodin.
 - **Appendices**: glossary, questions, changelog, the maintenance checklist.
 
 Put a new chapter in the part of its reader, and add it to the part's toctree in

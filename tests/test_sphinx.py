@@ -110,3 +110,20 @@ def test_extension_tunes_the_collector(tmp_path, enabled):
             "print(rc, gc.get_threshold() == GC_THRESHOLDS)")
     proc = subprocess.run([sys.executable, "-c", code], capture_output=True, text=True, check=False)
     assert proc.stdout.split() == ["0", str(enabled)], proc.stderr
+
+
+def test_tuned_build_freezes_after_start_up_and_after_reading(tmp_path):
+    import subprocess
+    import sys
+
+    (tmp_path / "conf.py").write_text("", encoding="utf-8")
+    (tmp_path / "index.rst").write_text("Title\n=====\n\nText.\n", encoding="utf-8")
+    code = ("import gc\nfreezes = []\nfreeze = gc.freeze\n"
+            "gc.freeze = lambda: (freezes.append(1), freeze())\n"
+            "from docodin.sphinx_build import main\n"
+            f"rc = main(['-q', '-b', 'html', {str(tmp_path)!r}, {str(tmp_path / 'o')!r}])\n"
+            "print(rc, len(freezes))")
+    env = dict(os.environ, DOCODIN_GC="tuned")
+    proc = subprocess.run([sys.executable, "-c", code], capture_output=True, text=True,
+                          env=env, check=False)
+    assert proc.stdout.split() == ["0", "2"], proc.stderr

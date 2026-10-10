@@ -28,7 +28,7 @@ from typing import Any
 from docodin.shim import enable as _enable_shim
 from docodin.shim import install_shim, uninstall_shim
 
-__version__ = "0.2.0"
+__version__ = "1.0.0b1"
 
 _enable_shim()
 

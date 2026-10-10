@@ -5,13 +5,12 @@ import "core:os"
 import "core:strings"
 
 import dt "../doctree"
+import "../imageinfo"
 import texmath "../math"
 
 // HTML5 visitors of images and mathematics
-// (``_html_base_media.MediaTranslatorMixin``).  Image sizes are never read
-// from the image file: docutils needs PIL for that, and without it warns as
-// the native writer does.  Where docutils would read the size, the writer
-// records a Python need.
+// (``_html_base_media.MediaTranslatorMixin``). Raster headers supply image
+// sizes without decoding pixels; other formats retain the PIL fallback.
 
 VIDEO_TYPES :: [?]string{"video/mp4", "video/webm", "video/ogg"}
 
@@ -128,9 +127,13 @@ image_size :: proc(t: ^Html, n: dt.Node, atts: ^[dynamic]Att) -> bool {
 	scale := 100.0
 	if v, ok := dt.get_attr(doc, n, "scale"); ok {
 		if len(measures) < 2 {
-			// ``read_size_with_PIL``: its result (and the warning's text) depends on PIL
-			dt.note_python_need_at(doc, n, .Pil, attr(doc, n, "uri"))
-			warn_cannot_scale(t, n)
+			if size, sized := raster_image_size(t, n); sized {
+				for name, i in ([?]string{"width", "height"}) {
+					if _, present := dt.get_attr(doc, n, name); present do continue
+					value := size.width if i == 0 else size.height
+					append(&measures, Measure{name, value, ""})
+				}
+			}
 		}
 		scale = attr_float(v)
 	}
@@ -151,6 +154,34 @@ image_size :: proc(t: ^Html, n: dt.Node, atts: ^[dynamic]Att) -> bool {
 	return true
 }
 
+// Keep the writer's URI resolution, file-insertion policy and explicit
+// dimensions. Unsupported headers still use the existing Python host.
+@(private = "file")
+raster_image_size :: proc(t: ^Html, n: dt.Node) -> (imageinfo.Size, bool) {
+	uri := attr(t.doc, n, "uri")
+	problems := make([dynamic]string, 0, 2, context.temp_allocator)
+	if is_video(guess_mime_type(uri)) do append(&problems, "PIL cannot read video images.")
+	if !t.s.file_insertion_enabled do append(&problems, "Reading external files disabled.")
+	if len(problems) > 0 {
+		warn_cannot_scale(t, n, strings.join(problems[:], "\n  ", context.temp_allocator))
+		return {}, false
+	}
+	path, err := uri2path(uri, t.s.output_path, t.s.root_prefix)
+	if err != "" {
+		warn_cannot_scale(t, n, err)
+		return {}, false
+	}
+	size, ok, file_error := imageinfo.read_size(path)
+	if ok do return size, true
+	if file_error != nil {
+		warn_cannot_scale(t, n, os_error_text(path, file_error))
+		return {}, false
+	}
+	dt.note_python_need_at(t.doc, n, .Pil, uri)
+	warn_cannot_scale(t, n, "Requires Python Imaging Library.")
+	return {}, false
+}
+
 // A number attribute as a float.
 @(private = "file")
 attr_float :: proc(v: dt.Attr_Value) -> f64 {
@@ -164,20 +195,15 @@ attr_float :: proc(v: dt.Attr_Value) -> f64 {
 	return 100
 }
 
-// ``read_size_with_PIL`` without PIL: the warning.
+// ``read_size_with_PIL``: retain its diagnostic for failed size reads.
 @(private = "file")
-warn_cannot_scale :: proc(t: ^Html, n: dt.Node) {
+warn_cannot_scale :: proc(t: ^Html, n: dt.Node, problem: string) {
 	uri := attr(t.doc, n, "uri")
 	b := strings.builder_make(context.temp_allocator)
 	strings.write_string(&b, "Cannot scale image!\n  Could not get size from \"")
 	strings.write_string(&b, uri)
-	strings.write_string(&b, "\":\n  Requires Python Imaging Library.")
-	if is_video(guess_mime_type(uri)) {
-		strings.write_string(&b, "\n  PIL cannot read video images.")
-	}
-	if !t.s.file_insertion_enabled {
-		strings.write_string(&b, "\n  Reading external files disabled.")
-	}
+	strings.write_string(&b, "\":\n  ")
+	strings.write_string(&b, problem)
 	msg := dt.warning(t.doc, strings.to_string(b), {base_node = n})
 	append(&t.messages, msg)
 }

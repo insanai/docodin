@@ -289,7 +289,7 @@ IMAGES = """\
 
 def test_pil_detection(tmp_path: Path, monkeypatch) -> None:
     monkeypatch.chdir(tmp_path)
-    assert needs(IMAGES) == [("pil", "pic.png", "doc.rst", 1), ("pil", "pic.png", "doc.rst", 4)]
+    assert needs(IMAGES) == []  # missing files are diagnosed without importing PIL
     (tmp_path / "pic.png").write_bytes(b"not read natively")
     assert needs(IMAGES) == [("pil", "pic.png", "doc.rst", 8), ("pil", "pic.png", "doc.rst", 1),
                              ("pil", "pic.png", "doc.rst", 4)]
@@ -305,6 +305,85 @@ def test_pil_fallback(tmp_path: Path, monkeypatch, writer: str) -> None:
     monkeypatch.chdir(tmp_path)
     write_png(tmp_path / "pic.png", 40, 30)
     same_as_docutils(IMAGES, writer)
+
+
+@pytest.mark.parametrize("format", ("PNG", "JPEG", "GIF", "BMP", "TIFF", "WEBP"))
+@pytest.mark.parametrize("writer", ("html5", "latex", "pseudoxml"))
+def test_raster_dimensions_are_native(tmp_path: Path, monkeypatch, format: str,
+                                      writer: str) -> None:
+    image = pytest.importorskip("PIL.Image")
+    monkeypatch.chdir(tmp_path)
+    # Inspect the signature, not the extension. Percent-encoded paths and
+    # a single explicit dimension must keep Docutils' sizing semantics.
+    image.new("RGB", (41, 31)).save("pic name.dat", format=format)
+    text = IMAGES.replace("pic.png", "pic%20name.dat")
+    assert needs(text, writer) == []
+    ours, messages = native(text, writer, {}, False)
+    expected, expected_messages = reference(docutils_core.publish_string, text, writer, {})
+    assert ours == expected
+    assert messages == expected_messages
+
+
+def test_unsupported_image_headers_keep_the_fallback(tmp_path: Path, monkeypatch) -> None:
+    image = pytest.importorskip("PIL.Image")
+    monkeypatch.chdir(tmp_path)
+    image.new("RGB", (41, 31)).save("pic.png", format="PPM")
+    assert {need[0] for need in needs(IMAGES)} == {"pil"}
+    same_as_docutils(IMAGES, "html5")
+
+
+def test_long_image_metadata_keeps_the_fallback(tmp_path: Path, monkeypatch) -> None:
+    image = pytest.importorskip("PIL.Image")
+    png = pytest.importorskip("PIL.PngImagePlugin")
+    monkeypatch.chdir(tmp_path)
+    metadata = png.PngInfo()
+    metadata.add_text("Comment", "x" * 70_000)
+    image.new("RGB", (41, 31)).save("pic.png", pnginfo=metadata)
+    assert {need[0] for need in needs(IMAGES)} == {"pil"}
+    same_as_docutils(IMAGES, "html5")
+
+
+def test_invalid_png_header_keeps_the_fallback(tmp_path: Path, monkeypatch) -> None:
+    pytest.importorskip("PIL")
+    monkeypatch.chdir(tmp_path)
+    path = tmp_path / "pic.png"
+    write_png(path, 41, 31)
+    data = bytearray(path.read_bytes())
+    data[29] ^= 1  # corrupt the IHDR checksum, without touching dimensions
+    path.write_bytes(data)
+    assert {need[0] for need in needs(IMAGES)} == {"pil"}
+    same_as_docutils(IMAGES, "html5")
+
+
+def test_image_size_obeys_file_insertion(tmp_path: Path, monkeypatch) -> None:
+    pytest.importorskip("PIL")
+    monkeypatch.chdir(tmp_path)
+    write_png(tmp_path / "pic.png", 41, 31)
+    # No figure width is read when external file access is disabled.
+    assert needs(IMAGES, "pseudoxml", {"file_insertion_enabled": False}) == []
+    same_as_docutils(IMAGES, "html5", {"file_insertion_enabled": False})
+
+
+@pytest.mark.parametrize("uri", ("missing.png", "https://example.invalid/pic.png", "video.mp4"))
+def test_failed_image_size_diagnostics_are_native(tmp_path: Path, monkeypatch, uri: str) -> None:
+    pytest.importorskip("PIL")
+    monkeypatch.chdir(tmp_path)
+    text = f".. image:: {uri}\n   :scale: 50\n"
+    assert needs(text) == []
+    same_as_docutils(text, "html5")
+
+
+@pytest.mark.parametrize("settings,uri", (({"output_path": "out/page.html"}, "pic.png"),
+                                         ({"root_prefix": "out"}, "/pic.png")))
+def test_image_size_uses_writer_paths(tmp_path: Path, monkeypatch, settings: dict,
+                                     uri: str) -> None:
+    pytest.importorskip("PIL")
+    monkeypatch.chdir(tmp_path)
+    (tmp_path / "out").mkdir()
+    write_png(tmp_path / "out" / "pic.png", 41, 31)
+    text = f".. image:: {uri}\n   :scale: 50\n"
+    assert needs(text, overrides=settings) == []
+    same_as_docutils(text, "html5", settings)
 
 
 def test_url_detection() -> None:

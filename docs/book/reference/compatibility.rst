@@ -17,9 +17,9 @@ docodin reproduces docutils 0.22.4.  For the same input and settings, docodin gi
 - the same exceptions, with the same class and message;
 - the same exit status of the command-line tools.
 
-This holds for the docutils package inside Python and for the native pipeline, whose
-outputs are compared with docutils in the same ways.  The exceptions are listed in
-:doc:`limits`.
+This is the aim for the docutils package inside Python and for the native pipeline,
+whose outputs are compared with docutils in the same ways, and the tests below measure
+it.  :doc:`limits` states what the 1.0.0b1 beta supports and lists the known exceptions.
 
 Versions
 ========
@@ -36,9 +36,10 @@ Versions
      - 8.0 or later for the ``sphinx`` extra; the measurements and test runs in this
        book use Sphinx 9.1.
    * - Unicode
-     - the native character tables come from CPython 3.14 (Unicode 16).  The
-       differential scripts that produce docutils' reference dumps run under CPython 3.14
-       for that reason.
+     - the native character tables come from CPython 3.14 (Unicode 16) and are used
+       under every Python, so on older Pythons a few results can differ from docutils
+       (:doc:`limits`).  The differential scripts that produce docutils' reference dumps
+       run under CPython 3.14 for that reason.
 
 How it is verified
 ==================
@@ -79,6 +80,10 @@ How it is verified
    * - Language server (``tests/test_lsp.py``)
      - diagnostics equal docutils' messages; definitions agree with docutils' resolved
        references
+   * - Release gate (``scripts/release_gate.sh``)
+     - the wheel, built from the sdist and installed outside the checkout: the programs,
+       the library, Sphinx and both documentation projects build
+       (:doc:`../development/releasing`)
 
 :doc:`../development/testing` and :doc:`../development/differential-testing` describe
 how to run them.
@@ -90,7 +95,9 @@ Where docutils uses a Python library (Pygments, PIL, ``urllib``, codecs, parser 
 writer modules, external MathML converters), docodin uses the same library: the docutils
 package calls it as docutils does, and the native tools hand such documents to docutils.
 So a document's result depends on the installed libraries exactly as it does with
-docutils (DOD 9).
+docutils (DOD 9).  The native image-size reader is an exception: it reads common raster
+headers without Pillow (:doc:`../internals/python-needs`), and reports unavailable files
+as Docutils with Pillow would.  Docodin's Python docutils package still uses Pillow.
 
 Extensions that change the grammar
 ==================================

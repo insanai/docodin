@@ -97,8 +97,30 @@ def test_thread_safety(lib):
     assert not errors
 
 
+def _peak_rss_mib() -> float:
+    import resource
+    import sys
+
+    peak = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
+    return peak / (1 << 20) if sys.platform == "darwin" else peak / 1024
+
+
+@pytest.mark.skipif(os.name == "nt", reason="uses the resource module")
+def test_short_lived_threads_do_not_retain_arenas(lib):
+    # Each thread's arena used to keep its block after the thread exited:
+    # about 1 MiB per retired thread.
+    text = "Paragraph with *emphasis* and ordinary words.\n\n" * 2000
+    lib.parse(text)
+    before = _peak_rss_mib()
+    for _ in range(200):
+        t = threading.Thread(target=lib.parse, args=(text,))
+        t.start()
+        t.join()
+    assert _peak_rss_mib() - before < 64
+
+
 @pytest.mark.parametrize("text", [
-    "*a " * 5000,                                           # unclosed start-strings
+    "*a " * 5000,                                          # unclosed start-strings
     "-".join(["a"] * 5000) + "_",                           # long name chain
     "".join("|" + " " * (i + 1) + "x\n" for i in range(3000)),  # deep line block
     "".join("  " * i + "- item\n\n" for i in range(500)),    # deep lists

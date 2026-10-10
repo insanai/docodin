@@ -287,7 +287,8 @@ def report(jobs: list[dict], results: dict[str, dict], work: Path) -> int:
         totals[key]["total"] += 1
         totals[key]["pil" if pil else "identical"] += diff == ""
         totals[key]["pil-total"] += pil
-        if diff and not pil:
+        pil_fallback = any(need.split(":", 1)[0] == "pil" for need in native.get("needs", []))
+        if diff and (not pil or not pil_fallback):
             failures.append(f"{job['name']}  {diff}")
             kinds[diff.split("@")[0].split(":")[0]] += 1
             save_failure(work, job, results.get(job["name"], {}))

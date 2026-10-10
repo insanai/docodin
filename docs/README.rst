@@ -16,11 +16,28 @@ The documentation is reStructuredText only, in two projects:
 
 Both are Sphinx projects that docodin also builds natively.
 
+Project website
+===============
+
+``site/`` is the homepage. The website assembles that page, the book and the DODs
+using only docodin's native HTML builder:
+
+.. code-block:: console
+
+   $ scripts/build_odin.sh
+   $ uv run --no-project python scripts/build_site.py
+
+The result is ``build/site/``, deployed to https://insanai.github.io/docodin/ by the
+Website workflow after Verify passes on ``main``. Generated output is ignored by Git.
+The book and DODs retain their own navigation and search indexes under ``book/`` and
+``dod/``. The homepage logo is served from the site's own static files.
+
 Building natively
 =================
 
-Build the native tools first (``scripts/build_odin.sh``, see the book's chapter "Building
-from source"), then:
+Use the ``docodin`` program that the wheel installs, or build the native tools in the
+checkout (``scripts/build_odin.sh``, see the book's chapter "Building from source").  In
+the checkout:
 
 .. code-block:: console
 

@@ -100,13 +100,9 @@ branch_numbers :: proc(dir: string) -> []int {
 	return out[:]
 }
 
-// "Name <email>" from git's configuration ("" without git).
+// The author's name from git; email addresses stay out of public records.
 git_author :: proc(dir: string) -> string {
-	name := git_config(dir, "user.name")
-	email := git_config(dir, "user.email")
-	if name == "" do return email
-	if email == "" do return name
-	return strings.concatenate({name, " <", email, ">"})
+	return git_config(dir, "user.name")
 }
 
 @(private = "file")
@@ -144,7 +140,7 @@ DEFAULT_TEMPLATE :: `===========================================================
 DOD 0: Title
 ==============================================================================
 
-:Authors: Name <email>
+:Authors: Name
 :State: prediscussion
 :Created: YYYY-MM-DD
 :Discussion:

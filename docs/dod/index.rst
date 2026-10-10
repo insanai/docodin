@@ -8,6 +8,11 @@ and how it was verified.  A record has a state, from ``prediscussion`` to ``comm
 so it is always clear which records describe docodin as it is and which are proposals.
 DOD 1 describes the process.
 
+.. image:: _static/docodin_logo.png
+   :alt: Sphinx's single-eye symbol with a minimal pencil outline of Odin's beard.
+   :width: 140px
+   :align: center
+
 .. rubric:: Quick start
 
 1. Create a record: ``docodin dod new "Title" --labels parser,performance``.
@@ -48,6 +53,7 @@ Committed
 - :doc:`DOD 15: Lower Peak Memory <0015-lower-peak-memory>`
 - :doc:`DOD 16: Garbage-Collector Tuning Is Opt-In <0016-garbage-collector-tuning>`
 - :doc:`DOD 18: The Documentation System <0018-documentation-system>`
+- :doc:`DOD 19: Beta Release Scope and Distribution <0019-beta-release-scope-and-distribution>`
 
 Ideation
 --------

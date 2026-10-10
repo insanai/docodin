@@ -32,7 +32,8 @@ run_pdf :: proc(args: []string) -> int {
 		return 0
 	}
 	if engine == "" do engine = default_engine()
-	writer := "xetex" if engine == "xelatex" || engine == "lualatex" else "latex"
+	name := strings.trim_suffix(filepath.base(engine), ".exe")
+	writer := "xetex" if name == "xelatex" || name == "lualatex" else "latex"
 	cli := parse_command_line(rest, writer)
 	if cli.source == "" || cli.source == "-" {
 		usage_error("MISSING SOURCE", "`docodin pdf` needs a source file.",
@@ -100,7 +101,7 @@ write_latex :: proc(cli: ^Cli, writer, tex: string) -> int {
 	if n, needed := need.?; needed do return python_latex(cli, writer, tex, {n})
 	if !ok do return 1
 	output, _, messages, status, err, needs := pb.publish(text, cli.source, cli.writer_name,
-		cli.overrides[:], NATIVE_OPTIONS)
+		cli.overrides[:], native_options())
 	if len(needs) > 0 do return python_latex(cli, writer, tex, needs, text)
 	for m in messages do os.write_string(os.stderr, m.text)
 	if err != nil {

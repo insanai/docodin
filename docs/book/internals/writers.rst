@@ -48,7 +48,10 @@ Data files
    ``docutils.sty``) are embedded with ``#load`` from docodin's docutils package
    (``files.odin``).  With ``embed_stylesheet`` they are embedded in the output; otherwise
    they are linked by their path in the docutils package directory, as docutils links
-   them.
+   them.  The native programs use the source checkout's docutils package directory when
+   it exists, so that paths in messages are those of the Python package; without it they
+   use the placeholder directory ``<docutils>``, read the embedded copies, and link a
+   stylesheet by its file name (``link_path``).
 
 Python formatting
    Where docutils formats numbers or strings with Python (``%``-formatting, ``repr``,

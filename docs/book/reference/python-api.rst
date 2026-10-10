@@ -18,7 +18,8 @@ Versions
 --------
 
 ``docodin.__version__``
-   The package version, for example ``"0.2.0"``.
+   The package version, for example ``"1.0.0b1"``.  It is the version of the native
+   library and programs too (``tests/test_release.py`` checks it).
 
 ``docodin.version() -> str``
    The version of the loaded native library.
@@ -53,12 +54,16 @@ The parser
 ``docodin.Parser``
    A subclass of ``docutils.parsers.rst.Parser`` that parses with the native engine.  It
    falls back to docutils' Python parser when the parser's state classes or inliner are
-   not the stock ones.  ``docodin.OdinRSTParser`` is its name from docodin 0.1.
+   not the stock ones, when a stock state was patched, and with ``DOCODIN_NATIVE=0``.  On
+   an installed docutils, the stock states are recorded when ``docodin.parser`` is first
+   imported, so a patch applied before that import is not seen (DOD 7).
+   ``docodin.OdinRSTParser`` is its name from docodin 0.1.
 
 ``docodin.patch_docutils()``
    Replaces ``docutils.parsers.rst.Parser.parse`` and
    ``docutils.parsers.rst.states.RSTStateMachine.run`` process-wide, so everything built
-   on the loaded docutils parses with docodin.  Calling it again does nothing.
+   on the loaded docutils parses with docodin, with the same fallback as
+   ``docodin.Parser``.  Calling it again does nothing.
 
 ``docodin.unpatch_docutils()``
    Undoes ``patch_docutils``.
@@ -148,8 +153,8 @@ A Sphinx extension: ``extensions = ["docodin.sphinx"]``.
 
 ``OdinSphinxRSTParser``
    Sphinx's ``RSTParser`` with docodin's native engine; it applies ``rst_prolog`` and
-   ``rst_epilog`` and falls back to Sphinx's parser for custom state classes or
-   inliners.
+   ``rst_epilog`` and falls back to Sphinx's parser in the cases of
+   ``docodin.Parser``.
 
 ``docodin_gc_tuning`` (configuration value, default ``False``)
    ``True`` tunes the garbage collector for the build (:doc:`../guide/sphinx`).
@@ -166,7 +171,8 @@ docodin.sphinx_build
 ``tune_garbage_collection()``
    Raises the collector's thresholds to ``GC_THRESHOLDS`` (``(50000, 20, 100)``) and
    makes every Sphinx application created afterwards collect and freeze its objects
-   when the builder is initialised and when the environment is updated.
+   when it has started (its builder is initialised by then) and when the environment is
+   updated.
 
 docodin.conf
 ============

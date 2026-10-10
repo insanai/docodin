@@ -1,0 +1,12 @@
+project = "docodin"
+author = "Vikrant Rathore"
+copyright = "2026, Vikrant Rathore and the docodin contributors"
+version = "1.0"
+release = "1.0.0b1"
+language = "en"
+root_doc = "index"
+exclude_patterns = ["_build"]
+html_title = "docodin"
+html_static_path = ["../theme"]
+html_logo = "../book/_static/docodin_logo.png"
+docodin_tagline = "A native reStructuredText toolchain, written in Odin"

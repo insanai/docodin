@@ -5,10 +5,10 @@
 # today_fmt and the docodin_* values); everything else is for Sphinx only.
 
 project = "The docodin Book"
-author = "The docodin authors"
-copyright = "2026, The docodin authors"
-version = "0.2"
-release = "0.2.0"
+author = "Vikrant Rathore"
+copyright = "2026, Vikrant Rathore and the docodin contributors"
+version = "1.0"
+release = "1.0.0b1"
 html_title = "The docodin Book"
 language = "en"
 root_doc = "index"
@@ -31,7 +31,7 @@ pygments_style = "friendly"
 html_theme = "furo"
 html_static_path = ["../theme", "_static"]
 html_css_files = ["docodin.css"]
-html_logo = "_static/docodin-mark.svg"
+html_logo = "_static/docodin_logo.png"
 html_favicon = "_static/docodin-mark.svg"
 html_show_sourcelink = False
 

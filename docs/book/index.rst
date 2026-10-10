@@ -2,22 +2,31 @@
 The docodin Book
 ==============================================================================
 
-docodin is a drop-in replacement for docutils 0.22.4, built on a reStructuredText engine
-written in Odin.  Sphinx, its extensions and every other program that imports
-``docutils`` run on it unchanged and produce identical output, faster.  docodin also
-publishes and checks documents natively, without Python, and gives editors a language
-server with docutils' exact diagnostics.
+docodin is a reStructuredText toolchain built on an engine written in Odin.  It
+publishes, checks and builds documentation natively, without Python, with the output and
+messages of docutils 0.22.4, and gives editors a language server with docutils' exact
+diagnostics.  It also contains a docutils package for Python, on which Sphinx and other
+docutils users parse with the native engine.  This edition describes 1.0.0b1, the first
+beta; :doc:`reference/limits` states what the beta supports.
+
+.. image:: _static/docodin_logo.png
+   :alt: Sphinx's single-eye symbol with a minimal pencil outline of Odin's beard.
+   :width: 140px
+   :align: center
 
 This book is written for four kinds of readers, in five parts.  Part I explains what
 docodin is and gets you to a first result.  Part II shows how to use it: with Sphinx,
 from Python, on the command line, as a checker and in an editor.  Part III is the
-reference for commands, settings, environment variables and compatibility.  Part IV
-explains how docodin works inside, and Part V how to build, test and change it.  The
-appendices hold a glossary, questions and answers, the changelog and the checklist for
-maintaining this book.
+reference for commands, settings, environment variables, compatibility and the beta's
+limits.  Part IV explains how docodin works inside, and Part V how to build, test, change
+and release it.  The appendices hold a glossary, questions and answers, the changelog and
+the checklist for maintaining this book.
 
 The design decisions behind docodin are recorded separately, as numbered DocOdin
 Discussions (``docs/dod``).  The book refers to them by number, for example "DOD 8".
+
+docodin is authored by Vikrant Rathore, with algorithm assistance from Ronak Rathore
+and logo design by Kanak Rathore.
 
 Orientation
 ===========
@@ -93,6 +102,7 @@ Development
    development/code-rules
    development/dod-process
    development/documentation
+   development/releasing
 
 Appendices
 ==========

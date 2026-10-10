@@ -12,11 +12,9 @@ import rst "../rst"
 // ``io.FileInput`` (UTF-8, universal newlines).
 
 // The directory of the standard include files (``<isonum.txt>``); empty:
-// the shim's copy next to the sources.
+// ``parsers/rst/include`` of the ``docutils_dir`` setting, else the embedded
+// files (std_include.odin).
 standard_include_path := ""
-
-@(private = "file")
-DEFAULT_INCLUDE_PATH :: #directory + "/../../python/docodin/shim/docutils/parsers/rst/include"
 
 @(private = "file")
 INCLUDE_OPTIONS := [?]Option_Spec {
@@ -86,7 +84,7 @@ include_source :: proc(c: ^Context, d: ^Directive) -> string {
 		if root_prefix == "" && c.doc.settings.docutils_dir != "" {
 			root_prefix = concat(c.doc.settings.docutils_dir, "/parsers/rst/include")
 		}
-		if root_prefix == "" do root_prefix = DEFAULT_INCLUDE_PATH
+		if root_prefix == "" do root_prefix = DEFAULT_STD_INCLUDE_PATH
 	}
 	return adapt_path(c, file_path, root_prefix)
 }
@@ -325,14 +323,17 @@ abspath :: proc(p: string, cwd := "") -> string {
 // message texts.
 read_file :: proc(c: ^Context, d: ^Directive, file_path: string) -> (string, Failure) {
 	errno, strerror := 0, ""
+	// a standard include file on disk wins over the embedded copy
+	data, embedded := standard_include(file_path)
+	if embedded && os.exists(file_path) do data, embedded = nil, false
 	switch {
+	case embedded:
 	case !os.exists(file_path):
 		errno, strerror = 2, "No such file or directory"
 	case os.is_dir(file_path):
 		errno, strerror = 21, "Is a directory"
 	}
-	data: []u8
-	if errno == 0 {
+	if errno == 0 && data == nil {
 		err: os.Error
 		data, err = os.read_entire_file(file_path, c.allocator)
 		if err != nil do errno, strerror = 13, "Permission denied"
@@ -521,7 +522,7 @@ file_url_path :: proc(c: ^Context, url: string) -> (string, bool) {
 	return percent_decode(c, rest), true
 }
 
-@(private = "file")
+@(private)
 percent_decode :: proc(c: ^Context, s: string) -> string {
 	if strings.index_byte(s, '%') < 0 do return s
 	b := strings.builder_make(0, len(s), c.allocator)

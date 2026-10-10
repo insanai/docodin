@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Build the docodin shared library (libdocodin.{dylib,so} / docodin.dll) and
-# the native checker (bin/docodin-check).
+# the native programs (bin/docodin, bin/docodin-check, bin/docodin-lsp).
 #
 # The package is compiled to a single object and linked with the system
 # toolchain; ``docodin_init`` is registered as the library initializer so the
@@ -51,17 +51,23 @@ cp "${BUILD_DIR}/${LIB_NAME}" "${PKG_DIR}/.${LIB_NAME}.tmp"
 mv -f "${PKG_DIR}/.${LIB_NAME}.tmp" "${PKG_DIR}/${LIB_NAME}"
 echo "Built ${PKG_DIR}/${LIB_NAME}"
 
-echo "=== Building docodin native checker ==="
+# The programs: built aside and moved into place, as running programs (an
+# editor's language server) must not be overwritten in place.  On macOS they
+# target the library's minimum version: the wheel installs them too.
+PROGRAM_OPT=("${OPT[@]}")
+if [[ "$(uname -s)" == Darwin* ]]; then
+    PROGRAM_OPT+=(-minimum-os-version:"${MIN_OS}")
+fi
 mkdir -p "${PROJECT_DIR}/bin"
-odin build "${PROJECT_DIR}/cmd/docodin-check" "${OPT[@]}" -out:"${PROJECT_DIR}/bin/docodin-check"
-echo "Built ${PROJECT_DIR}/bin/docodin-check"
 
-echo "=== Building docodin standalone CLI compiler ==="
-odin build "${PROJECT_DIR}/cmd/docodin" "${OPT[@]}" -out:"${PROJECT_DIR}/bin/docodin"
-echo "Built ${PROJECT_DIR}/bin/docodin"
+build_program() {
+    local name="$1" title="$2"
+    echo "=== Building ${title} ==="
+    odin build "${PROJECT_DIR}/cmd/${name}" "${PROGRAM_OPT[@]}" -out:"${BUILD_DIR}/${name}"
+    mv -f "${BUILD_DIR}/${name}" "${PROJECT_DIR}/bin/${name}"
+    echo "Built ${PROJECT_DIR}/bin/${name}"
+}
 
-echo "=== Building docodin language server ==="
-# built aside and moved into place: editors may be running the old binary
-odin build "${PROJECT_DIR}/cmd/docodin-lsp" "${OPT[@]}" -out:"${BUILD_DIR}/docodin-lsp"
-mv -f "${BUILD_DIR}/docodin-lsp" "${PROJECT_DIR}/bin/docodin-lsp"
-echo "Built ${PROJECT_DIR}/bin/docodin-lsp"
+build_program docodin-check "docodin native checker"
+build_program docodin "docodin standalone CLI compiler"
+build_program docodin-lsp "docodin language server"

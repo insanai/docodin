@@ -2,151 +2,211 @@
 docodin
 =======
 
-docodin is a drop-in replacement for `docutils <https://docutils.sourceforge.io/>`__
-0.22, built on a reStructuredText engine written in `Odin <https://odin-lang.org/>`__.
-Sphinx, its extensions and every other docutils user run on it unchanged, with identical
-output, faster.
+.. image:: https://raw.githubusercontent.com/insanai/docodin/main/docs/book/_static/docodin_logo.png
+   :alt: Sphinx's single-eye symbol with a minimal pencil outline of Odin's beard.
+   :width: 240px
+   :align: center
 
-- **A docutils implementation** (``python/docodin/shim/docutils``): the whole docutils
-  package, written for docodin, with every writer.  It passes docutils' own test suite
-  and Sphinx's test suite with the same results as docutils.
-- **A native reStructuredText engine** (``odin/rst``): docutils' block and inline
-  grammar, every system message and line number, about five times faster.
-- **Native tools**: ``docodin`` publishes without Python, with docutils' output,
-  messages and exit status; ``docodin-check`` explains markup errors in milliseconds;
-  ``docodin-lsp`` gives editors docutils' diagnostics as you type.  Documents that need
-  a Python library (Pygments, PIL, ...) go through docutils automatically.
+**A native reStructuredText toolchain, written in Odin.**
 
-The documentation is **The docodin Book** (``docs/book``), and the design decisions are
-the **DocOdin Discussions** (``docs/dod``).  ``docs/README.rst`` explains how to build
-them.
+Features_ · Quickstart_ · `Build and installation`_ · Performance_ · Documentation_
 
-Installation
-============
+`Website <https://insanai.github.io/docodin/>`__ ·
+`Book <https://insanai.github.io/docodin/book/>`__ ·
+`Releases <https://github.com/insanai/docodin/releases>`__
+
+docodin publishes documents, checks markup, builds HTML sites and PDF books, and gives
+editors a language server. Its engine uses `Odin <https://odin-lang.org/>`__'s explicit
+allocators, arenas and data-oriented storage. The native tools run without Python for
+supported documents. A Python package also lets docutils and Sphinx use the engine.
+
+**First beta: 1.0.0b1.** Native tooling is the main focus. Compatibility with docutils
+0.22.4 is checked against its output, diagnostics and tests; support for every Sphinx
+project and extension is outside this beta's promise. See `Known limits
+<https://insanai.github.io/docodin/book/reference/limits.html>`__ before adopting it for a production build.
+
+Features
+========
+
+- **Native publishing:** HTML5, LaTeX, XeLaTeX, Docutils XML and pseudo-XML, with
+  docutils-compatible messages and exit status.
+- **Sites and books:** build the documented subset of Sphinx projects with docodin's
+  own HTML theme, navigation, search and cross-document references; typeset PDF books
+  with an external TeX engine.
+- **Fast markup checks:** ``docodin-check`` explains errors with source excerpts and
+  hints, or reports them in docutils' format.
+- **Editor tools:** ``docodin-lsp`` provides diagnostics, definitions, references, hover,
+  completion, symbols, folding and semantic tokens within a document.
+- **Native image metadata:** read PNG, JPEG, GIF, BMP, TIFF and WebP dimensions without
+  Pillow or decoding pixels. Unsupported cases keep the Python fallback.
+- **Python integration:** use ``publish_native`` directly, replace docutils through the
+  shim, or run Sphinx with docodin's parser.
+- **MIT licensed:** the source, native tools and Python package are open for improvement.
+
+Quickstart
+==========
+
+Install a beta wheel into a Python 3.12+ environment:
 
 .. code-block:: console
 
-   $ uv pip install docodin          # or: pip install docodin
+   $ uv pip install --pre docodin      # or: pip install --pre docodin
 
-Wheels contain the native library for their platform and need Python 3.12 or later.  To
-build from source, and for the native commands, you need the Odin compiler
-(``dev-2026-09`` or newer) and a C toolchain:
+Write ``hello.rst``:
+
+.. code-block:: rst
+
+   Hello, docodin
+   ==============
+
+   A small document with **strong text**, *emphasis* and a list:
+
+   - Publish it to HTML.
+   - Check its markup.
+   - Typeset it as a PDF.
 
 .. code-block:: console
 
-   $ uv build                        # sdist and platform wheel (hatchling)
-   $ scripts/build_odin.sh           # the library and bin/docodin, docodin-check, docodin-lsp
+   $ docodin hello.rst hello.html
+   $ docodin-check hello.rst
+   $ docodin pdf --engine=lualatex hello.rst hello.pdf
 
-Using docodin instead of docutils
-=================================
+PDF generation needs TeX Live or MacTeX. Engine names and full executable paths work;
+LuaLaTeX and XeLaTeX use the Unicode-capable writer. The `PDF guide
+<https://insanai.github.io/docodin/book/guide/command-line.html>`__ explains settings and dependencies.
 
-docodin serves the ``docutils`` package itself: programs keep importing ``docutils``.
+Build an existing documentation project with the supported markup and configuration:
 
-.. list-table::
-   :header-rows: 1
-   :widths: 40 60
+.. code-block:: console
 
-   * - How
-     - What happens
-   * - ``docodin-sphinx-build ARGS...``
-     - ``sphinx-build`` running on docodin
-   * - ``DOCODIN_DOCUTILS=1 any-command``
-     - every Python process in the environment uses docodin (``sphinx-build``, ``tox``,
-       test runners)
-   * - docutils not installed
-     - ``import docutils`` finds docodin automatically
-   * - ``docodin.shim.install_shim(force=True)``
-     - switch the current process, before docutils is imported
+   $ docodin book build docs --html -o build/manual
+   $ docodin book build docs --pdf -o build/manual
 
-Extensions that change the reStructuredText grammar work exactly as with docutils:
-docodin parses those documents with its pure-Python parser.  ``DOCODIN_GC=tuned`` makes
-Sphinx builds about 20 % faster by tuning Python's garbage collector; it is opt-in
-because projects with duplicate labels or ids can see different output, with docutils as
-with docodin.
+The builder reads ``conf.py`` without executing Python. See `Maintaining the
+documentation <https://insanai.github.io/docodin/book/development/documentation.html>`__ for the supported values.
+
+Build and installation
+======================
+
+Wheels contain the native library, Python package, ``docodin``, ``docodin-check`` and
+``docodin-lsp``. The native programs run outside the source checkout. The release gate
+has verified macOS arm64 (macOS 11+) and Linux x86-64 under CPython 3.12. Linux wheels
+need glibc 2.34+ (for example Ubuntu 22.04, Debian 12 or RHEL 9). Windows, musl Linux
+and other architectures have not been verified for this beta.
+
+From source, install Odin ``dev-2026-09`` or newer, a C toolchain and uv:
+
+.. code-block:: console
+
+   $ scripts/build_odin.sh             # library and three programs in bin/
+   $ uv sync --extra test
+   $ uv run --extra test python -m pytest -q tests
+   $ uv build                         # source distribution and platform wheel
+
+The `build guide <https://insanai.github.io/docodin/book/development/building.html>`__ covers compiler setup. The
+`release guide <https://insanai.github.io/docodin/book/development/releasing.html>`__ explains the artifact installation
+checks. PDF content tests additionally use Poppler's ``pdftotext``.
+
+Python and Sphinx
+=================
+
+Publish through the native pipeline from Python:
+
+.. code-block:: python
+
+   import docodin
+
+   html = docodin.publish_native("Hello, **docodin**.\n", writer="html5")
+
+Install Sphinx support and build through docodin's docutils package:
+
+.. code-block:: console
+
+   $ uv pip install --pre 'docodin[sphinx]'
+   $ docodin-sphinx-build -b html docs build/sphinx
+
+``docodin sphinx ARGS...`` uses docodin's parser with Sphinx. Setting
+``DOCODIN_DOCUTILS=1`` makes Python processes in that environment use docodin's docutils
+package. Programs continue importing ``docutils``. See the `Sphinx guide
+<https://insanai.github.io/docodin/book/guide/sphinx.html>`__ for activation, grammar extensions and optional collector
+tuning, and the `Python guide <https://insanai.github.io/docodin/book/guide/python.html>`__ for the API.
+
+When a native publication needs a Python library or unsupported feature, it runs
+``python -m docodin``. Python is selected from ``DOCODIN_PYTHON``, the interpreter next
+to the program, then ``python3`` on ``PATH``. This is how Pygments highlighting and
+unsupported image metadata keep their Python implementations.
 
 Performance
 ===========
 
-Linux x86-64 with 32 cores, Python 3.13, docutils 0.22.4 and Sphinx 9.1:
+Published measurements show the difference between a native documentation build and
+replacing a parser inside Sphinx. Fresh serial HTML builds on an AMD Ryzen 9 5950X,
+Linux x86-64, Sphinx 9.1 and docutils 0.22.4; median of three runs, startup included:
 
 .. list-table::
    :header-rows: 1
    :widths: 46 24 30
 
-   * - Workload
-     - docutils
-     - docodin
-   * - Sphinx, CPython documentation (599 pages, ``-j1``)
-     - 65.6 s, 895 MB
-     - 47.6 s (1.38 times), 883 MB
-   * - The same with ``DOCODIN_GC=tuned``
-     - not applicable
-     - 38.4 s (1.71 times), 1034 MB
-   * - Publish the docutils documentation to HTML5 (60 files, in process)
-     - 2.21 s
-     - 0.96 s (shim), 0.20 s (``publish_native``)
-   * - The same, one command per file
-     - 7.37 s (``python -m docutils``)
-     - 0.22 s (``docodin``)
-   * - Check the docutils and Sphinx documentation for markup errors
-     - 2.81 s
-     - 0.03 s (``docodin-check -j1``)
+   * - Project
+     - Sphinx
+     - Native book builder
+   * - The docodin Book (40 pages)
+     - 1.77 s
+     - 0.064 s (27.8× faster)
+   * - Generated manual (151 pages)
+     - 7.09 s
+     - 0.249 s (28.5× faster)
 
-Sphinx output is identical.  ``CHANGELOG.rst`` has the details.
+These projects use the shared markup subset; docodin renders its own theme. They do
+not measure arbitrary Sphinx extensions or identical HTML.
 
-Native tools
-============
+An earlier docodin 0.2.0 benchmark of the CPython documentation (599 pages, Python 3.13,
+``-j1``) took **65.6 s with docutils and 47.6 s with docodin**, a **1.38×** improvement
+with identical HTML. Parser replacement leaves Sphinx's Python work in place, so the
+native builder's gains should not be expected from that integration. See the
+`performance chapter <https://insanai.github.io/docodin/book/internals/performance.html>`__ and `changelog
+<https://github.com/insanai/docodin/blob/main/CHANGELOG.rst>`__ for measurement conditions and historical results.
 
-.. code-block:: console
+Limits and compatibility
+========================
 
-   $ docodin doc.rst doc.html                   # as: python -m docutils doc.rst doc.html
-   $ docodin --writer=latex --documentclass=book doc.rst doc.tex
-   $ docodin pdf doc.rst                        # LaTeX writer and a TeX engine
-   $ docodin-check docs/*.rst                   # Elm-style reports
-   $ docodin-check --error-format=docutils docs/*.rst
+The native book builder supports the documented configuration and markup subset. It
+does not execute Sphinx extensions or reproduce Sphinx's themes. The language server
+works within a single document and does not rename symbols across a project.
 
-.. code-block:: text
+Differential tests compare output, warnings, settings and node positions with docutils
+0.22.4. Upstream docutils, Sphinx and selected extension suites are also used to check
+the Python integration. These checks establish measured compatibility, not a promise
+of complete Sphinx parity. Unicode 16 tables can also differ from an older Python's
+Unicode data. The `compatibility reference <https://insanai.github.io/docodin/book/reference/compatibility.html>`__
+and `known limits <https://insanai.github.io/docodin/book/reference/limits.html>`__ describe the supported boundary.
 
-   -- UNCLOSED EMPHASIS ----------------------------------------- guide.rst:12:6
-
-   Inline emphasis start-string without end-string.
-
-   12| Some *emphasis without an end.
-            ^
-   Hint: Close the emphasis with a matching `*`, or write `\*` for a literal
-   asterisk.
-
-From Python, ``docodin.publish_native(source, writer="html5")`` returns what
-``publish_string`` returns, from the native pipeline.
-
-Editor support
-==============
-
-``docodin-lsp`` is a language server for reStructuredText: docutils' diagnostics as you
-type, with hints and quick fixes; go to definition, references, hover and completion for
-targets, sections, substitutions, footnotes and citations; document symbols, folding and
-semantic tokens.  It runs no Python.  The book's chapter "Editor support"
-(``docs/book/guide/editors.rst``) has the setup for Neovim, VS Code and Zed, and the
-settings (``reportLevel``, ``debounce``, ``sphinx``, ``knownRoles``,
-``knownDirectives``).
-
-Compatibility
+Documentation
 =============
 
-- docutils' test suite: 465 passed, 17 skipped, 1862 subtests, identical to docutils,
-  natively and with ``DOCODIN_NATIVE=0``.
-- Sphinx 9.1's test suite: 2407 passed; the 7 failures are environment-related and fail
-  the same way with docutils.
-- The test suites of myst-parser, sphinx-design, sphinx-tabs, sphinxcontrib-bibtex,
-  sphinx-autodoc-typehints, sphinx-gallery, pydata-sphinx-theme, sphinx-book-theme,
-  sphinxext-opengraph, sphinx-notfound-page, sphinx-rtd-theme and breathe give the same
-  results as with docutils.
-- Differential tests publish generated documents with docutils and docodin, with every
-  writer and random settings; outputs, warnings and node positions must be identical.
+- `The docodin Book <https://insanai.github.io/docodin/book/index.html>`__: installation, tools, editors, reference,
+  internals and development.
+- `DocOdin Discussions <https://insanai.github.io/docodin/dod/>`__: numbered design records and their states.
+- `Building the documentation <https://github.com/insanai/docodin/blob/main/docs/README.rst>`__: native and Sphinx build commands.
+- `Editor setup <https://insanai.github.io/docodin/book/guide/editors.html>`__: Neovim, VS Code and Zed.
 
-The known differences are listed in the book's chapter "Known limits".
+Contributing
+============
+
+docodin is authored by **Vikrant Rathore**, with **Ronak Rathore** providing algorithm
+assistance and **Kanak Rathore** contributing logo design. See `AUTHORS.rst <https://github.com/insanai/docodin/blob/main/AUTHORS.rst>`__.
+
+Bug reports, small improvements and compatibility examples are welcome in `GitHub
+issues <https://github.com/insanai/docodin/issues>`__ and pull requests. Include a small
+input, the command you ran, your platform, and the expected output.
+
+Read the `code rules <https://insanai.github.io/docodin/book/development/code-rules.html>`__ and `testing guide
+<https://insanai.github.io/docodin/book/development/testing.html>`__. Keep Odin bounds checks enabled, use explicit
+ownership and build with ``-vet -strict-style``. Changes on the docutils path need
+differential evidence; substantial design changes belong in a DOD.
 
 License
 =======
 
-MIT
+`MIT <https://github.com/insanai/docodin/blob/main/LICENSE>`__. `NOTICE.rst <https://github.com/insanai/docodin/blob/main/NOTICE.rst>`__ lists third-party works; ``LICENSES/``
+contains their license texts. Source distributions and wheels include these notices.

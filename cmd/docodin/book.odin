@@ -66,6 +66,11 @@ run_book :: proc(args: []string) -> int {
 			"`docodin book build docs/book`.")
 	}
 	defer site.destroy_site(s)
+	// a source that cannot be read stops the build, as docutils halts at SEVERE
+	if site.max_level(s) >= 4 {
+		report_warnings(s, &opts)
+		return 1
+	}
 	if opts.engine == "" do opts.engine = s.conf.latex_engine
 	status := build_outputs(s, &opts)
 	report_warnings(s, &opts)

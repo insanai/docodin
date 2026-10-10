@@ -13,8 +13,26 @@ import pb "../../odin/publish"
 // MathML converters) or its front end (configuration files, dumps), the
 // command runs again as ``python -m docodin`` (docutils' front end on
 // docodin) with the same arguments, standard streams and exit status.  The
-// Python is ``$DOCODIN_PYTHON``, else ``python3`` on the PATH, if it
-// imports docodin; without one, a report says what needs Python.
+// Python is ``$DOCODIN_PYTHON``, else the ``python3`` or ``python`` next to
+// this program (the environment a wheel installed it into), else ``python3``
+// on the PATH, if it imports docodin; without one, a report says what needs
+// Python.
+
+// ``docodin sphinx ARGS``: sphinx-build in Python, parsing with docodin
+// (``python -m docodin sphinx``).
+run_sphinx :: proc(args: []string) -> int {
+	python, found := find_python()
+	if !found {
+		usage_error("NO PYTHON", "`docodin sphinx` runs Sphinx, which needs a Python " +
+			"that imports docodin, and I found none.",
+			"Install docodin and Sphinx (`pip install docodin[sphinx]`), or name the " +
+			"Python with `DOCODIN_PYTHON=/path/to/python`.")
+	}
+	argv := make([dynamic]string)
+	append(&argv, "sphinx")
+	append(&argv, ..args)
+	return run_python(python, argv[:], nil)
+}
 
 // Run ``python -m docodin`` with ``args`` (the writer first, as the program
 // name or command chose it), or report the needs; ``input`` is the
@@ -38,11 +56,18 @@ python_fallback :: proc(
 	return run_python(python, argv[:], input)
 }
 
-// A Python that imports docodin: ``$DOCODIN_PYTHON``, then ``python3``.
+// A Python that imports docodin: ``$DOCODIN_PYTHON``, the environment's
+// own Python, then ``python3``.
 find_python :: proc() -> (string, bool) {
 	candidates := make([dynamic]string, context.temp_allocator)
 	if env := os.get_env("DOCODIN_PYTHON", context.temp_allocator); env != "" {
 		append(&candidates, env)
+	}
+	if dir, err := os.get_executable_directory(context.temp_allocator); err == nil {
+		for name in ([]string{"python3", "python"}) {
+			p, _ := filepath.join({dir, name}, context.temp_allocator)
+			append(&candidates, p)
+		}
 	}
 	append(&candidates, "python3")
 	for name in candidates {
@@ -145,7 +170,7 @@ report_needs :: proc(needs: []pb.Python_Need, text, source_path: string) {
 		explanation := fmt.tprintf(
 			"%s\n\ndocodin runs these with docutils' Python front end " +
 			"(`python -m docodin`), but found no Python that imports docodin: it tries " +
-			"`$DOCODIN_PYTHON`, then `python3`.",
+			"`$DOCODIN_PYTHON`, the Python next to docodin, then `python3`.",
 			pb.python_need_text(need, context.temp_allocator),
 		)
 		hint := strings.concatenate({

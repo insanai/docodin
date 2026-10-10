@@ -3,6 +3,7 @@ package docodin
 import "base:runtime"
 import "core:mem"
 import "core:mem/virtual"
+import "core:sync"
 
 // Lock-free bump allocator for per-thread parse arenas.
 //
@@ -14,10 +15,17 @@ import "core:mem/virtual"
 // memory at once.  ``bump_reset`` keeps the largest block of at most
 // ``BUMP_RETAIN_MAX``: steady-state parsing maps no memory, and a large parse
 // does not leave a large block resident.
+//
+// Between calls an arena holds no memory: ``bump_park`` moves the kept block
+// to a small process-wide cache (``BUMP_CACHE_MAX`` blocks) and
+// ``bump_unpark`` takes one back.  A thread that exits therefore owns
+// nothing, and hosts that create and retire threads keep at most
+// ``BUMP_CACHE_MAX * BUMP_RETAIN_MAX`` bytes cached.
 
 BUMP_MIN_BLOCK  :: 1 * mem.Megabyte
 BUMP_MAX_GROWTH :: 64 * mem.Megabyte // blocks double up to this size
 BUMP_RETAIN_MAX :: 4 * mem.Megabyte
+BUMP_CACHE_MAX  :: 8 // cached blocks shared by all threads
 
 Bump_Block :: struct {
 	prev: ^Bump_Block,
@@ -134,6 +142,55 @@ bump_reset :: proc "contextless" (a: ^Bump_Arena) {
 		keep.used = 0
 	}
 	a.last_alloc = nil
+}
+
+@(private = "file")
+Block_Cache :: struct {
+	lock:   sync.Atomic_Mutex,
+	blocks: [BUMP_CACHE_MAX]^Bump_Block,
+	count:  int,
+}
+
+@(private = "file")
+block_cache: Block_Cache
+
+// Reset the arena and move its kept block to the shared cache (or unmap it
+// when the cache is full): the arena holds no memory afterwards.
+bump_park :: proc "contextless" (a: ^Bump_Arena) {
+	bump_reset(a)
+	b := a.block
+	if b == nil do return
+	a.block = nil
+	c := &block_cache
+	sync.atomic_mutex_lock(&c.lock)
+	cached := c.count < BUMP_CACHE_MAX
+	if cached {
+		c.blocks[c.count] = b
+		c.count += 1
+	}
+	sync.atomic_mutex_unlock(&c.lock)
+	if !cached do free_block(b)
+}
+
+// Give an empty arena a cached block, if any.
+bump_unpark :: proc "contextless" (a: ^Bump_Arena) {
+	if a.block != nil do return
+	c := &block_cache
+	sync.atomic_mutex_lock(&c.lock)
+	if c.count > 0 {
+		c.count -= 1
+		a.block = c.blocks[c.count]
+		c.blocks[c.count] = nil
+	}
+	sync.atomic_mutex_unlock(&c.lock)
+}
+
+// Blocks in the shared cache (for tests).
+bump_cached_blocks :: proc "contextless" () -> int {
+	c := &block_cache
+	sync.atomic_mutex_lock(&c.lock)
+	defer sync.atomic_mutex_unlock(&c.lock)
+	return c.count
 }
 
 bump_destroy :: proc "contextless" (a: ^Bump_Arena) {

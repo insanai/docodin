@@ -15,8 +15,9 @@ import "core:strings"
 import "core:time"
 
 import rst "../rst"
+import "../version"
 
-VERSION :: "0.2.0"
+VERSION :: version.VERSION
 
 // JSON-RPC and LSP error codes.
 Error_Code :: enum int {

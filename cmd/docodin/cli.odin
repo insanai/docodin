@@ -34,6 +34,7 @@ USAGE_HEAD :: `Usage: docodin [--writer=NAME] [options] [SOURCE [DESTINATION]]
        docodin pdf [options] SOURCE [OUTPUT.pdf]
        docodin book build [DIR] [-o OUTDIR] [--html] [--pdf] [--engine=NAME]
        docodin dod new|list|index|check [options]
+       docodin sphinx [sphinx-build options] SOURCEDIR OUTPUTDIR
 
 Convert reStructuredText into HTML5, LaTeX, XeLaTeX, Docutils XML or
 pseudo-XML, exactly as docutils 0.22 does, without Python.  Reads SOURCE
@@ -44,7 +45,8 @@ the writer.  Configuration files are not read.
 
 "docodin book build" builds a Sphinx project (HTML site and PDF book) and
 "docodin dod" manages DocOdin Discussions (design records); see
-"docodin book --help" and "docodin dod --help".
+"docodin book --help" and "docodin dod --help".  "docodin sphinx" runs
+sphinx-build in Python, parsing with docodin ("python -m docodin sphinx").
 `
 
 parse_command_line :: proc(args: []string, default_writer: string) -> Cli {
@@ -59,7 +61,7 @@ parse_command_line :: proc(args: []string, default_writer: string) -> Cli {
 		return cli
 	}
 	cli.writer = w
-	cli.settings = pb.default_settings(w, SHIM_DOCUTILS)
+	cli.settings = pb.default_settings(w, pb.tools_docutils_dir())
 	positional := make([dynamic]string)
 	parse_options(&cli, args, &positional)
 	set_positional(&cli, positional[:])
@@ -264,7 +266,7 @@ set_positional :: proc(cli: ^Cli, args: []string) {
 
 // The settings that differ from the writer's defaults, as overrides.
 changed_settings :: proc(cli: ^Cli) -> [dynamic]pb.Override {
-	defaults := pb.default_settings(cli.writer, SHIM_DOCUTILS)
+	defaults := pb.default_settings(cli.writer, pb.tools_docutils_dir())
 	out := make([dynamic]pb.Override)
 	for name, v in cli.settings {
 		if d, ok := defaults[name]; ok && same_value(d, v) do continue

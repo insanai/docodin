@@ -5,7 +5,42 @@ Performance and benchmarks
 ============================
 
 This chapter collects docodin's measurements: what was measured, on what, and how to
-reproduce it.  Output is identical in every measurement; only time and memory change.
+reproduce it.  Where docodin stands in for docutils, output is identical in every
+measurement and only time and memory change.  The native book builder is a different
+product: it builds the same project as Sphinx, with its own theme.
+
+The native book builder (1.0.0b1)
+=================================
+
+The external release review of 10 October 2026 compared ``docodin book build --html``
+with Sphinx on fresh HTML builds: Linux x86-64, AMD Ryzen 9 5950X (16 cores, 32 logical
+CPUs), Sphinx 9.1.0 run serially (``-j 1``), docutils 0.22.4.  Each project was built
+three times per tool in alternating order; the times are medians of the elapsed time of
+a fresh process, start-up included, and the memory is the median peak resident size from
+GNU ``time``.  All builds treated warnings as errors and exited with status 0.
+
+.. list-table::
+   :header-rows: 1
+   :widths: 40 20 20 20
+
+   * - Project
+     - Sphinx
+     - docodin
+     - Speed-up
+   * - The docodin Book (40 source pages)
+     - 1.771 s, 82.4 MiB
+     - 0.064 s, 23.6 MiB
+     - 27.8 times
+   * - A generated 151-page manual
+     - 7.093 s, 186.8 MiB
+     - 0.249 s, 107.5 MiB
+     - 28.5 times
+
+The generated manual has section headings, emphasis, strong text, literals, hyperlinks,
+lists, admonitions, a toctree and cross-document references.  The comparison measures
+speed on the features both support; it does not claim that the native builder runs
+Sphinx's extensions or writes Sphinx's HTML.  The measurements below of Sphinx running
+on docodin's docutils are a different path and must not be mixed with these.
 
 docodin 0.2.0
 =============

@@ -219,8 +219,8 @@ stylesheet_call :: proc(t: ^Html, o: ^Out, path: string, adjust := Maybe(bool){}
 		w(o, "\n</style>\n")
 		return
 	}
-	href := path
-	if adjust_path do href = relative_path(t.s.output_path, path)
+	href := link_path(path)
+	if adjust_path && href == path do href = relative_path(t.s.output_path, path)
 	begin(o)
 	w(o, "<link rel=\"stylesheet\" href=\"")
 	write_encoded(o, href)

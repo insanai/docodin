@@ -102,7 +102,7 @@ Documents that need Python
 --------------------------
 
 When a document uses a feature for which docutils calls a Python library, for example a
-``code`` directive with a language (Pygments) or a scaled image (PIL), the native
+``code`` directive with a language (Pygments) or unsupported image headers (PIL), the native
 pipeline cannot produce docutils' result.  ``publish_native`` then publishes the document
 with the importable docutils, with the same arguments, so the result is still docutils'.
 To find such documents instead, pass ``native_only=True``:

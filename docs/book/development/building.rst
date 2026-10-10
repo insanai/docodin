@@ -45,10 +45,11 @@ The script builds, in order:
    broken on macOS in current Odin releases.)  On macOS the minimum OS version is
    ``MACOSX_DEPLOYMENT_TARGET`` (default 11.0).  The library is copied next to the old one
    in ``python/docodin`` and renamed into place, so running processes are not killed.
-2. **bin/docodin-check** from ``cmd/docodin-check``.
-3. **bin/docodin** from ``cmd/docodin``.
-4. **bin/docodin-lsp** from ``cmd/docodin-lsp``, built aside and moved into place,
-   because editors may be running the old binary.
+2. **The programs**: ``bin/docodin-check`` from ``cmd/docodin-check``, ``bin/docodin``
+   from ``cmd/docodin`` and ``bin/docodin-lsp`` from ``cmd/docodin-lsp``.  Each is built
+   in ``build/`` and moved into place, because a running program (an editor's language
+   server) must not be overwritten in place.  On macOS they target the library's
+   minimum OS version, since the wheel installs them too.
 
 All builds use ``-vet -strict-style``.  ``bin/`` and ``build/`` are not versioned.
 
@@ -64,10 +65,39 @@ Building the distribution
    $ uv build                        # sdist and platform wheel (hatchling)
 
 The hatch build hook (``hatch_build.py``) runs ``scripts/build_odin.sh`` for the wheel,
-includes the library, and tags the wheel ``py3-none-<platform>``.
-``DOCODIN_SKIP_NATIVE_BUILD=1`` packages a library that is already built.  The sdist
-contains the Python package, the Odin sources, the commands, the scripts, the tests, the
-documentation, ``hatch_build.py`` and ``README.rst``.
+includes the library, installs the three programs as the wheel's scripts (hatchling's
+``shared_scripts``, which installers put in the environment's ``bin`` or ``Scripts``
+directory), and tags the wheel ``py3-none-<platform>``.  On macOS the platform is the
+deployment target; on glibc Linux it is ``manylinux_<x>_<y>_<arch>``, after the newest
+``GLIBC_x.y`` symbol version found in the library and the programs (at least 2.17), so the
+tag states the glibc the binaries really need.  It stops when a program is missing.
+``DOCODIN_SKIP_NATIVE_BUILD=1`` packages an engine that is already built.  The wheel's
+only Python console script is ``docodin-sphinx-build``.
+
+The sdist contains the Python package, the Odin sources, the commands, the scripts, the
+tests, the documentation, ``hatch_build.py``, ``README.rst``, ``CHANGELOG.rst`` and the
+license files.  A wheel built from it compiles the native code again, so building from
+the sdist needs the Odin compiler too.
+
+The version
+-----------
+
+The version is written in ``odin/version/version.odin`` (``VERSION``, imported by the
+library, the programs and the book builder's pages), ``pyproject.toml``,
+``python/docodin/__init__.py`` (``__version__``) and ``docs/book/conf.py`` and
+``docs/dod/conf.py`` (``release``, and ``version``, its first two parts).
+``tests/test_release.py`` fails when they disagree.
+
+License files
+-------------
+
+``LICENSE`` is docodin's MIT license.  ``NOTICE.rst`` lists the third-party works docodin
+contains or ports: docutils' data files and algorithms (smart quotes, the math
+converters, the stylesheets), SmartyPants, and the Unicode Character Database behind the
+generated tables.  ``LICENSES/`` holds their license texts.  ``pyproject.toml`` names
+all three in ``license-files``, so the wheel carries them in ``dist-info/licenses``, and
+in the sdist's ``include``.  Update ``NOTICE.rst`` when docodin embeds or ports another
+third-party work.
 
 Generated sources
 =================

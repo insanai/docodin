@@ -1,0 +1,66 @@
+name: Verify
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+  workflow_call:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: verify-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: ${{ matrix.platform }} / Python ${{ matrix.python }}
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 40
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - {runner: ubuntu-24.04, platform: linux-x86_64, python: '3.12', pdf: true}
+          - {runner: ubuntu-24.04, platform: linux-x86_64, python: '3.14', pdf: false}
+          - {runner: macos-15, platform: macos-arm64, python: '3.12', pdf: false}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7
+        with:
+          python-version: ${{ matrix.python }}
+      - uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
+        with:
+          version: '0.12.19'
+          enable-cache: true
+      - name: Install checksum-verified Odin
+        run: |
+          uv run --no-project python scripts/install_odin.py "$RUNNER_TEMP/odin" > "$RUNNER_TEMP/odin-path"
+          cat "$RUNNER_TEMP/odin-path" >> "$GITHUB_PATH"
+      - name: Install PDF dependencies
+        if: matrix.pdf
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends texlive-luatex texlive-xetex \
+            texlive-latex-extra texlive-fonts-recommended fonts-linuxlibertine \
+            librsvg2-bin poppler-utils
+          echo "TEXMFHOME=$RUNNER_TEMP/texmf" >> "$GITHUB_ENV"
+          uv run --no-project python scripts/install_pdf_fonts.py "$RUNNER_TEMP/texmf"
+      - name: Python style
+        if: matrix.pdf
+        run: uvx ruff==0.17.0 check python tests scripts hatch_build.py
+      - name: Build native engine and tools
+        run: scripts/build_odin.sh
+      - name: Odin tests
+        shell: bash
+        run: |
+          for directory in odin/tests odin/*/tests; do
+            odin test "$directory" -vet -strict-style
+          done
+      - name: Python and native CLI tests
+        run: uv run --locked --extra test --python '${{ matrix.python }}' python -m pytest -q tests
+      - name: Build website with docodin
+        if: matrix.pdf
+        run: uv run --locked --extra test python scripts/build_site.py

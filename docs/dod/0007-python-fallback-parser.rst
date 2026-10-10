@@ -48,7 +48,7 @@ when:
   ``RFC2822Body``;
 - a custom ``Inliner`` class is used;
 - an extension replaced or wrapped a method, or changed a pattern, of a stock state class
-  or of ``Inliner`` since the module was loaded.  ``_fallback.Snapshot`` records the
+  or of ``Inliner`` since the module was loaded.  ``docodin._grammar.Snapshot`` records the
   attributes of the stock classes at import time and compares them with the current
   ones; attributes that change at run time without changing the grammar are ignored;
 - ``DOCODIN_NATIVE=0`` is set, which forces the Python parser everywhere (for debugging
@@ -98,6 +98,6 @@ extensions' replacements of the doctest and definition list transitions").
 References
 ==========
 
-- ``python/docodin/shim/docutils/parsers/rst/_fallback.py``, ``states.py``,
+- ``python/docodin/_grammar.py``, ``python/docodin/shim/docutils/parsers/rst/states.py``,
   ``python/docodin/_machine.py``.
 - DOD 6 (the docutils package).

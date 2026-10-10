@@ -16,6 +16,11 @@ Glossary
       A region of memory from which many objects are allocated and then released
       together.  docodin allocates each parse, document and write from one arena.
 
+   arena cache
+      The process-wide cache of at most 8 arena blocks of at most 4 MB in the native
+      library (``bump_park`` and ``bump_unpark``).  A thread's arena returns its block
+      there after each outermost call, so threads that exit keep no memory.
+
    bump arena
       An arena that allocates by advancing a pointer through a block.  The C ABI uses a
       per-thread bump arena (``odin/lib/bump.odin``).
@@ -103,6 +108,11 @@ Glossary
       A place where docutils would use a Python library (Pygments, PIL, ...).  The native
       pipeline records it, and the tools publish the document with docutils.
 
+   release gate
+      ``scripts/release_gate.sh``: builds the sdist and a wheel from it, installs the wheel
+      outside the checkout, tests the programs, the library and Sphinx, and builds the
+      documentation with the installed docodin (:doc:`../development/releasing`).
+
    role
       Inline markup of the form ``:name:`text```, such as ``:math:`` or ``:ref:``.
 
@@ -116,6 +126,10 @@ Glossary
 
    span
       The half-open byte range of the input that a parse node was parsed from.
+
+   support contract
+      What a release supports and where it stops, stated in :doc:`../reference/limits`.
+      For the 1.0.0b1 beta it is native-first (DOD 19).
 
    struct of arrays
       Storing each field of a record type in its own array (Odin's ``#soa``), so that a

@@ -1,5 +1,8 @@
 """When the reStructuredText parser runs the Python state machine.
 
+Used by docodin's docutils (``docutils.parsers.rst.states``) and by
+`docodin.parser` on stock docutils; it imports the standard library only.
+
 docodin's native engine implements the stock grammar of `states`.  It cannot
 see what an extension changes in Python, so a parse falls back to the pure
 Python state machine when

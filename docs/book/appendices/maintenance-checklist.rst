@@ -12,9 +12,9 @@ For every change
 
 Commands and options
    - A new or changed option of ``docodin``, ``docodin pdf``, ``docodin check``,
-     ``docodin book`` or ``docodin dod``: update :doc:`../reference/cli` (compare with
-     ``bin/docodin --help`` and ``--help --writer=NAME`` for each writer) and the guide
-     chapter that uses it.
+     ``docodin book``, ``docodin dod`` or ``docodin sphinx``: update
+     :doc:`../reference/cli` (compare with ``bin/docodin --help`` and ``--help
+     --writer=NAME`` for each writer) and the guide chapter that uses it.
    - A new or changed option of ``docodin-check`` or ``docodin-lsp``: update
      :doc:`../reference/cli` and :doc:`../guide/checker` or :doc:`../guide/editors`.
 
@@ -47,6 +47,14 @@ Internals
    - A new test or differential script: update :doc:`../development/testing` or
      :doc:`../development/differential-testing`.
 
+Distribution and licenses
+   - A change to what the wheel or the sdist contains: update
+     :doc:`../guide/installation` and :doc:`../development/building`.
+   - Embedded or ported third-party code or data: update ``NOTICE.rst`` and add its
+     license text to ``LICENSES/``.
+   - A change to what the beta supports or to the verified platforms: update
+     :doc:`../reference/limits` and ``README.rst``.
+
 Design
    - A decision that needs a record: write a DOD (:doc:`../development/dod-process`).
    - A record that changes state: run ``docodin dod index`` and update the table in
@@ -64,10 +72,11 @@ Before a release
 4. Update the numbers wherever the book quotes them: :doc:`../internals/performance`,
    :doc:`../internals/memory`, :doc:`../guide/sphinx`,
    :doc:`../orientation/introduction`, and ``README.rst``.
-5. Set the version everywhere it is written: ``pyproject.toml``,
-   ``python/docodin/__init__.py``, ``odin/lib/export.odin``, ``odin/lsp/server.odin``,
-   ``cmd/docodin/main.odin``, ``cmd/docodin-check/main.odin``, and both ``conf.py`` files
-   (``version`` and ``release``).  ``git grep`` the old version to be sure.
+5. Set the version everywhere it is written: ``odin/version/version.odin``,
+   ``pyproject.toml``, ``python/docodin/__init__.py`` and both ``conf.py`` files
+   (``version`` and ``release``); run ``uv lock`` so that ``uv.lock`` follows.
+   ``tests/test_release.py`` fails while they disagree; ``git grep`` the old version to
+   find it in prose.
 6. Set implemented DODs to ``committed`` with their outcome, and run ``docodin dod
    index``.
 7. Check and build the documentation:
@@ -85,6 +94,9 @@ Before a release
 8. Build the PDFs with Sphinx and ``latexmk -lualatex``, and look at the title page, the
    part pages and a few chapters.
 9. Read the quick start from start to end, and run every command in it.
+10. Commit, and run the release gate (``scripts/release_gate.sh``) on every platform to
+    be released (:doc:`../development/releasing`).  Record the verified platforms in
+    ``CHANGELOG.rst``, ``README.rst`` and :doc:`../reference/limits`.
 
 Periodically
 ============

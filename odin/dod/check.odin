@@ -127,7 +127,7 @@ check_value :: proc(out: ^[dynamic]Problem, r: ^Record, f: Field, records: []Rec
 	case "Authors":
 		if f.value != "" do return
 		append(out, Problem{r.path, f.line, 3, "NO AUTHOR", "The record has no author.",
-			"Write `:Authors: Name <email>`."})
+			"Write `:Authors: Name`."})
 	case "Supersedes", "Superseded-By":
 		check_reference(out, r, f, records)
 	}

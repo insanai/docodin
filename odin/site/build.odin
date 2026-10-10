@@ -189,7 +189,7 @@ read_page :: proc(b: ^Build, id: Doc_Id) {
 	page.highlight = "default"
 	page.metadata = make(map[string]string)
 	options := pb.Read_Options {
-		options = {docutils_dir = DOCUTILS_DIR, extension = &b.extension},
+		options = {docutils_dir = pb.tools_docutils_dir(), extension = &b.extension},
 	}
 	overrides := read_overrides(b.format, s.conf.language)
 	r := pb.read_document(src.text, src.path, WRITER_OF[b.format], overrides, options)

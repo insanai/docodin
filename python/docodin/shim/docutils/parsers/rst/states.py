@@ -14,7 +14,7 @@ regular expressions ("transitions") and build the document tree:
 docodin's native engine implements this grammar.  `RSTStateMachine.run` and
 nested parses use it unless the grammar in Python differs from the stock one
 (custom state classes, extensions that replaced state methods, or
-``DOCODIN_NATIVE=0``); see `_fallback`.  The pure Python machine here then
+``DOCODIN_NATIVE=0``); see `docodin._grammar`.  The pure Python machine here then
 parses exactly as docutils does.
 """
 
@@ -45,9 +45,10 @@ from docutils.utils._roman_numerals import (
     RomanNumeral,
 )
 
+from docodin._grammar import Snapshot, python_forced
+
 from ._body import FIELD_MARKER, BodyHelpers, MarkupError, ParserError
 from ._explicit import ExplicitHelpers
-from ._fallback import Snapshot, python_forced
 from ._inliner import Inliner, MarkupMismatch, build_regexp
 
 __docformat__ = "reStructuredText"
@@ -1248,7 +1249,7 @@ def _stock_classes(classes: Any) -> bool:
 
 def python_parser_needed(classes: Any, initial_state: str, inliner: Any = None) -> bool:
     """Whether a document parse with these state classes, initial state and
-    inliner needs the Python state machine (see `_fallback`)."""
+    inliner needs the Python state machine (see `docodin._grammar`)."""
     if python_forced() or initial_state not in ("Body", "RFC2822Body"):
         return True
     if inliner is not None and type(inliner) is not Inliner and not getattr(

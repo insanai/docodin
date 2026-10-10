@@ -7,6 +7,7 @@ package main
 //     docodin pdf [options] SOURCE [OUTPUT.pdf]
 //     docodin book build [DIR] [options]
 //     docodin dod new|list|index|check [options]
+//     docodin sphinx [sphinx-build options] SOURCEDIR OUTPUTDIR
 //
 // Publishing works as ``docutils`` (``python -m docutils``) does, with the
 // same output, messages and exit status: the standalone reader and the rST
@@ -22,15 +23,14 @@ import "core:strings"
 
 import "../../odin/check"
 import pb "../../odin/publish"
+import "../../odin/version"
 
-VERSION :: "0.2.0"
+VERSION :: version.VERSION
 
-// The docutils directory of the native tools: the shim's copy of the
-// package data (stylesheets, templates and standard include files).
-SHIM_DOCUTILS :: #directory + "/../../python/docodin/shim/docutils"
-
-NATIVE_OPTIONS :: pb.Options {
-	docutils_dir = SHIM_DOCUTILS,
+// The publisher's options: the docutils data (stylesheets, templates and
+// standard include files) are embedded, see ``pb.tools_docutils_dir``.
+native_options :: proc() -> pb.Options {
+	return {docutils_dir = pb.tools_docutils_dir()}
 }
 
 Command :: enum u8 {
@@ -39,6 +39,7 @@ Command :: enum u8 {
 	Pdf,
 	Book,
 	Dod,
+	Sphinx,
 }
 
 main :: proc() {
@@ -55,6 +56,8 @@ main :: proc() {
 			cmd, args = .Book, args[1:]
 		case "dod":
 			cmd, args = .Dod, args[1:]
+		case "sphinx":
+			cmd, args = .Sphinx, args[1:]
 		case:
 			if w, ok := command_writer(args[0]); ok do writer, args = w, args[1:]
 		}
@@ -68,6 +71,8 @@ main :: proc() {
 		os.exit(run_book(args))
 	case .Dod:
 		os.exit(run_dod(args))
+	case .Sphinx:
+		os.exit(run_sphinx(args))
 	case .Publish:
 		os.exit(run_publish(args, writer))
 	}
@@ -82,11 +87,19 @@ program_writer :: proc(argv0: string) -> string {
 	return "html5"
 }
 
-// A writer named as the command (``docodin latex doc.rst``).
+// A writer named as the command (``docodin latex doc.rst``), with the
+// commands ``python -m docodin`` takes (``rst2man`` and the writers that
+// need Python are run there).
 command_writer :: proc(arg: string) -> (string, bool) {
 	switch arg {
 	case "html", "html5", "xhtml", "latex", "latex2e", "xetex", "xml", "pseudoxml":
 		return arg, true
+	case "rst2html", "rst2html5":
+		return "html5", true
+	case "rst2latex", "rst2xetex", "rst2xml", "rst2pseudoxml", "rst2odt", "rst2s5":
+		return arg[4:], true
+	case "rst2man":
+		return "manpage", true
 	}
 	return "", false
 }
@@ -107,7 +120,7 @@ run_publish :: proc(args: []string, default_writer: string) -> int {
 	if !ok do return 1
 	source_path := "<stdin>" if source == "-" else source
 	output, _, messages, status, err, needs := pb.publish(text, source_path, cli.writer_name,
-		cli.overrides[:], NATIVE_OPTIONS)
+		cli.overrides[:], native_options())
 	if len(needs) > 0 {
 		return python_fallback(args, default_writer, needs, input, text, source_path)
 	}

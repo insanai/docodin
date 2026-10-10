@@ -91,6 +91,14 @@ read_text :: proc(path: string, allocator := context.allocator) -> (text: string
 	return string(data), ""
 }
 
+// The path to link to for ``path``: an embedded data file that is not on
+// disk (the native tools run without docutils' data directory) is linked by
+// its name, as ``find_file_in_dirs`` keeps a file it does not find.
+link_path :: proc(path: string) -> string {
+	if _, ok := embedded_path(path); ok && !os.exists(path) do return path_name(path)
+	return path
+}
+
 // ``str(OSError)`` of a failed ``open(path)``.
 os_error_text :: proc(path: string, err: os.Error) -> string {
 	b := strings.builder_make(context.temp_allocator)

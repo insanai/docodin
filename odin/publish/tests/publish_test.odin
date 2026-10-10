@@ -104,7 +104,6 @@ reports_python_needs :: proc(t: ^testing.T) {
 		 {.Pygments, "python", "doc.rst", 3}},
 		{".. role:: py(code)\n   :language: c\n\n:py:`x`\n", "pseudoxml", nil,
 		 {.Pygments, "c", "doc.rst", 4}},
-		{".. image:: a.png\n   :scale: 50\n", "html5", nil, {.Pil, "a.png", "doc.rst", 1}},
 		{".. raw:: html\n   :url: https://example.org/x\n", "xml", nil,
 		 {.Url, "https://example.org/x", "doc.rst", 1}},
 		{".. include:: x.md\n   :parser: markdown\n", "xml", nil,
@@ -121,6 +120,7 @@ reports_python_needs :: proc(t: ^testing.T) {
 		testing.expectf(t, len(needs) == 1 && needs[0] == c.need, "%q: %v", c.text, needs)
 	}
 	plain := []Case {
+		{".. image:: a.png\n   :scale: 50\n", "html5", nil, {}}, // missing file: native warning
 		{".. code::\n\n   x = 1\n", "pseudoxml", nil, {}},
 		{".. code:: python\n\n   x\n", "pseudoxml", {{"syntax_highlight", "none"}}, {}},
 		{".. image:: a.png\n   :scale: 50\n", "latex", nil, {}},
@@ -257,4 +257,20 @@ transform_halts_like_docutils :: proc(t: ^testing.T) {
 	testing.expect_value(t, len(messages), 1)
 	testing.expect(t, strings.has_prefix(messages[0].text, "<string>:3: (ERROR/3) No suitable"))
 	testing.expect_value(t, status, 1) // no message below the halting one reached level 3
+}
+
+// Without a docutils data directory (``<docutils>``, the default), the
+// standard include files and stylesheets come from the embedded copies.
+@(test)
+embedded_docutils_data :: proc(t: ^testing.T) {
+	context.allocator = context.temp_allocator
+	text := ".. include:: <isonum.txt>\n\n|copy| 2026\n"
+	out, _, messages, status, err, _ := pb.publish(text, "doc.rst", "html5", nil)
+	testing.expect_value(t, err, pb.Error{})
+	testing.expect_value(t, status, 0)
+	testing.expect_value(t, len(messages), 0)
+	testing.expect(t, strings.contains(out, "<p>© 2026</p>"), out)
+	testing.expect(t, strings.contains(out, "<style type=\"text/css\">"), out)
+	linked, _, _, _, _, _ := pb.publish(text, "doc.rst", "html5", {{"embed_stylesheet", "no"}})
+	testing.expect(t, strings.contains(linked, `href="minimal.css"`), linked)
 }

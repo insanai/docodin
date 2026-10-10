@@ -7,6 +7,7 @@ DOD 10: Packaging and Activation
 :Created: 2026-09-27
 :Discussion:
 :Labels: release, shim, compatibility
+:Updated: 2026-10-10
 
 .. contents:: Contents
    :local:
@@ -120,6 +121,10 @@ Implemented in docodin 0.1.0 ("Build platform wheels with hatchling, including t
 shim's data files", "Add docodin-sphinx-build and an opt-in start-up hook that serves
 docutils", "Install the native library atomically so running processes are not
 killed").
+
+In 1.0.0b1 the wheel also installs the native programs, and the console script
+``docodin`` was replaced by the native program (DOD 19).  The activation design above
+stands.
 
 References
 ==========
