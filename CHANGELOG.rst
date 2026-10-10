@@ -63,6 +63,11 @@ Fixes
 Distribution
 ------------
 
+- **Visual documentation and PDF downloads.** Inline Graphviz diagrams explain the
+  architecture, storage, pipeline, language server, DOD lifecycle and release process.
+  Native HTML diagrams have separate light and dark palettes. The website and release
+  include the manual, collected design records and 19 individual light PDF records.
+
 - **GitHub project workflows.** Verification on Linux and macOS, a native GitHub Pages
   site, qualified wheels/source/native archives, draft tagged releases and a separate
   PyPI publishing workflow. Odin and PDF font downloads are checksum verified.
@@ -102,8 +107,8 @@ Commands
 
 - ``docodin sphinx ARGS``: ``sphinx-build`` with docodin's parser, run as ``python -m
   docodin sphinx ARGS`` with the Python found as above.
-- ``docodin dod new --author="Name <email>"`` names the author of a new record.
-  Without it, and without git's ``user.name`` and ``user.email``, the command stops with
+- ``docodin dod new --author="Name"`` names the author of a new record.
+  Without it, and without git's ``user.name``, the command stops with
   NO AUTHOR instead of writing a record with no author.
 
 Release process

@@ -112,6 +112,7 @@ jobs:
     permissions:
       contents: write
     steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8
         with:
           name: release-assets
@@ -125,10 +126,13 @@ jobs:
         run: |
           FLAGS=()
           if [[ "$RELEASE_TAG" =~ (a|b|rc)[0-9]+$ ]]; then FLAGS+=(--prerelease); fi
+          NOTES="releases/$RELEASE_TAG.md"
+          test -s "$NOTES"
           if gh release view "$RELEASE_TAG" --repo "$RELEASE_REPOSITORY" --json isDraft > release.json; then
             python -c 'import json; assert json.load(open("release.json"))["isDraft"], "Refusing to modify a published release"'
             gh release upload "$RELEASE_TAG" dist/* --clobber --repo "$RELEASE_REPOSITORY"
+            gh release edit "$RELEASE_TAG" --repo "$RELEASE_REPOSITORY" --notes-file "$NOTES"
           else
             gh release create "$RELEASE_TAG" dist/* --repo "$RELEASE_REPOSITORY" --verify-tag \
-              --draft --generate-notes --title "docodin $RELEASE_TAG" "${FLAGS[@]}"
+              --draft --notes-file "$NOTES" --title "docodin $RELEASE_TAG" "${FLAGS[@]}"
           fi
