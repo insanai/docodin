@@ -50,7 +50,7 @@ for dir in odin/tests odin/*/tests; do
 done
 
 step "Python tests"
-uv run python -m pytest -q tests
+uv run --extra test python -m pytest -q tests
 
 step "source distribution and wheel"
 uv build --sdist -o "${OUT}/dist"
