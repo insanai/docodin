@@ -87,11 +87,19 @@ program_writer :: proc(argv0: string) -> string {
 	return "html5"
 }
 
-// A writer named as the command (``docodin latex doc.rst``).
+// A writer named as the command (``docodin latex doc.rst``), with the
+// commands ``python -m docodin`` takes (``rst2man`` and the writers that
+// need Python are run there).
 command_writer :: proc(arg: string) -> (string, bool) {
 	switch arg {
 	case "html", "html5", "xhtml", "latex", "latex2e", "xetex", "xml", "pseudoxml":
 		return arg, true
+	case "rst2html", "rst2html5":
+		return "html5", true
+	case "rst2latex", "rst2xetex", "rst2xml", "rst2pseudoxml", "rst2odt", "rst2s5":
+		return arg[4:], true
+	case "rst2man":
+		return "manpage", true
 	}
 	return "", false
 }

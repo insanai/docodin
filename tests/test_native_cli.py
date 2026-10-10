@@ -215,6 +215,8 @@ FALLBACK_CASES = {
     "pygments exit status": ["--exit-status=warning", "--report=info", "code.rst"],
     "configuration file": ["--writer=pseudoxml", "--config=my.conf", "plain.rst"],
     "other writer": ["--writer=manpage", "plain.rst"],
+    "rst2man command": ["rst2man", "plain.rst"],
+    "rst2xml command": ["rst2xml", "plain.rst"],  # native, as python -m docodin rst2xml
     "latin-9 source": ["--writer=pseudoxml", "--input-encoding=iso-8859-15", "latin9.rst"],
 }
 
