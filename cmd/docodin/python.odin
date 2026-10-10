@@ -18,8 +18,8 @@ import pb "../../odin/publish"
 // on the PATH, if it imports docodin; without one, a report says what needs
 // Python.
 
-// ``docodin sphinx ARGS``: Sphinx with docutils served by docodin, which
-// runs in Python (``python -m docodin sphinx``).
+// ``docodin sphinx ARGS``: sphinx-build in Python, parsing with docodin
+// (``python -m docodin sphinx``).
 run_sphinx :: proc(args: []string) -> int {
 	python, found := find_python()
 	if !found {

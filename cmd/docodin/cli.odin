@@ -46,7 +46,7 @@ the writer.  Configuration files are not read.
 "docodin book build" builds a Sphinx project (HTML site and PDF book) and
 "docodin dod" manages DocOdin Discussions (design records); see
 "docodin book --help" and "docodin dod --help".  "docodin sphinx" runs
-sphinx-build in Python with docutils served by docodin.
+sphinx-build in Python, parsing with docodin ("python -m docodin sphinx").
 `
 
 parse_command_line :: proc(args: []string, default_writer: string) -> Cli {
