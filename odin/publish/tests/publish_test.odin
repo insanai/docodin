@@ -258,3 +258,19 @@ transform_halts_like_docutils :: proc(t: ^testing.T) {
 	testing.expect(t, strings.has_prefix(messages[0].text, "<string>:3: (ERROR/3) No suitable"))
 	testing.expect_value(t, status, 1) // no message below the halting one reached level 3
 }
+
+// Without a docutils data directory (``<docutils>``, the default), the
+// standard include files and stylesheets come from the embedded copies.
+@(test)
+embedded_docutils_data :: proc(t: ^testing.T) {
+	context.allocator = context.temp_allocator
+	text := ".. include:: <isonum.txt>\n\n|copy| 2026\n"
+	out, _, messages, status, err, _ := pb.publish(text, "doc.rst", "html5", nil)
+	testing.expect_value(t, err, pb.Error{})
+	testing.expect_value(t, status, 0)
+	testing.expect_value(t, len(messages), 0)
+	testing.expect(t, strings.contains(out, "<p>© 2026</p>"), out)
+	testing.expect(t, strings.contains(out, "<style type=\"text/css\">"), out)
+	linked, _, _, _, _, _ := pb.publish(text, "doc.rst", "html5", {{"embed_stylesheet", "no"}})
+	testing.expect(t, strings.contains(linked, `href="minimal.css"`), linked)
+}
