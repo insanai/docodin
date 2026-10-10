@@ -124,7 +124,8 @@ release. Publishing that draft triggers a separate PyPI workflow, which uploads 
 same qualified files without rebuilding them.
 
 1. Follow the :doc:`../appendices/maintenance-checklist`: update the version, changelog,
-   design records and documentation. Commit on the working branch, merge into ``main``
+   design records and documentation, including the README and pinned installation
+   examples. Commit on the working branch, merge into ``main``
    and wait for Verify to pass.
 2. For a rehearsal, dispatch the Release workflow on ``main``. It builds both supported
    platforms and uploads ``release-assets`` without creating a tag, a GitHub release
@@ -155,6 +156,12 @@ The repository workflows are ``ci.yml``, ``pages.yml``, ``release.yml`` and ``pu
 under ``.github/workflows``. PyPI publishing happens only for a published release,
 not a normal push to ``main``. The Website workflow deploys the docodin-built site to
 GitHub Pages after main's Verify workflow succeeds.
+
+The README is embedded in each distribution's package metadata. PyPI displays that
+release's README; editing ``README.rst`` on GitHub later does not update an existing
+PyPI version. Finish and render-check it before creating the tag. A later correction
+requires a new package version. GitHub Pages follows verified ``main`` changes, while
+the PDF assets in a published release retain the matching tagged documentation.
 
 The license files
 =================

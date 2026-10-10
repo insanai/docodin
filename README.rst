@@ -1,29 +1,23 @@
-=======
-docodin
-=======
-
-.. image:: https://raw.githubusercontent.com/insanai/docodin/main/docs/book/_static/docodin_logo.png
-   :alt: Sphinx's single-eye symbol with a minimal pencil outline of Odin's beard.
-   :width: 240px
-   :align: center
+**************
+|logo| docodin
+**************
 
 **A native reStructuredText toolchain, written in Odin.**
 
-Features_ · Quickstart_ · `Build and installation`_ · Performance_ · Documentation_
+Publish documents, check markup, build HTML sites and PDF books, and work with an
+editor language server. Supported native documents run without Python; the Python
+package brings the same engine to docutils and Sphinx.
+
+Quickstart_ · Features_ · Performance_ · Documentation_
 
 `Website <https://insanai.github.io/docodin/>`__ ·
 `Book <https://insanai.github.io/docodin/book/>`__ ·
-`Releases <https://github.com/insanai/docodin/releases>`__
+`Downloads <https://github.com/insanai/docodin/releases>`__
 
-docodin publishes documents, checks markup, builds HTML sites and PDF books, and gives
-editors a language server. Its engine uses `Odin <https://odin-lang.org/>`__'s explicit
-allocators, arenas and data-oriented storage. The native tools run without Python for
-supported documents. A Python package also lets docutils and Sphinx use the engine.
-
-**First beta: 1.0.0b1.** Native tooling is the main focus. Compatibility with docutils
-0.22.4 is checked against its output, diagnostics and tests; support for every Sphinx
-project and extension is outside this beta's promise. See `Known limits
-<https://insanai.github.io/docodin/book/reference/limits.html>`__ before adopting it for a production build.
+**Beta 1.0.0b1.** Native tooling is the main focus. Compatibility checks target
+docutils 0.22.4; complete support for every Sphinx project and extension is outside
+this beta's promise. Read the `known limits
+<https://insanai.github.io/docodin/book/reference/limits.html>`__ before adoption.
 
 Features
 ========
@@ -46,11 +40,15 @@ Features
 Quickstart
 ==========
 
-Install a beta wheel into a Python 3.12+ environment:
+Install a published beta wheel into a Python 3.12+ environment:
 
 .. code-block:: console
 
-   $ uv pip install --pre docodin      # or: pip install --pre docodin
+   $ uv pip install docodin==1.0.0b1    # or: pip install docodin==1.0.0b1
+
+For standalone tools, download the Linux x86-64 or macOS arm64 native archive from
+`GitHub Releases <https://github.com/insanai/docodin/releases>`__. If the beta is not
+yet listed, follow `Build and installation`_ to build from source.
 
 Write ``hello.rst``:
 
@@ -94,7 +92,11 @@ has verified macOS arm64 (macOS 11+) and Linux x86-64 under CPython 3.12. Linux 
 need glibc 2.34+ (for example Ubuntu 22.04, Debian 12 or RHEL 9). Windows, musl Linux
 and other architectures have not been verified for this beta.
 
-From source, install Odin ``dev-2026-09`` or newer, a C toolchain and uv:
+Native archives contain the three programs and license notices; wheels also contain
+the Python package and shared library. Both distributions come from the same tested
+release. Check downloads against the release's ``SHA256SUMS``.
+
+From source, install Odin ``dev-2026-10``, a C toolchain and uv:
 
 .. code-block:: console
 
@@ -122,7 +124,7 @@ Install Sphinx support and build through docodin's docutils package:
 
 .. code-block:: console
 
-   $ uv pip install --pre 'docodin[sphinx]'
+   $ uv pip install 'docodin[sphinx]==1.0.0b1'
    $ docodin-sphinx-build -b html docs build/sphinx
 
 ``docodin sphinx ARGS...`` uses docodin's parser with Sphinx. Setting
@@ -184,6 +186,10 @@ and `known limits <https://insanai.github.io/docodin/book/reference/limits.html>
 Documentation
 =============
 
+The website follows verified changes on ``main``. Each GitHub release also includes
+PDF copies of the book and design records built from that release's source. Use those
+PDFs when you need documentation matching an installed version.
+
 - `The docodin Book <https://insanai.github.io/docodin/book/index.html>`__: installation, tools, editors, reference,
   internals and development.
 - `DocOdin Discussions <https://insanai.github.io/docodin/dod/>`__: numbered design records and their states.
@@ -210,3 +216,9 @@ License
 
 `MIT <https://github.com/insanai/docodin/blob/main/LICENSE>`__. `NOTICE.rst <https://github.com/insanai/docodin/blob/main/NOTICE.rst>`__ lists third-party works; ``LICENSES/``
 contains their license texts. Source distributions and wheels include these notices.
+
+.. |logo| image:: https://raw.githubusercontent.com/insanai/docodin/main/docs/book/_static/docodin_logo.png
+   :alt: docodin logo
+   :width: 72px
+   :height: 72px
+   :align: middle
