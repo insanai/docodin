@@ -37,7 +37,9 @@ a ``StringList`` port.
   run the directive dry when the parser meets it; the parser inserts the lines after the
   directive block and parses them in the same state machine (``rst.insert_input``).  The
   reader inserts them into its input lines at the same place and later runs the directive
-  without inserting again.
+  without inserting again.  The standard include files (``<isonum.txt>`` and the others)
+  are embedded (``odin/reader/std_include.odin``): a path below a
+  ``parsers/rst/include`` directory that is not on disk is read from the embedded copy.
 - **The parse tree.**  ``reader.parse_document`` can keep the parse tree when it is given
   a ``tree_allocator`` (the language server uses it, with spans).
 

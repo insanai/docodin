@@ -138,6 +138,15 @@ The C ABI
    (``BUMP_RETAIN_MAX``): steady-state parsing maps no memory, and a large parse does not
    leave a large block resident.
 
+   Between calls an arena holds no memory.  When the outermost call returns,
+   ``bump_park`` resets the arena and moves its kept block to a process-wide cache of
+   ``BUMP_CACHE_MAX`` (8) blocks, or unmaps it when the cache is full; the next outermost
+   call on any thread takes a block back with ``bump_unpark``.  The cache is the only
+   shared mutable state, guarded by an atomic mutex.  A thread that exits therefore owns
+   nothing, and a host that creates and retires threads keeps at most 32 MB cached
+   (DOD 19).  Before 1.0.0b1 each thread kept its block after it exited, about 1 MB per
+   retired thread.
+
 Threads
    ``docodin-check`` gives each worker thread its own arena.  The language server
    handles each message in a scratch arena that is reset afterwards, and gives each
@@ -147,8 +156,8 @@ Safety
 ======
 
 - Bounds checks stay on in release builds.
-- Tables are ``@(rodata)``; there is no shared mutable state, so the library can be
-  called from many threads at once.
+- Tables are ``@(rodata)``; the only shared mutable state is the locked cache of arena
+  blocks, so the library can be called from many threads at once.
 - Recursion is bounded (``MAX_NESTING``, and ``MAX_DEPTH`` in the math converters).
 - All generated Unicode tables come from one CPython version (3.14, Unicode 16),
   recorded in each table's header.
