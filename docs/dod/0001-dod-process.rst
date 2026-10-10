@@ -256,8 +256,9 @@ command and needs no Python.
 
    ``docodin dod new`` picks the next number (or the one given with ``--number``), writes
    ``docs/dod/0019-incremental-checking-in-the-language-server.rst`` from the template
-   with your name and e-mail from ``git config`` and today's date, and prints the next
-   steps.  ``--dir`` names another directory than ``docs/dod``.
+   with your name and e-mail from ``git config`` (or ``--author="Name <email>"``) and
+   today's date, and prints the next steps.  ``--dir`` names another directory than
+   ``docs/dod``.
 
 2. **Write it** in ``prediscussion``.  Check the markup as you go:
 

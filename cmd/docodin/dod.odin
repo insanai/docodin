@@ -13,7 +13,7 @@ import "../../odin/dod"
 // ``docodin dod``: DocOdin Discussions, the numbered design records of
 // docs/dod.
 
-DOD_USAGE :: `Usage: docodin dod new "Title" [--number=N] [--labels=a,b] [--dir=DIR]
+DOD_USAGE :: `Usage: docodin dod new "Title" [--number=N] [--labels=a,b] [--author=A] [--dir=DIR]
        docodin dod list [--state=STATE] [--label=LABEL] [--dir=DIR]
        docodin dod index [--dir=DIR]
        docodin dod check [--dir=DIR] [--error-format=FORMAT] [--color=WHEN]
@@ -21,8 +21,9 @@ DOD_USAGE :: `Usage: docodin dod new "Title" [--number=N] [--labels=a,b] [--dir=
 Manage the DocOdin Discussions (DOD) in DIR (default: docs/dod).
 
   new     create NNNN-slug.rst from the template: the next free number (the
-          records' and the dod/NNNN git branches'), the author from git's
-          configuration, today's date, the state "prediscussion"
+          records' and the dod/NNNN git branches'), the author from
+          --author="Name <email>" or git's configuration, today's date, the
+          state "prediscussion"
   list    a table of the records
   index   rewrite the records by state in index.rst (between the comments
           ".. dod-index-start" and ".. dod-index-end")
@@ -37,6 +38,7 @@ Dod_Options :: struct {
 	title:   string,
 	number:  int, // 0: the next one
 	labels:  string,
+	author:  string, // --author; "": git's configuration
 	state:   string,
 	label:   string,
 	format:     check.Error_Format,
@@ -81,11 +83,17 @@ dod_new :: proc(opts: ^Dod_Options, records: []dod.Record) -> int {
 	if data, err := os.read_entire_file_from_path(template_path, context.allocator); err == nil {
 		template = string(data)
 	}
+	author := opts.author if opts.author != "" else dod.git_author(opts.dir)
+	if author == "" {
+		usage_error("NO AUTHOR", "I cannot find your name in git's configuration.",
+			"Name the author with `--author=\"Name <email>\"`, or set it for git: " +
+			"`git config user.name \"Name\"` and `git config user.email you@example.com`.")
+	}
 	slug := dod.make_slug(opts.title)
 	name := fmt.tprintf("%s-%s.rst", dod.pad4(number), slug)
 	path := join_path(opts.dir, name)
 	text := dod.fill_record(template, {number, opts.title, strings.join(split_labels(opts.labels),
-		", "), dod.git_author(opts.dir), dod.today()})
+		", "), author, dod.today()})
 	if err := os.write_entire_file(path, text); err != nil {
 		fmt.eprintf("docodin: cannot write %s: %s\n", path, os.error_string(err))
 		return 1
@@ -266,7 +274,8 @@ check_dod_command :: proc(command: string) {
 @(private = "file")
 dod_takes_value :: proc(key: string) -> bool {
 	switch key {
-	case "--dir", "--number", "--labels", "--state", "--label", "--error-format", "--color":
+	case "--dir", "--number", "--labels", "--author", "--state", "--label", "--error-format",
+	     "--color":
 		return true
 	}
 	return false
@@ -288,6 +297,8 @@ dod_option :: proc(opts: ^Dod_Options, key, value: string) -> bool {
 		opts.number = n
 	case "--labels":
 		opts.labels = value
+	case "--author":
+		opts.author = strings.trim_space(value)
 	case "--state":
 		opts.state = choice_value(key, value, dod.STATES[:])
 	case "--label":

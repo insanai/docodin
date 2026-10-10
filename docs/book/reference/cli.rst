@@ -606,7 +606,7 @@ docodin dod
 
 .. code-block:: text
 
-   docodin dod new "Title" [--number=N] [--labels=a,b] [--dir=DIR]
+   docodin dod new "Title" [--number=N] [--labels=a,b] [--author=A] [--dir=DIR]
    docodin dod list [--state=STATE] [--label=LABEL] [--dir=DIR]
    docodin dod index [--dir=DIR]
    docodin dod check [--dir=DIR] [--error-format=FORMAT] [--color=WHEN]
@@ -617,8 +617,9 @@ Manages the DocOdin Discussions in ``DIR`` (default: ``docs/dod``;
 ``new``
    Creates ``NNNN-slug.rst`` from ``0000-template.rst``: the next free number (after the
    records' numbers and those of the ``dod/NNNN`` git branches) or ``--number``, the
-   labels of ``--labels``, the author from git's configuration, today's date and the
-   state ``prediscussion``.
+   labels of ``--labels``, the author (``--author="Name <email>"``, or else
+   ``user.name`` and ``user.email`` from git's configuration), today's date and the state
+   ``prediscussion``.  Without either author, the command stops and says how to name one.
 ``list``
    Prints a table of the records, optionally only those with a state (``--state``) or a
    label (``--label``).
