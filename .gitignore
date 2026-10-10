@@ -68,6 +68,7 @@ _build/
 /public/
 /test_docs/
 /downloaded_docs/
+_graphviz/
 *.pxml
 *.pseudoxml
 

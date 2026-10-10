@@ -186,13 +186,21 @@ and `known limits <https://insanai.github.io/docodin/book/reference/limits.html>
 Documentation
 =============
 
-The website follows verified changes on ``main``. Each GitHub release also includes
-PDF copies of the book and design records built from that release's source. Use those
-PDFs when you need documentation matching an installed version.
+Read the website in light or dark mode, or download print-friendly light PDFs: the
+complete book, the collected design records and each individual DOD. Download links
+appear on the documentation pages.
+Inline Graphviz diagrams explain the architecture, document pipeline, ownership and
+design-record lifecycle in both HTML and PDF.
+
+The website follows verified changes on ``main``. Each GitHub release includes the
+same PDF collection built from that release's source. Use the release PDFs when you
+need documentation matching an installed version.
 
 - `The docodin Book <https://insanai.github.io/docodin/book/index.html>`__: installation, tools, editors, reference,
   internals and development.
 - `DocOdin Discussions <https://insanai.github.io/docodin/dod/>`__: numbered design records and their states.
+- `Download the book (PDF) <https://insanai.github.io/docodin/pdf/docodin-book.pdf>`__ or
+  `all design records (PDF) <https://insanai.github.io/docodin/pdf/docodin-dod.pdf>`__.
 - `Building the documentation <https://github.com/insanai/docodin/blob/main/docs/README.rst>`__: native and Sphinx build commands.
 - `Editor setup <https://insanai.github.io/docodin/book/guide/editors.html>`__: Neovim, VS Code and Zed.
 

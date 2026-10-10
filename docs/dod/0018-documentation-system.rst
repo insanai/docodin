@@ -5,6 +5,7 @@ DOD 18: The Documentation System
 :Authors: Vikrant Rathore
 :State: committed
 :Created: 2026-09-27
+:Updated: 2026-10-11
 :Discussion:
 :Labels: documentation, tooling, process
 
@@ -36,6 +37,40 @@ Proposal
 
 Layout
 ------
+
+.. graphviz::
+   :class: adaptive-diagram
+   :align: center
+   :caption: Graphviz renders the diagrams; docodin publishes the surrounding documentation and PDF downloads.
+   :alt: Inline DOT is rendered to SVG or vector PDF and combined with reStructuredText by docodin into themed HTML, both collected PDFs and each individual DOD PDF.
+
+   digraph documentation_flow {
+   graph [bgcolor="white", pad="0.28", nodesep="0.4", ranksep="0.6", fontname="Helvetica", fontsize=17, fontcolor="#425574", color="#CBD5E1"];
+   node [shape=box, style="rounded,filled", fontname="Helvetica", fontsize=16, margin="0.22,0.16", fillcolor="#EFF4FF", color="#B3C6F7", fontcolor="#18243D", penwidth=1.2];
+   edge [fontname="Helvetica", fontsize=12, color="#526B97", fontcolor="#425574", arrowsize=0.75, penwidth=1.4];
+   rankdir=TB;
+   rst [label="reStructuredText source\nBook + DODs", fillcolor="#F4F6FA", color="#CDD5E2"];
+   dot [label="Inline graphviz directive\nDOT beside the explanation"];
+   renderer [label="Graphviz dot\nSVG / vector PDF"];
+   publisher [label="docodin native builder\nReader, transforms, writers", fillcolor="#DBE7FF", color="#7DA1ED"];
+   html [label="HTML\nLight / dark theme"];
+   book [label="Book + collected DOD PDF\nLight layout"];
+   records [label="Individual DOD PDFs\nLight layout"];
+   site [label="GitHub Pages\nHTML + PDF download links", fillcolor="#E5F5EE", color="#8DC9B0"];
+   release [label="GitHub release\nPDFs match the source tag", fillcolor="#E5F5EE", color="#8DC9B0"];
+   rst -> dot -> renderer -> publisher;
+   rst -> publisher [label="text + structure"];
+   publisher -> html;
+   publisher -> book;
+   publisher -> records;
+   {rank=same; html; book; records;}
+   html -> site;
+   book -> site;
+   records -> site;
+   book -> release;
+   records -> release;
+   }
+
 
 .. code-block:: text
 
@@ -83,8 +118,11 @@ docutils standard directive and role; Sphinx's ``toctree``, ``code-block``,
 ``versionchanged``, ``deprecated``, ``only``, ``index``, ``centered`` and ``hlist``; the
 roles ``doc``, ``ref``, ``term``, ``abbr``, ``file``, ``command``, ``program``,
 ``envvar``, ``kbd``, ``guilabel``, ``samp``, ``numref`` and ``download``; labels; math.
-No Sphinx extensions beyond the built-in ones, no MyST, no graphviz: diagrams are text or
-committed SVG files.
+No Sphinx extensions beyond the built-in ones and no MyST. Inline Graphviz DOT diagrams
+now explain architecture and workflows: Sphinx uses ``sphinx.ext.graphviz``, while the
+native builder invokes ``dot`` directly, producing SVG for HTML and vector PDF for TeX.
+The DOT stays in the reStructuredText source. Standalone DOD PDFs enable Graphviz
+explicitly with ``docodin pdf --graphviz``.
 
 Configuration
 -------------

@@ -34,6 +34,19 @@ $requirements
 \setmonofont{SourceCodePro}[Extension=.otf, UprightFont=*-Regular,
   ItalicFont=*-RegularIt, BoldFont=*-Semibold, BoldItalicFont=*-SemiboldIt, Scale=0.86]
 \usepackage{microtype}
+% Allow inline paths and identifiers to wrap without inserting a printed hyphen.
+\ExplSyntaxOn
+\cs_new_eq:NN \dod_original_texttt:n \texttt
+\RenewDocumentCommand {\texttt} {m} {
+  \group_begin:
+  \tl_set:Nn \l_tmpa_tl {#1}
+  \tl_replace_all:Nnn \l_tmpa_tl {.} {.\allowbreak}
+  \tl_replace_all:Nnn \l_tmpa_tl {/} {/\allowbreak}
+  \tl_replace_all:Nnn \l_tmpa_tl {\_} {\_\allowbreak}
+  \exp_args:NV \dod_original_texttt:n \l_tmpa_tl
+  \group_end:
+}
+\ExplSyntaxOff
 \linespread{1.08}
 \setlength{\emergencystretch}{3em}
 \setlength{\parskip}{0.45em plus 0.1em}

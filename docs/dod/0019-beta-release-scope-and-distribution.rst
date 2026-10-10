@@ -5,6 +5,7 @@ DOD 19: Beta Release Scope and Distribution
 :Authors: Vikrant Rathore
 :State: committed
 :Created: 2026-10-10
+:Updated: 2026-10-11
 :Discussion:
 :Labels: release, compatibility
 
@@ -64,6 +65,36 @@ documentation).
 
 Discussion
 ==========
+
+.. graphviz::
+   :class: adaptive-diagram
+   :align: center
+   :caption: Publishing a reviewed GitHub draft triggers PyPI; qualified packages are not rebuilt.
+   :alt: A verified main revision is tagged, gated on Linux and macOS, assembled with checksums, reviewed as a draft and published; PyPI uploads the same two wheels and source distribution.
+
+   digraph release_flow {
+   graph [bgcolor="white", pad="0.28", nodesep="0.4", ranksep="0.28", fontname="Helvetica", fontsize=17, fontcolor="#425574", color="#CBD5E1"];
+   node [shape=box, style="rounded,filled", fontname="Helvetica", fontsize=16, margin="0.22,0.16", fillcolor="#EFF4FF", color="#B3C6F7", fontcolor="#18243D", penwidth=1.2];
+   edge [fontname="Helvetica", fontsize=12, color="#526B97", fontcolor="#425574", arrowsize=0.75, penwidth=1.4];
+   rankdir=TB;
+   source [label="Working branch -> main\nReviewed source revision", fillcolor="#F4F6FA", color="#CDD5E2"];
+   verify [label="Verify\nOdin + Python + CLI checks"];
+   tag [label="Version tag\nv1.0.0b1", fillcolor="#DBE7FF", color="#7DA1ED"];
+   linux [label="Linux gate\nsdist -> wheel -> fresh install\nHTML + all PDFs"];
+   mac [label="macOS gate\nsdist -> wheel -> fresh install\nNative + Sphinx smoke"];
+   assemble [label="Assemble exact tested artifacts\nVersion, revision, SHA256 checks"];
+   draft [label="Draft GitHub prerelease\nReview assets and notes", fillcolor="#FFF3E6", color="#E3BB86"];
+   published [label="Publish GitHub release\nNative archives + PDFs", fillcolor="#E5F5EE", color="#8DC9B0"];
+   pypi [label="PyPI workflow\nVerify and upload the same\n2 wheels + sdist", fillcolor="#E5F5EE", color="#8DC9B0"];
+   source -> verify -> tag;
+   tag -> linux;
+   tag -> mac;
+   {rank=same; linux; mac;}
+   linux -> assemble;
+   mac -> assemble;
+   assemble -> draft -> published -> pypi;
+   }
+
 
 The support contract
 --------------------

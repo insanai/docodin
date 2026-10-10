@@ -21,7 +21,7 @@ jobs:
       (github.event.workflow_run.conclusion == 'success' &&
        github.event.workflow_run.head_repository.full_name == github.repository)
     runs-on: ubuntu-24.04
-    timeout-minutes: 15
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
@@ -41,8 +41,18 @@ jobs:
         run: |
           mkdir -p bin
           odin build cmd/docodin -o:speed -vet -strict-style -out:bin/docodin
+      - name: Install PDF dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends texlive-luatex texlive-xetex \
+            texlive-latex-extra texlive-fonts-recommended fonts-linuxlibertine \
+            librsvg2-bin poppler-utils graphviz
+          echo "TEXMFHOME=$RUNNER_TEMP/texmf" >> "$GITHUB_ENV"
+          uv run --no-project python scripts/install_pdf_fonts.py "$RUNNER_TEMP/texmf"
+      - name: Build the book and individual design record PDFs
+        run: uv run --no-project python scripts/build_documentation_pdfs.py
       - name: Build homepage, book and design records
-        run: uv run --no-project python scripts/build_site.py
+        run: uv run --no-project python scripts/build_site.py --pdf-dir build/pdf
       - uses: actions/configure-pages@45bfe0192ca1faeb007ade9deae92b16b8254a0d # v6
       - uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5
         with:

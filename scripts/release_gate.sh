@@ -104,6 +104,9 @@ for project in book dod; do
 done
 if [[ -n "${ENGINE}" ]]; then
     ls -l "${OUT}"/docs/*/latex/*.pdf
+    "${BIN}/python" "${ROOT}/scripts/build_documentation_pdfs.py" --binary "${BIN}/docodin" \
+        --output "${OUT}/docs/pdf" --book-pdf "${OUT}/docs/book/latex/docodin-book.pdf" \
+        --dod-pdf "${OUT}/docs/dod/latex/docodin-dod.pdf"
 else
     echo "PDF books: SKIPPED (no lualatex on this machine)"
 fi

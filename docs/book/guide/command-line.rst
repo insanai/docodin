@@ -52,6 +52,23 @@ option or a bad value gets an explanation with a hint:
    Hint: Use one of `info`, `warning`, `error`, `severe`, `none`, `1`, `2`, `3`,
    `4`, `5`.
 
+Inline Graphviz diagrams
+------------------------
+
+The native book builder understands Sphinx's inline ``graphviz``, ``graph`` and
+``digraph`` directives. For a standalone document, enable them explicitly:
+
+.. code-block:: console
+
+   $ docodin --graphviz --syntax-highlight=none design.rst design.html
+   $ docodin pdf --graphviz --engine=lualatex --syntax-highlight=none design.rst design.pdf
+
+Install Graphviz's ``dot`` command. HTML diagrams use SVG; PDFs embed vector diagrams.
+The options ``:alt:``, ``:caption:``, ``:align:``, ``:name:`` and ``:class:`` work with
+inline DOT. The option is for native publication: documents that also need Python
+should use Sphinx with ``sphinx.ext.graphviz``. See :doc:`../development/documentation`
+for the book's diagram palette and theme support.
+
 Messages and exit status
 ------------------------
 

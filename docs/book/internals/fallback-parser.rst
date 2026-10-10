@@ -12,6 +12,34 @@ which behaves exactly like docutils' (DOD 7).
 When it is used
 ===============
 
+.. graphviz::
+   :class: adaptive-diagram
+   :align: center
+   :caption: The host selects a parser for each parse; custom grammar takes the Python path.
+   :alt: An explicit native-off setting or a changed parser grammar selects the Python parser; otherwise the Odin parser feeds the same docutils node model.
+
+   digraph parser_choice {
+   graph [bgcolor="white", pad="0.28", nodesep="0.4", ranksep="0.6", fontname="Helvetica", fontsize=17, fontcolor="#425574", color="#CBD5E1"];
+   node [shape=box, style="rounded,filled", fontname="Helvetica", fontsize=16, margin="0.22,0.16", fillcolor="#EFF4FF", color="#B3C6F7", fontcolor="#18243D", penwidth=1.2];
+   edge [fontname="Helvetica", fontsize=12, color="#526B97", fontcolor="#425574", arrowsize=0.75, penwidth=1.4];
+   rankdir=TB;
+   request [label="Parser.parse / RSTStateMachine.run", fillcolor="#F4F6FA", color="#CDD5E2"];
+   forced [label="DOCODIN_NATIVE=0?", shape=diamond, style=filled];
+   stock [label="Stock states, Inliner\nand snapshot unchanged?", shape=diamond, style=filled];
+   native [label="Odin parser\nStock grammar", fillcolor="#DBE7FF", color="#7DA1ED"];
+   python [label="Pure-Python parser\nCustom or patched grammar", fillcolor="#EEE9FB", color="#C0AEE7"];
+   nodes [label="Ordinary docutils nodes\nHost directives and roles", fillcolor="#E5F5EE", color="#8DC9B0"];
+   request -> forced;
+   forced -> python [label="yes"];
+   forced -> stock [label="no"];
+   stock -> native [label="yes"];
+   stock -> python [label="no"];
+   native -> nodes [label="marshal + builder"];
+   python -> nodes;
+   {rank=same; native; python;}
+   }
+
+
 ``docodin/_grammar.py`` decides, for each parse in ``Parser.parse`` and
 ``RSTStateMachine.run``.  docodin's docutils and ``docodin.Parser``, ``patch_docutils``
 and the ``docodin.sphinx`` extension on an installed docutils use the same rules.  The

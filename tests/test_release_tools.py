@@ -34,6 +34,10 @@ def candidates(root: Path) -> tuple[Path, str]:
         info = tarfile.TarInfo(f"docodin-{version}/PKG-INFO")
         info.size = len(data)
         source.addfile(info, io.BytesIO(data))
+    pdfs = root / "linux-x86_64" / "docs" / "pdf"
+    pdfs.mkdir(parents=True)
+    for name in release.documentation_pdfs():
+        (pdfs / name).write_bytes(b"%PDF-1.7\nPDF fixture")
     return root, version
 
 
@@ -72,3 +76,10 @@ def test_release_rejects_missing_platform_and_wrong_tag(tmp_path: Path) -> None:
         release.assemble(inputs, tmp_path / "out", "a" * 40, f"v{version}")
     with pytest.raises(ValueError, match="does not match"):
         release.project_version("v0.0.0")
+
+
+def test_release_requires_every_individual_dod_pdf(tmp_path: Path) -> None:
+    inputs, version = candidates(tmp_path / "input")
+    next((inputs / "linux-x86_64" / "docs" / "pdf").glob("dod-*.pdf")).unlink()
+    with pytest.raises(FileNotFoundError):
+        release.assemble(inputs, tmp_path / "out", "a" * 40, f"v{version}")

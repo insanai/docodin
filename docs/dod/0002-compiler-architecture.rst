@@ -5,7 +5,7 @@ DOD 2: The docodin Compiler Architecture
 :Authors: Vikrant Rathore
 :State: committed
 :Created: 2026-09-27
-:Updated: 2026-09-27
+:Updated: 2026-10-11
 :Discussion:
 :Labels: parser, native, shim, compatibility
 
@@ -81,30 +81,52 @@ Proposal
 The pipeline
 ------------
 
-.. code-block:: text
+.. graphviz::
+   :class: adaptive-diagram
+   :align: center
+   :caption: One parser feeds two toolchains; the Sphinx path still builds and processes Python nodes.
+   :alt: The Odin parser feeds the native reader, transforms and writers, or a marshal bridge into Python nodes and Sphinx.
 
-   source text (.rst, UTF-8)
-        |
-        v
-   indentation calculus and line slicing
-        |
-        v
-   block state automaton (transitions, tables)
-        |
-        v
-   parse tree in a bump arena (rst.Node handles)
-        |
-        +--------------------+----------------------+
-        v                    v                      v
-   HTML5 writer         LaTeX writer         CPython marshal bridge
-                        (TeX engine)         (docodin.shim)
+   digraph architecture {
+   newrank=true;
+   graph [bgcolor="white", pad="0.28", nodesep="0.4", ranksep="0.6", fontname="Helvetica", fontsize=17, fontcolor="#425574", color="#CBD5E1"];
+   node [shape=box, style="rounded,filled", fontname="Helvetica", fontsize=16, margin="0.22,0.16", fillcolor="#EFF4FF", color="#B3C6F7", fontcolor="#18243D", penwidth=1.2];
+   edge [fontname="Helvetica", fontsize=12, color="#526B97", fontcolor="#425574", arrowsize=0.75, penwidth=1.4];
+   rankdir=TB;
+   source [label="reStructuredText source", fillcolor="#F4F6FA", color="#CDD5E2"];
+   parser [label="Odin parser\nodin/rst\nFlat parse tree + messages", fillcolor="#DBE7FF", color="#7DA1ED"];
+   source -> parser;
+   subgraph cluster_native {
+     label="NATIVE TOOLCHAIN"; style="rounded"; bgcolor="#F7FAFF";
+     reader [label="Native reader\ndoctree + registry" ];
+     transform [label="Native transforms\nReferences, contents, validation"];
+     writer [label="Native writers\nHTML, LaTeX, XML"];
+     native_out [label="Native output\nHTML / PDF / XML", fillcolor="#E5F5EE", color="#8DC9B0"];
+     reader -> transform -> writer -> native_out;
+   }
+   subgraph cluster_python {
+     label="PYTHON / SPHINX"; style="rounded"; bgcolor="#FAF8FF";
+     wire [label="C ABI / marshal\nNative result buffer", fillcolor="#EEE9FB", color="#C0AEE7"];
+     builder [label="Python builder\nOrdinary docutils nodes", fillcolor="#EEE9FB", color="#C0AEE7"];
+     sphinx [label="Python transforms + writers\nSphinx and extensions", fillcolor="#EEE9FB", color="#C0AEE7"];
+     python_out [label="Sphinx outputs\nWithin measured support", fillcolor="#E5F5EE", color="#8DC9B0"];
+     wire -> builder -> sphinx -> python_out;
+   }
+   parser -> reader [label="Odin API"];
+   parser -> wire [label="C ABI"];
+   {rank=same; reader; wire;}
+   {rank=same; transform; builder;}
+   {rank=same; writer; sphinx;}
+   {rank=same; native_out; python_out;}
+   }
+
 
 Indentation calculus
 --------------------
 
 reStructuredText is an off-side rule language.  Let a document :math:`D` be a sequence of
-lines :math:`L = (l_1, l_2, \dots, l_n)`.  The indentation of a line is the width of its
-leading white space :math:`c_1 \dots c_k`:
+lines :math:`L = (l_1, l_2, \ldots, l_n)`.  The indentation of a line is the width of its
+leading white space :math:`c_1 \ldots c_k`:
 
 .. math::
 
@@ -121,7 +143,7 @@ The open indentation levels form a strictly increasing stack
 
 .. math::
 
-   S = [d_0, d_1, \dots, d_m], \qquad 0 = d_0 < d_1 < \dots < d_m
+   S = [d_0, d_1, \ldots, d_m], \qquad 0 = d_0 < d_1 < \ldots < d_m
 
 When the next line :math:`l_{i+1}` has indentation :math:`d'`:
 
@@ -148,7 +170,7 @@ form the ordered set
 
 .. math::
 
-   \mathcal{L} = (A_1, A_2, \dots, A_k)
+   \mathcal{L} = (A_1, A_2, \ldots, A_k)
 
 and the depth of style :math:`A_i` is :math:`i`.  Titles must satisfy
 
@@ -169,7 +191,7 @@ bounded by corners (``+``), horizontal borders (``-`` or ``=``) and vertical bor
 
 .. math::
 
-   V = \{ (r, c) \mid M[r, c] = \texttt{+} \}
+   V = \{ (r, c) \mid M[r, c] = \mathrm{+} \}
 
 A cell is a rectangle with top-left corner :math:`(r_1, c_1)` and bottom-right corner
 :math:`(r_2, c_2)`.  Its column span :math:`\gamma` and row span :math:`\rho` count the
@@ -211,7 +233,7 @@ Allocation rounds the used size up to the alignment and adds:
 
 .. math::
 
-   \mathrm{offset}' = (\mathrm{used} + \mathrm{align} - 1) \mathbin{\&} \lnot(\mathrm{align} - 1),
+   \mathrm{offset}' = (\mathrm{used} + \mathrm{align} - 1) \;\&\; \lnot(\mathrm{align} - 1),
    \qquad \mathrm{ptr} = \mathrm{base} + \mathrm{offset}'
 
 When a document is done, ``bump_reset`` resets the arena in constant time.  Nothing is

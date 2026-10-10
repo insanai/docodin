@@ -25,7 +25,7 @@ Html_Options :: struct {
 // Build the HTML site of ``s`` into ``outdir``; false when a page or file
 // could not be written (the warnings say why).
 write_html :: proc(s: ^Site, outdir: string, options: Html_Options) -> bool {
-	b := build_make(s, .Html)
+	b := build_make(s, .Html, join(outdir, "_graphviz"))
 	defer build_destroy(b)
 	context.allocator = b.allocator
 	index := search_index_make(b)

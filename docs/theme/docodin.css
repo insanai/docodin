@@ -1020,3 +1020,57 @@ body:not(.docodin-native) article dl.field-list {
   border-radius: 8px;
   background: var(--color-background-secondary);
 }
+
+/* Documentation download actions use the same palette in both colour themes. */
+.docodin .document-downloads {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .6rem;
+  margin: 0 0 1.5rem;
+}
+.docodin .document-downloads a {
+  display: inline-flex;
+  align-items: center;
+  padding: .55rem .85rem;
+  border: 1px solid var(--dod-border-strong);
+  border-radius: var(--dod-radius-sm);
+  background: var(--dod-bg-soft);
+  color: var(--dod-accent-strong);
+  font-size: .875rem;
+  font-weight: 600;
+  text-decoration: none;
+}
+.docodin .document-downloads a:hover {
+  border-color: var(--dod-accent);
+  background: var(--dod-accent-soft);
+}
+.docodin .document-downloads a:focus-visible {
+  outline: 2px solid var(--dod-accent);
+  outline-offset: 3px;
+}
+
+/* Branded DOT diagrams have separate SVG palettes; PDFs keep the light one. */
+.docodin img.graphviz,
+.docodin img.graphviz-diagram {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  padding: 0.65rem;
+  border: 1px solid var(--dod-border-strong);
+  border-radius: 0.75rem;
+  background: var(--dod-bg-soft);
+}
+
+.docodin img.graphviz-dark { display: none; }
+.docodin[data-theme="dark"] img.graphviz-light { display: none; }
+.docodin[data-theme="dark"] img.graphviz-dark { display: block; }
+
+@media (prefers-color-scheme: dark) {
+  .docodin[data-theme="auto"] img.graphviz-light { display: none; }
+  .docodin[data-theme="auto"] img.graphviz-dark { display: block; }
+}
+
+@media print {
+  .docodin img.graphviz-light { display: block !important; }
+  .docodin img.graphviz-dark { display: none !important; }
+}

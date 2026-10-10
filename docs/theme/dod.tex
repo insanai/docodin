@@ -1,0 +1,85 @@
+$head_prefix
+\usepackage{fontspec}
+\ifdefined\UnicodeEncodingName
+  \DeclareTextCommand{\textquotedbl}{\UnicodeEncodingName}{%
+    {\addfontfeatures{RawFeature=-tlig,Mapping=}\char34}}%
+\fi
+$requirements
+$latex_preamble
+$stylesheet
+\usepackage[a4paper,margin=24mm,headheight=26pt,headsep=8mm,footskip=12mm]{geometry}
+\usepackage{xcolor}
+\definecolor{dodInk}{HTML}{141B2D}
+\definecolor{dodMuted}{HTML}{667085}
+\definecolor{dodAccent}{HTML}{2F5BEA}
+\definecolor{dodRule}{HTML}{D6DBE6}
+\definecolor{dodCode}{HTML}{F4F6FA}
+\setmainfont{SourceSerif4}[Extension=.otf,UprightFont=*-Regular,
+  ItalicFont=*-RegularIt,BoldFont=*-Semibold,BoldItalicFont=*-SemiboldIt]
+\setsansfont{SourceSans3}[Extension=.otf,UprightFont=*-Regular,
+  ItalicFont=*-RegularIt,BoldFont=*-Semibold,BoldItalicFont=*-SemiboldIt]
+\setmonofont{SourceCodePro}[Extension=.otf,UprightFont=*-Regular,
+  ItalicFont=*-RegularIt,BoldFont=*-Semibold,BoldItalicFont=*-SemiboldIt,Scale=0.82]
+\usepackage{microtype}
+% Allow inline paths and identifiers to wrap without inserting a printed hyphen.
+\ExplSyntaxOn
+\cs_new_eq:NN \dod_original_texttt:n \texttt
+\RenewDocumentCommand {\texttt} {m} {
+  \group_begin:
+  \tl_set:Nn \l_tmpa_tl {#1}
+  \tl_replace_all:Nnn \l_tmpa_tl {.} {.\allowbreak}
+  \tl_replace_all:Nnn \l_tmpa_tl {/} {/\allowbreak}
+  \tl_replace_all:Nnn \l_tmpa_tl {\_} {\_\allowbreak}
+  \exp_args:NV \dod_original_texttt:n \l_tmpa_tl
+  \group_end:
+}
+\ExplSyntaxOff
+\usepackage{titlesec}
+\usepackage{fancyhdr}
+\usepackage{graphicx}
+\usepackage[most]{tcolorbox}
+\linespread{1.08}
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{0.45em plus 0.1em}
+\setlength{\emergencystretch}{3em}
+\color{dodInk}
+\titleformat{\section}{\sffamily\Large\bfseries\color{dodInk}}{\thesection}{0.8em}{}
+\titleformat{\subsection}{\sffamily\large\bfseries\color{dodInk}}{\thesubsection}{0.8em}{}
+\titleformat{\subsubsection}{\sffamily\normalsize\bfseries\color{dodInk}}{\thesubsubsection}{0.8em}{}
+\titlespacing*{\section}{0pt}{1.5em}{0.5em}
+\titlespacing*{\subsection}{0pt}{1.2em}{0.4em}
+\newtcolorbox{dodcode}{enhanced,breakable,colback=dodCode,colframe=dodRule,
+  boxrule=0.5pt,arc=3pt,left=8pt,right=8pt,top=5pt,bottom=5pt,
+  before skip=0.7em,after skip=0.9em,fontupper=\small}
+\newenvironment{DUCLASScode}
+  {\begin{dodcode}\renewenvironment{quote}{\par\raggedright}{\par}}
+  {\end{dodcode}}
+\newenvironment{DUadmonition}
+  {\begin{tcolorbox}[enhanced,breakable,colback=dodCode,colframe=dodAccent,
+    boxrule=0pt,leftrule=3pt,arc=2pt,left=10pt,right=10pt,top=6pt,bottom=6pt]}
+  {\end{tcolorbox}}
+\newcommand{\DUtitle}[1]{{\sffamily\bfseries\color{dodAccent}#1}\par\smallskip}
+$fallbacks
+$pdfsetup
+\hypersetup{colorlinks=true,linkcolor=dodAccent,urlcolor=dodAccent}
+$titledata
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\sffamily\small\color{dodMuted}DOCODIN DISCUSSIONS}
+\fancyhead[R]{\includegraphics[height=8mm]{@DOCODIN_LOGO@}}
+\fancyfoot[L]{\sffamily\footnotesize\color{dodMuted}docodin @VERSION@}
+\fancyfoot[R]{\sffamily\small\bfseries\color{dodAccent}\thepage}
+\renewcommand{\headrulewidth}{0.4pt}
+\renewcommand{\headrule}{{\color{dodRule}\hrule width\headwidth height\headrulewidth}}
+\makeatletter
+\renewcommand{\maketitle}{%
+  {\sffamily\small\bfseries\color{dodAccent}DESIGN RECORD}\par\vspace{6mm}%
+  {\sffamily\fontsize{26}{31}\selectfont\bfseries\color{dodInk}%
+    \raggedright\hyphenpenalty=10000 \@title\par}%
+  \vspace{4mm}{\color{dodAccent}\rule{\linewidth}{1.2pt}}\par\vspace{3mm}%
+  {\sffamily\small\color{dodMuted}\@author}\par\vspace{4mm}%
+}
+\makeatother
+\begin{document}
+$body_pre_docinfo$docinfo$dedication$abstract$body
+\end{document}

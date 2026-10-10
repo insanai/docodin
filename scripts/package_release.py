@@ -19,6 +19,21 @@ PROGRAMS = ("docodin", "docodin-check", "docodin-lsp")
 PLATFORMS = ("linux-x86_64", "macos-arm64")
 
 
+def documentation_pdfs() -> list[str]:
+    names = ["docodin-book.pdf", "docodin-dod.pdf"]
+    names.extend(f"dod-{source.stem}.pdf" for source in
+                 sorted((ROOT / "docs" / "dod").glob("[0-9][0-9][0-9][0-9]-*.rst"))
+                 if not source.name.startswith("0000-"))
+    return names
+
+
+def check_documentation(directory: Path) -> None:
+    for name in documentation_pdfs():
+        with (directory / name).open("rb") as pdf:
+            if pdf.read(5) != b"%PDF-":
+                raise ValueError(f"Invalid documentation PDF: {name}")
+
+
 def project_version(tag: str | None = None) -> str:
     version = tomllib.loads((ROOT / "pyproject.toml").read_text(encoding="utf-8"))["project"]["version"]
     if tag is not None and tag != f"v{version}":
@@ -103,9 +118,11 @@ def assemble(inputs: Path, output: Path, revision: str, tag: str | None) -> None
         raise ValueError("Expected one qualified Linux source distribution")
     check_source(sources[0], version)
     shutil.copy2(sources[0], output / sources[0].name)
-    for pdf in (inputs / "linux-x86_64").rglob("*.pdf"):
-        if pdf.name in ("docodin-book.pdf", "docodin-dod.pdf"):
-            shutil.copy2(pdf, output / pdf.name)
+    pdfs = inputs / "linux-x86_64" / "docs" / "pdf"
+    check_documentation(pdfs)
+    for name in documentation_pdfs():
+        pdf = pdfs / name
+        shutil.copy2(pdf, output / pdf.name)
     manifest = {"version": version, "revision": revision, "files": {}}
     for path in sorted(output.iterdir()):
         manifest["files"][path.name] = {
@@ -141,6 +158,7 @@ def verify(directory: Path, tag: str, revision: str | None = None) -> None:
         if record["sha256"] != entries[name] or record["size"] != (directory / name).stat().st_size:
             raise ValueError(f"Manifest mismatch: {name}")
     check_source(directory / f"docodin-{version}.tar.gz", version)
+    check_documentation(directory)
     for platform in PLATFORMS:
         wheels = [path for path in directory.glob("*.whl") if
                   path.name.endswith("_x86_64.whl" if platform == "linux-x86_64" else "_arm64.whl")]

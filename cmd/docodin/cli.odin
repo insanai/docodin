@@ -22,6 +22,7 @@ Cli :: struct {
 	overrides:   [dynamic]pb.Override, // the settings that differ from the defaults
 	source:      string, // "" or "-": standard input
 	warnings:    string, // ``--warnings`` file
+	graphviz:    bool, // explicitly enable inline DOT rendering
 	// the options (with their values) but ``--output-path``, for a run of
 	// the Python front end with other positional arguments
 	option_args: [dynamic]string,
@@ -160,6 +161,8 @@ apply_option :: proc(cli: ^Cli, o: ^Option, name, value: string) {
 		apply_flag(cli, o)
 	case .Warnings:
 		cli.warnings = value
+	case .Graphviz:
+		cli.graphviz = true
 	case .Ignore:
 	case .Unsupported:
 		append(&cli.needs, pb.Python_Need{feature = .Option, detail = name})

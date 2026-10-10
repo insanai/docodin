@@ -5,6 +5,7 @@ DOD 1: DocOdin Discussions
 :Authors: Vikrant Rathore
 :State: committed
 :Created: 2026-09-27
+:Updated: 2026-10-11
 :Discussion:
 :Labels: process, documentation
 
@@ -98,25 +99,40 @@ Every DOD is in exactly one state, recorded in its ``:State:`` field.
 
 The transitions:
 
-.. code-block:: text
+.. graphviz::
+   :name: dod-state-transitions
+   :class: adaptive-diagram
+   :align: center
+   :caption: A DOD keeps its number and rationale through review, implementation or abandonment.
+   :alt: DOD states: ideation or prediscussion, then discussion, published and committed; dropped, rejected or overtaken ideas become abandoned.
 
-      (new idea)                         (topic, no author yet)
-          |                                      |
-          | create                               | placeholder
-          v                                      v
-    prediscussion  <------- start work ------- ideation
-          |                                      |
-          | ready for review                     | drop
-          v                                      |
-      discussion  -------- reject ----------+    |
-          |                                 |    |
-          | converge                        v    v
-          v                                abandoned
-      published  --------- obsolete ---------->^
-          |
-          | implement
-          v
-      committed
+   digraph dod_lifecycle {
+   newrank=true;
+   graph [bgcolor="white", pad="0.28", nodesep="0.4", ranksep="0.6", fontname="Helvetica", fontsize=17, fontcolor="#425574", color="#CBD5E1"];
+   node [shape=box, style="rounded,filled", fontname="Helvetica", fontsize=16, margin="0.22,0.16", fillcolor="#EFF4FF", color="#B3C6F7", fontcolor="#18243D", penwidth=1.2];
+   edge [fontname="Helvetica", fontsize=12, color="#526B97", fontcolor="#425574", arrowsize=0.75, penwidth=1.4];
+   rankdir=TB;
+   new [label="New topic", shape=ellipse, fillcolor="#F4F6FA", color="#CDD5E2"];
+   idea [label="ideation\nTopic reserved"];
+   draft [label="prediscussion\nDraft on a branch"];
+   review [label="discussion\nReview in a pull request", fillcolor="#EEE9FB", color="#C0AEE7"];
+   agreed [label="published\nAccepted and merged\nImplementation pending"];
+   done [label="committed\nImplemented and merged", fillcolor="#E5F5EE", color="#8DC9B0"];
+   stop [label="abandoned\nDecision retained\nReason recorded", fillcolor="#FFF3E6", color="#E3BB86"];
+   {rank=same; idea; draft;}
+   {rank=same; done; stop;}
+   new -> idea [label="reserve topic"];
+   new -> draft [label="start writing"];
+   idea -> draft [label="pick up"];
+   draft -> draft [label="write + check", fontsize=11];
+   draft -> review [label="ready for review"];
+   review -> review [label="address feedback", fontsize=11];
+   review -> agreed [label="agree and merge"];
+   agreed -> done [label="implement and merge"];
+   idea -> stop [label="drop", style=dashed];
+   review -> stop [label="reject", style=dashed];
+   agreed -> stop [label="overtaken", style=dashed];
+   }
 
 .. list-table::
    :header-rows: 1

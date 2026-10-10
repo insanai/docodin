@@ -22,15 +22,28 @@ import "core:path/filepath"
 import "core:strings"
 
 import "../../odin/check"
+import gv "../../odin/graphviz"
 import pb "../../odin/publish"
+import rd "../../odin/reader"
 import "../../odin/version"
 
 VERSION :: version.VERSION
 
 // The publisher's options: the docutils data (stylesheets, templates and
 // standard include files) are embedded, see ``pb.tools_docutils_dir``.
-native_options :: proc() -> pb.Options {
-	return {docutils_dir = pb.tools_docutils_dir()}
+native_options :: proc(cli: ^Cli) -> pb.Options {
+	options := pb.Options{docutils_dir = pb.tools_docutils_dir()}
+	if cli.graphviz {
+		format := "pdf" if cli.writer == .Latex || cli.writer == .Xetex else "svg"
+		renderer := new(gv.Renderer)
+		renderer^ = {directory = filepath.dir(setting_string(cli, "output_path", ".")),
+			format = format, relative = cli.writer == .Html5}
+		renderer.directory, _ = filepath.join({renderer.directory, "_graphviz"})
+		ext := new(rd.Extension)
+		ext^ = gv.extension(renderer)
+		options.extension = ext
+	}
+	return options
 }
 
 Command :: enum u8 {
@@ -109,6 +122,7 @@ command_writer :: proc(arg: string) -> (string, bool) {
 @(private = "file")
 run_publish :: proc(args: []string, default_writer: string) -> int {
 	cli := parse_command_line(args, default_writer)
+	if cli.graphviz && len(cli.needs) > 0 do return graphviz_python_error()
 	if len(cli.needs) > 0 do return python_fallback(args, default_writer, cli.needs[:])
 	source := cli.source if cli.source != "" else "-"
 	data, read_ok := read_input(source)
@@ -120,14 +134,22 @@ run_publish :: proc(args: []string, default_writer: string) -> int {
 	if !ok do return 1
 	source_path := "<stdin>" if source == "-" else source
 	output, _, messages, status, err, needs := pb.publish(text, source_path, cli.writer_name,
-		cli.overrides[:], native_options())
+		cli.overrides[:], native_options(&cli))
 	if len(needs) > 0 {
+		if cli.graphviz do return graphviz_python_error()
 		return python_fallback(args, default_writer, needs, input, text, source_path)
 	}
 	write_messages(&cli, messages, err)
 	if _, failed := err.(pb.Settings_Error); failed do return 2
 	if err == nil && !write_destination(&cli, output) do return 1
 	return status
+}
+
+graphviz_python_error :: proc() -> int {
+	os.write_string(os.stderr,
+		"docodin: --graphviz needs native publication; these options or this document need Python.\n" +
+		"Use native options (such as --syntax-highlight=none), or build with Sphinx and sphinx.ext.graphviz.\n")
+	return 1
 }
 
 // ``FileInput.read`` of a path or of standard input ("-"): the bytes; on

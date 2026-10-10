@@ -94,6 +94,7 @@ find_tex :: proc(engine: string) -> (string, bool) {
 // Publish the LaTeX source to ``tex`` (messages to standard error).
 @(private = "file")
 write_latex :: proc(cli: ^Cli, writer, tex: string) -> int {
+	if cli.graphviz && len(cli.needs) > 0 do return graphviz_python_error()
 	if len(cli.needs) > 0 do return python_latex(cli, writer, tex, cli.needs[:])
 	data, read_ok := read_input(cli.source)
 	if !read_ok do return 1
@@ -101,8 +102,11 @@ write_latex :: proc(cli: ^Cli, writer, tex: string) -> int {
 	if n, needed := need.?; needed do return python_latex(cli, writer, tex, {n})
 	if !ok do return 1
 	output, _, messages, status, err, needs := pb.publish(text, cli.source, cli.writer_name,
-		cli.overrides[:], native_options())
-	if len(needs) > 0 do return python_latex(cli, writer, tex, needs, text)
+		cli.overrides[:], native_options(cli))
+	if len(needs) > 0 {
+		if cli.graphviz do return graphviz_python_error()
+		return python_latex(cli, writer, tex, needs, text)
+	}
 	for m in messages do os.write_string(os.stderr, m.text)
 	if err != nil {
 		os.write_string(os.stderr, pb.error_report(err))

@@ -29,6 +29,7 @@ Action :: enum u8 {
 	Unsupported, // needs Python (``--config``, ``--dump-*``)
 	Help,
 	Version,
+	Graphviz,
 }
 
 Const :: union {
@@ -56,6 +57,8 @@ LEVELS :: "info warning error severe none 1 2 3 4 5"
 // Every option, in the order of ``--help``.
 @(rodata)
 OPTIONS := [?]Option {
+	{names = "--graphviz", action = .Graphviz,
+	 help = "enable Sphinx-compatible inline DOT diagrams (requires Graphviz)"},
 	{names = "--writer", action = .Store, metavar = "<writer>",
 	 help = "writer: html5 (html, xhtml), latex, xetex, xml or pseudoxml (default: html5)"},
 	{names = "--output-path --output -o", dest = "output_path", metavar = "<destination>",
