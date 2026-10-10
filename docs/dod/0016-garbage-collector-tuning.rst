@@ -7,6 +7,7 @@ DOD 16: Garbage-Collector Tuning Is Opt-In
 :Created: 2026-09-27
 :Discussion:
 :Labels: performance, compatibility, release
+:Updated: 2026-10-10
 
 .. contents:: Contents
    :local:
@@ -33,8 +34,11 @@ collections rescan it again and again.  Two changes avoid most of that work:
   environment is updated (after reading): the objects alive at those points are moved to
   a permanent generation that later collections skip.
 
-``docodin-sphinx-build`` patches ``Sphinx.__init__`` to connect the two events; the
-extension connects them from ``builder-inited``.
+``docodin-sphinx-build`` patches ``Sphinx.__init__``: it collects and freezes once
+``__init__`` has returned, when the builder is initialised, and connects ``env-updated``.
+The extension does both from ``builder-inited``.  (Until 1.0.0b1 the wrapper connected
+``builder-inited`` from its patched ``__init__``, after Sphinx had emitted that event, so
+its first freeze never happened; the measurements below were made that way.)
 
 Discussion
 ==========
