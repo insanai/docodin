@@ -20,7 +20,9 @@ Get started
 The first beta is **1.0.0b1**. Start with the `installation guide
 <book/guide/installation.html>`__ or `build from source
 <book/development/building.html>`__. Published packages and native archives are listed
-on `GitHub Releases <https://github.com/insanai/docodin/releases>`__.
+on the `beta release page
+<https://github.com/insanai/docodin/releases/tag/v1.0.0b1>`__. Documentation PDFs
+are available from this site.
 
 .. code-block:: console
 

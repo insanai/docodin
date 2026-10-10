@@ -29,7 +29,13 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
+          # Verification policy comes from this workflow's immutable revision;
+          # package identity and provenance come from the release tag below.
+          ref: ${{ github.workflow_sha }}
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
           ref: ${{ github.event.release.tag_name || inputs.tag }}
+          path: release-source
       - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7
         with:
           python-version: '3.12'
@@ -41,8 +47,10 @@ jobs:
           gh release view "$RELEASE_TAG" --repo "$RELEASE_REPOSITORY" --json isDraft > release.json
           uv run --no-project python -c 'import json; assert not json.load(open("release.json"))["isDraft"], "Release is still a draft"'
           gh release download "$RELEASE_TAG" --repo "$RELEASE_REPOSITORY" --dir dist
-          uv run --no-project python scripts/package_release.py --verify dist --tag "$RELEASE_TAG" --revision "$(git rev-parse HEAD)"
-          VERSION=$(uv run --no-project python scripts/package_release.py --print-version --tag "$RELEASE_TAG")
+          uv run --no-project python scripts/package_release.py --verify dist --tag "$RELEASE_TAG" \
+            --revision "$(git -C release-source rev-parse HEAD)" --project-root release-source
+          VERSION=$(uv run --no-project python scripts/package_release.py --print-version \
+            --tag "$RELEASE_TAG" --project-root release-source)
           mkdir publish
           cp dist/*.whl "dist/docodin-$VERSION.tar.gz" publish/
           uvx twine check publish/*

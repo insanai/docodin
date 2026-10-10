@@ -84,7 +84,7 @@ Discussion
    mac [label="macOS gate\nsdist -> wheel -> fresh install\nNative + Sphinx smoke"];
    assemble [label="Assemble exact tested artifacts\nVersion, revision, SHA256 checks"];
    draft [label="Draft GitHub prerelease\nReview assets and notes", fillcolor="#FFF3E6", color="#E3BB86"];
-   published [label="Publish GitHub release\nNative archives + PDFs", fillcolor="#E5F5EE", color="#8DC9B0"];
+   published [label="Publish GitHub release\nNative archives + packages", fillcolor="#E5F5EE", color="#8DC9B0"];
    pypi [label="PyPI workflow\nVerify and upload the same\n2 wheels + sdist", fillcolor="#E5F5EE", color="#8DC9B0"];
    source -> verify -> tag;
    tag -> linux;

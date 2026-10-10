@@ -57,7 +57,6 @@ Layout
    book [label="Book + collected DOD PDF\nLight layout"];
    records [label="Individual DOD PDFs\nLight layout"];
    site [label="GitHub Pages\nHTML + PDF download links", fillcolor="#E5F5EE", color="#8DC9B0"];
-   release [label="GitHub release\nPDFs match the source tag", fillcolor="#E5F5EE", color="#8DC9B0"];
    rst -> dot -> renderer -> publisher;
    rst -> publisher [label="text + structure"];
    publisher -> html;
@@ -67,8 +66,6 @@ Layout
    html -> site;
    book -> site;
    records -> site;
-   book -> release;
-   records -> release;
    }
 
 

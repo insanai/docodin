@@ -47,6 +47,8 @@ def test_assembled_release_preserves_native_modes_and_identity(tmp_path: Path) -
     revision = "a" * 40
     release.assemble(inputs, out, revision, f"v{version}")
     release.verify(out, f"v{version}", revision)
+    assert len(list(out.iterdir())) == 7
+    assert not list(out.glob("*.pdf"))
     with tarfile.open(out / f"docodin-{version}-linux-x86_64.tar.gz") as archive:
         for name in release.PROGRAMS:
             assert archive.getmember(f"docodin-{version}-linux-x86_64/{name}").mode == 0o755
@@ -83,3 +85,16 @@ def test_release_requires_every_individual_dod_pdf(tmp_path: Path) -> None:
     next((inputs / "linux-x86_64" / "docs" / "pdf").glob("dod-*.pdf")).unlink()
     with pytest.raises(FileNotFoundError):
         release.assemble(inputs, tmp_path / "out", "a" * 40, f"v{version}")
+
+
+def test_verification_reads_version_from_the_tagged_source(tmp_path: Path) -> None:
+    inputs, version = candidates(tmp_path / "input")
+    out = tmp_path / "release"
+    release.assemble(inputs, out, "a" * 40, f"v{version}")
+    tagged = tmp_path / "tagged-source"
+    tagged.mkdir()
+    (tagged / "pyproject.toml").write_text(f'[project]\nversion = "{version}"\n')
+    release.verify(out, f"v{version}", "a" * 40, tagged)
+    (tagged / "pyproject.toml").write_text('[project]\nversion = "0.0.0"\n')
+    with pytest.raises(ValueError, match="does not match"):
+        release.verify(out, f"v{version}", "a" * 40, tagged)
