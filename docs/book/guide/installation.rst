@@ -41,9 +41,9 @@ programs and their license notices; the matching wheel also installs the Python 
 and shared library. Use the wheel for Sphinx integration and Python-dependent fallback
 features.
 
-The published release includes PDF copies of this book and the design records, built
-from the same source revision as its distributions. The website follows verified
-``main`` changes; use the release PDFs for documentation matching an older installation.
+Download the PDF book and design records from the documentation website. GitHub
+release assets contain software packages and checksums. The website follows verified
+``main`` changes.
 
 What the wheel installs
 -----------------------

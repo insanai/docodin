@@ -65,8 +65,9 @@ Distribution
 
 - **Visual documentation and PDF downloads.** Inline Graphviz diagrams explain the
   architecture, storage, pipeline, language server, DOD lifecycle and release process.
-  Native HTML diagrams have separate light and dark palettes. The website and release
-  include the manual, collected design records and 19 individual light PDF records.
+  Native HTML diagrams have separate light and dark palettes. The website hosts the
+  manual, collected design records and 19 individual light PDF records. Release assets
+  contain software packages and integrity files.
 
 - **GitHub project workflows.** Verification on Linux and macOS, a native GitHub Pages
   site, qualified wheels/source/native archives, draft tagged releases and a separate

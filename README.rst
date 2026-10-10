@@ -12,7 +12,7 @@ Quickstart_ · Features_ · Performance_ · Documentation_
 
 `Website <https://insanai.github.io/docodin/>`__ ·
 `Book <https://insanai.github.io/docodin/book/>`__ ·
-`Downloads <https://github.com/insanai/docodin/releases>`__
+`Beta downloads <https://github.com/insanai/docodin/releases/tag/v1.0.0b1>`__
 
 **Beta 1.0.0b1.** Native tooling is the main focus. Compatibility checks target
 docutils 0.22.4; complete support for every Sphinx project and extension is outside
@@ -47,8 +47,8 @@ Install a published beta wheel into a Python 3.12+ environment:
    $ uv pip install docodin==1.0.0b1    # or: pip install docodin==1.0.0b1
 
 For standalone tools, download the Linux x86-64 or macOS arm64 native archive from
-`GitHub Releases <https://github.com/insanai/docodin/releases>`__. If the beta is not
-yet listed, follow `Build and installation`_ to build from source.
+`beta release page <https://github.com/insanai/docodin/releases/tag/v1.0.0b1>`__.
+The release contains native archives, Python wheels, the source distribution and checksums.
 
 Write ``hello.rst``:
 
@@ -192,9 +192,8 @@ appear on the documentation pages.
 Inline Graphviz diagrams explain the architecture, document pipeline, ownership and
 design-record lifecycle in both HTML and PDF.
 
-The website follows verified changes on ``main``. Each GitHub release includes the
-same PDF collection built from that release's source. Use the release PDFs when you
-need documentation matching an installed version.
+The website follows verified changes on ``main`` and hosts all documentation PDFs.
+GitHub release assets contain software packages and checksums.
 
 - `The docodin Book <https://insanai.github.io/docodin/book/index.html>`__: installation, tools, editors, reference,
   internals and development.

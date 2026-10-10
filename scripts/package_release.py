@@ -34,8 +34,8 @@ def check_documentation(directory: Path) -> None:
                 raise ValueError(f"Invalid documentation PDF: {name}")
 
 
-def project_version(tag: str | None = None) -> str:
-    version = tomllib.loads((ROOT / "pyproject.toml").read_text(encoding="utf-8"))["project"]["version"]
+def project_version(tag: str | None = None, root: Path = ROOT) -> str:
+    version = tomllib.loads((root / "pyproject.toml").read_text(encoding="utf-8"))["project"]["version"]
     if tag is not None and tag != f"v{version}":
         raise ValueError(f"Tag {tag!r} does not match project version v{version}")
     return version
@@ -119,10 +119,8 @@ def assemble(inputs: Path, output: Path, revision: str, tag: str | None) -> None
     check_source(sources[0], version)
     shutil.copy2(sources[0], output / sources[0].name)
     pdfs = inputs / "linux-x86_64" / "docs" / "pdf"
+    # PDFs remain a qualification check and are published by the website workflow.
     check_documentation(pdfs)
-    for name in documentation_pdfs():
-        pdf = pdfs / name
-        shutil.copy2(pdf, output / pdf.name)
     manifest = {"version": version, "revision": revision, "files": {}}
     for path in sorted(output.iterdir()):
         manifest["files"][path.name] = {
@@ -134,8 +132,22 @@ def assemble(inputs: Path, output: Path, revision: str, tag: str | None) -> None
     (output / "SHA256SUMS").write_text("".join(checksums), encoding="utf-8")
 
 
-def verify(directory: Path, tag: str, revision: str | None = None) -> None:
-    version = project_version(tag)
+def check_packages(directory: Path, version: str) -> None:
+    check_source(directory / f"docodin-{version}.tar.gz", version)
+    if any(directory.glob("*.pdf")):
+        raise ValueError("Documentation PDFs belong on the documentation website")
+    for platform in PLATFORMS:
+        if not (directory / f"docodin-{version}-{platform}.tar.gz").is_file():
+            raise ValueError(f"Missing native archive for {platform}")
+        wheels = [path for path in directory.glob("*.whl") if
+                  path.name.endswith("_x86_64.whl" if platform == "linux-x86_64" else "_arm64.whl")]
+        if len(wheels) != 1:
+            raise ValueError(f"Missing wheel for {platform}")
+        check_wheel(wheels[0], version, platform)
+
+
+def verify(directory: Path, tag: str, revision: str | None = None, root: Path = ROOT) -> None:
+    version = project_version(tag, root)
     manifest = json.loads((directory / "RELEASE.json").read_text(encoding="utf-8"))
     if manifest["version"] != version:
         raise ValueError("Release manifest version does not match its tag")
@@ -157,14 +169,7 @@ def verify(directory: Path, tag: str, revision: str | None = None) -> None:
     for name, record in manifest["files"].items():
         if record["sha256"] != entries[name] or record["size"] != (directory / name).stat().st_size:
             raise ValueError(f"Manifest mismatch: {name}")
-    check_source(directory / f"docodin-{version}.tar.gz", version)
-    check_documentation(directory)
-    for platform in PLATFORMS:
-        wheels = [path for path in directory.glob("*.whl") if
-                  path.name.endswith("_x86_64.whl" if platform == "linux-x86_64" else "_arm64.whl")]
-        if len(wheels) != 1:
-            raise ValueError(f"Missing wheel for {platform}")
-        check_wheel(wheels[0], version, platform)
+    check_packages(directory, version)
 
 
 def main() -> None:
@@ -175,13 +180,15 @@ def main() -> None:
     parser.add_argument("--tag")
     parser.add_argument("--verify", type=Path)
     parser.add_argument("--print-version", action="store_true")
+    parser.add_argument("--project-root", type=Path, default=ROOT,
+                        help="Tagged source checkout for version verification")
     args = parser.parse_args()
     if args.print_version:
-        print(project_version(args.tag))
+        print(project_version(args.tag, args.project_root))
     elif args.verify:
         if not args.tag:
             parser.error("--verify requires --tag")
-        verify(args.verify, args.tag, args.revision)
+        verify(args.verify, args.tag, args.revision, args.project_root)
     elif args.inputs and args.revision:
         assemble(args.inputs, args.output, args.revision, args.tag)
     else:

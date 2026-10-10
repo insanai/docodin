@@ -29,7 +29,7 @@ The release gate
    mac [label="macOS gate\nsdist -> wheel -> fresh install\nNative + Sphinx smoke"];
    assemble [label="Assemble exact tested artifacts\nVersion, revision, SHA256 checks"];
    draft [label="Draft GitHub prerelease\nReview assets and notes", fillcolor="#FFF3E6", color="#E3BB86"];
-   published [label="Publish GitHub release\nNative archives + PDFs", fillcolor="#E5F5EE", color="#8DC9B0"];
+   published [label="Publish GitHub release\nNative archives + packages", fillcolor="#E5F5EE", color="#8DC9B0"];
    pypi [label="PyPI workflow\nVerify and upload the same\n2 wheels + sdist", fillcolor="#E5F5EE", color="#8DC9B0"];
    source -> verify -> tag;
    tag -> linux;
@@ -66,7 +66,8 @@ The script stops at the first failure.  On a clean tree it runs these steps:
    with ``-W``. With ``lualatex`` on the ``PATH`` or in ``/Library/TeX/texbin``, it
    also builds both PDF books and a standalone PDF for every DOD except the template.
    Without TeX the gate builds HTML only and prints ``PDF books: SKIPPED``. The Linux
-   release job requires the complete PDF collection before assembling the release.
+   release job requires the complete PDF collection for validation. PDFs are published
+   on the documentation website and are not copied into release assets.
 
 With changes in the working tree, the gate refuses to start (status 2) unless
 ``--allow-dirty`` is given: a gate result names a revision, and it is only meaningful for
@@ -181,7 +182,7 @@ same qualified files without rebuilding them.
    publish it when the token is configured.
 7. Publish to PyPI downloads the published assets, verifies hashes and the tag's commit,
    checks the wheel and source metadata, and uploads only the two wheels and sdist.
-   Native archives and the PDF collection remain GitHub release downloads. A failed publishing
+   Native archives remain GitHub release downloads. PDFs are hosted on GitHub Pages. A failed publishing
    run can be retried with the workflow's ``tag`` input after correcting the failure.
 
 The repository workflows are ``ci.yml``, ``pages.yml``, ``release.yml`` and ``publish.yml``
@@ -194,8 +195,8 @@ PDF download on each DOD page.
 The README is embedded in each distribution's package metadata. PyPI displays that
 release's README; editing ``README.rst`` on GitHub later does not update an existing
 PyPI version. Finish and render-check it before creating the tag. A later correction
-requires a new package version. GitHub Pages follows verified ``main`` changes, while
-the PDF assets in a published release retain the matching tagged documentation.
+requires a new package version. GitHub Pages follows verified ``main`` changes and
+hosts the documentation PDFs. Release assets contain software packages and checksums.
 
 The license files
 =================
