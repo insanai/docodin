@@ -4,6 +4,7 @@ import "base:runtime"
 import "core:fmt"
 import "core:slice"
 import "core:strings"
+import "core:sync"
 
 import dt "../doctree"
 
@@ -295,12 +296,16 @@ PREAMBLE_CMDS := [?][2]string {
 sty_blocks: map[string]string
 
 @(private = "file")
+sty_blocks_once: sync.Once
+
+@(private = "file")
 load_docutils_sty :: proc() {
 	// a process-wide cache: not in the writer's scratch arena
 	context.allocator = runtime.heap_allocator()
 	sty_blocks = make(map[string]string, 64)
 	text, _ := data_file(.Latex, "docutils.sty")
 	lines := strings.split_lines_after(text)
+	defer delete(lines)
 	for i := 0; i < len(lines); {
 		line := strings.trim(lines[i], "% \n")
 		i += 1
@@ -327,7 +332,7 @@ load_docutils_sty :: proc() {
 
 // A ``PreambleCmds`` attribute; ``ok`` is false if there is none.
 preamble_lookup :: proc(name: string) -> (string, bool) {
-	if sty_blocks == nil do load_docutils_sty()
+	sync.once_do(&sty_blocks_once, load_docutils_sty)
 	if s, ok := sty_blocks[name]; ok do return s, true
 	for c in PREAMBLE_CMDS do if c[0] == name do return c[1], true
 	return "", false

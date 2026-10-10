@@ -25,6 +25,8 @@ Fixes
   local contents lists its own sections instead of the preceding chapter's.
 - **Book PDF subprocesses inherit TeX settings.** The book compiler keeps the caller's
   environment, including font and search paths, instead of overriding TeX log limits.
+- **Concurrent LaTeX writers initialize their cache once.** Odin's ``sync.Once`` keeps
+  parallel callers from reading incomplete preamble blocks during first use.
 - **Documentation presentation.** The README has a shorter introduction, practical
   examples and explicit beta limits. A pencil-drawn Sphinx/Odin logo appears in the
   README and both documentation projects, including their native PDF introductions.
