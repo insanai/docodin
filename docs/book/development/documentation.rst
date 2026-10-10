@@ -128,7 +128,7 @@ The book is organised in parts by reader:
 - **Reference**: complete and exact lists: commands, options, settings, environment
   variables, the Python API, compatibility, limits.
 - **Internals**: how docodin works.
-- **Development**: how to build, test and change docodin.
+- **Development**: how to build, test, change and release docodin.
 - **Appendices**: glossary, questions, changelog, the maintenance checklist.
 
 Put a new chapter in the part of its reader, and add it to the part's toctree in

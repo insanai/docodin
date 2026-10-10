@@ -15,13 +15,13 @@ Everyday commands
 .. code-block:: console
 
    $ scripts/build_odin.sh
-   $ for t in odin/tests odin/{doctree,reader,transforms,writers,publish,lsp}/tests; do
-   >     odin test $t
-   > done
-   $ uv run python -m pytest -q tests
+   $ for t in odin/tests odin/*/tests; do odin test $t -vet -strict-style; done
+   $ uv run --extra test python -m pytest -q tests
 
 Run both after every change.  ``odin test`` builds and runs the Odin unit tests of a
-package; add ``-vet -strict-style`` to match the build flags.
+package; ``-vet -strict-style`` matches the build flags.  Before a release, run the
+release gate, which runs both and then tests the installed artifacts
+(:doc:`releasing`).
 
 The Odin tests
 ==============
@@ -47,6 +47,12 @@ The Odin tests
      - ``publish`` and ``read_document``
    * - ``odin/lsp/tests``
      - the protocol and each feature of the language server
+   * - ``odin/site/tests``
+     - the native book builder: ``conf.py`` reading, names and titles, the toctree and
+       numbers, cross-references, the search index, missing documents
+   * - ``odin/dod/tests``
+     - the DocOdin Discussions: parsing records, dates and names, the checks, the index,
+       new records and their numbers
 
 Some test directories also hold the Odin programs that the Python differential scripts
 build and run (``differential``, ``harness``, ``odin/math/difftest``).
@@ -84,6 +90,12 @@ The Python tests
      - ``docodin-check``: formats, levels, exit status
    * - ``test_lsp.py``
      - ``docodin-lsp`` against docutils' messages and resolved references
+   * - ``test_book.py``
+     - ``docodin book build`` and ``docodin dod``: pages, links, the search index, the
+       PDF book, warnings, sources that are not UTF-8, and both documentation projects
+   * - ``test_release.py``
+     - one version in ``pyproject.toml``, ``docodin.__version__``, the Odin constant, the
+       loaded library, the programs and both ``conf.py`` files; the license files
    * - ``test_conformance.py``
      - docutils' parser test suite (with ``DOCUTILS_SRC`` set to a docutils sdist)
 
