@@ -257,17 +257,21 @@ search_index_json :: proc(t: ^testing.T) {
 	defer site.destroy_site(s)
 	b := site.build_make(s, .Html)
 	defer site.build_destroy(b)
-	context.allocator = b.allocator
-	ix := site.search_index_make(b)
-	for i in 1 ..< len(s.docs) {
-		id := site.Doc_Id(i)
-		site.prepare_html_page(b, id)
-		site.search_index_add(&ix, b, id)
+	{
+		// the index lives in the build's arena; the deferred clean-up above
+		// runs with the test's allocator again (the context is scoped)
+		context.allocator = b.allocator
+		ix := site.search_index_make(b)
+		for i in 1 ..< len(s.docs) {
+			id := site.Doc_Id(i)
+			site.prepare_html_page(b, id)
+			site.search_index_add(&ix, b, id)
+		}
+		json := site.search_index_json(&ix)
+		testing.expect(t, strings.has_prefix(json, `{"docs":[{"n":"a/one","t":"One"`), json[:60])
+		testing.expect(t, strings.contains(json, `"widget":[[0,`))
+		testing.expect(t, strings.contains(json, `[0,"Sub one","sub-one"]`))
 	}
-	json := site.search_index_json(&ix)
-	testing.expect(t, strings.has_prefix(json, `{"docs":[{"n":"a/one","t":"One"`), json[:60])
-	testing.expect(t, strings.contains(json, `"widget":[[0,`))
-	testing.expect(t, strings.contains(json, `[0,"Sub one","sub-one"]`))
 	words := site.search_words("The Quick-brown fox, a b", context.temp_allocator)
 	testing.expect_value(t, len(words), 3)
 	testing.expect_value(t, words[1], "brown")
