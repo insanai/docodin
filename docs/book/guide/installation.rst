@@ -7,9 +7,14 @@ Installation and activation
 Installing docodin
 ==================
 
+For a published beta, install its matching wheel from PyPI:
+
 .. code-block:: console
 
-   $ uv pip install docodin          # or: pip install docodin
+   $ uv pip install docodin==1.0.0b1  # or: pip install docodin==1.0.0b1
+
+Check `GitHub Releases <https://github.com/insanai/docodin/releases>`__ for published
+versions. If the beta has not been published yet, use :doc:`../development/building`.
 
 docodin needs Python 3.12 or later and has no dependencies.  Its wheels are built per
 platform, not per Python version: the native library is loaded with ``ctypes`` and
@@ -25,6 +30,20 @@ The extras add optional tools:
    Sphinx 8.0 or later.
 ``docodin[test]``
    pytest, Sphinx and docutils, for docodin's own tests.
+
+Standalone native downloads
+----------------------------
+
+Each GitHub release includes native archives for Linux x86-64 and macOS arm64, together
+with ``SHA256SUMS``. Extract the archive for your platform and run ``docodin --help``,
+``docodin-check --help`` or ``docodin-lsp --help`` from it. The archive contains the three
+programs and their license notices; the matching wheel also installs the Python package
+and shared library. Use the wheel for Sphinx integration and Python-dependent fallback
+features.
+
+The published release includes PDF copies of this book and the design records, built
+from the same source revision as its distributions. The website follows verified
+``main`` changes; use the release PDFs for documentation matching an older installation.
 
 What the wheel installs
 -----------------------
