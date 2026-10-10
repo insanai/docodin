@@ -124,8 +124,6 @@ jobs:
           RELEASE_TAG: ${{ github.ref_name }}
         shell: bash
         run: |
-          FLAGS=()
-          if [[ "$RELEASE_TAG" =~ (a|b|rc)[0-9]+$ ]]; then FLAGS+=(--prerelease); fi
           NOTES="releases/$RELEASE_TAG.md"
           test -s "$NOTES"
           if gh release view "$RELEASE_TAG" --repo "$RELEASE_REPOSITORY" --json isDraft > release.json; then
@@ -134,5 +132,5 @@ jobs:
             gh release edit "$RELEASE_TAG" --repo "$RELEASE_REPOSITORY" --notes-file "$NOTES"
           else
             gh release create "$RELEASE_TAG" dist/* --repo "$RELEASE_REPOSITORY" --verify-tag \
-              --draft --notes-file "$NOTES" --title "docodin $RELEASE_TAG" "${FLAGS[@]}"
+              --draft --notes-file "$NOTES" --title "Release ${RELEASE_TAG#v}"
           fi

@@ -12,7 +12,7 @@ Quickstart_ · Features_ · Performance_ · Documentation_
 
 `Website <https://insanai.github.io/docodin/>`__ ·
 `Book <https://insanai.github.io/docodin/book/>`__ ·
-`Beta downloads <https://github.com/insanai/docodin/releases/tag/v1.0.0b1>`__
+`Release 1.0.0b1 <https://github.com/insanai/docodin/releases/tag/v1.0.0b1>`__
 
 **Beta 1.0.0b1.** Native tooling is the main focus. Compatibility checks target
 docutils 0.22.4; complete support for every Sphinx project and extension is outside
@@ -47,7 +47,7 @@ Install a published beta wheel into a Python 3.12+ environment:
    $ uv pip install docodin==1.0.0b1    # or: pip install docodin==1.0.0b1
 
 For standalone tools, download the Linux x86-64 or macOS arm64 native archive from
-`beta release page <https://github.com/insanai/docodin/releases/tag/v1.0.0b1>`__.
+`release page <https://github.com/insanai/docodin/releases/tag/v1.0.0b1>`__.
 The release contains native archives, Python wheels, the source distribution and checksums.
 
 Write ``hello.rst``:
