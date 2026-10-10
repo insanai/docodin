@@ -28,7 +28,7 @@ The release gate
    linux [label="Linux gate\nsdist -> wheel -> fresh install\nHTML + all PDFs"];
    mac [label="macOS gate\nsdist -> wheel -> fresh install\nNative + Sphinx smoke"];
    assemble [label="Assemble exact tested artifacts\nVersion, revision, SHA256 checks"];
-   draft [label="Draft GitHub prerelease\nReview assets and notes", fillcolor="#FFF3E6", color="#E3BB86"];
+   draft [label="Draft GitHub release\nReview assets and notes", fillcolor="#FFF3E6", color="#E3BB86"];
    published [label="Publish GitHub release\nNative archives + packages", fillcolor="#E5F5EE", color="#8DC9B0"];
    pypi [label="PyPI workflow\nVerify and upload the same\n2 wheels + sdist", fillcolor="#E5F5EE", color="#8DC9B0"];
    source -> verify -> tag;
@@ -178,8 +178,9 @@ same qualified files without rebuilding them.
    Source fonts and action revisions are pinned; downloads are checked against SHA256.
 6. The workflow checks metadata and versions, produces native archives from the tested
    wheels, and adds ``RELEASE.json`` and ``SHA256SUMS``. A tag creates a **draft** GitHub
-   release; beta tags are marked as prereleases. Inspect its assets and notes, then
-   publish it when the token is configured.
+   release. Inspect its assets and notes, then publish it when the token is configured.
+   Release 1.0.0b1 is a regular GitHub release marked Latest. GitHub's release category
+   is independent of Python's version rules: PyPI still treats ``1.0.0b1`` as a beta.
 7. Publish to PyPI downloads the published assets, verifies hashes and the tag's commit,
    checks the wheel and source metadata, and uploads only the two wheels and sdist.
    Native archives remain GitHub release downloads. PDFs are hosted on GitHub Pages. A failed publishing
