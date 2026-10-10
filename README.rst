@@ -218,7 +218,7 @@ License
 contains their license texts. Source distributions and wheels include these notices.
 
 .. |logo| image:: https://raw.githubusercontent.com/insanai/docodin/main/docs/book/_static/docodin_logo.png
-   :alt: docodin logo
-   :width: 72px
-   :height: 72px
+   :alt:
+   :width: 40px
+   :height: 40px
    :align: middle
