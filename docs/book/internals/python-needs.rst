@@ -60,9 +60,10 @@ environment without Pygments and PIL.  But the result is not used:
   needs.
 - The ``docodin`` command runs ``python -m docodin`` with the same arguments, standard
   streams and exit status; standard input it already read is passed on.  The Python is
-  ``$DOCODIN_PYTHON``, else ``python3`` on the ``PATH``, if it imports docodin.  Without
-  one, the command prints an Elm-style report for each need, with its source line and how
-  to do without the library, and exits with status 1.
+  the first that imports docodin among ``$DOCODIN_PYTHON``, the ``python3`` or ``python``
+  next to the program, and ``python3`` on the ``PATH``.  Without one, the command prints
+  an Elm-style report for each need, with its source line and how to do without the
+  library, and exits with status 1.
 
 So native publishing is complete: every document gets docutils' result, with the Python
 libraries that are installed.

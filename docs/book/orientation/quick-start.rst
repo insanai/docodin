@@ -4,8 +4,8 @@
 Quick start
 ===========
 
-This chapter takes you from nothing to a Sphinx build on docodin, a checked file and a
-document published without Python, in a few minutes.
+This chapter takes you from nothing to a Sphinx build on docodin, a checked file, a
+document published without Python and a native book build, in a few minutes.
 
 Install
 =======
@@ -14,13 +14,16 @@ Install
 
    $ uv pip install docodin          # or: pip install docodin
 
-The wheel contains the native library for your platform and has no dependencies.  Check
-that it loads:
+The wheel has no dependencies.  It contains the native library for your platform and
+installs the native programs ``docodin``, ``docodin-check`` and ``docodin-lsp`` next to
+the environment's Python.  Check that both load:
 
 .. code-block:: console
 
    $ python -c "import docodin; print(docodin.__version__, docodin.version())"
-   0.2.0 0.2.0
+   1.0.0b1 1.0.0b1
+   $ docodin --version
+   docodin 1.0.0b1 (Docutils 0.22.4, native)
 
 Build a Sphinx project on docodin
 =================================
@@ -64,25 +67,12 @@ Or call docodin directly:
 ``render_html`` runs the native pipeline, and falls back to docutils when the document
 needs a Python library.
 
-Build the native tools
-======================
-
-The native commands are built from a source checkout.  You need the Odin compiler
-(``dev-2026-09`` or newer) and a C toolchain:
-
-.. code-block:: console
-
-   $ git clone <docodin repository> docodin && cd docodin
-   $ scripts/build_odin.sh
-   $ ls bin
-   docodin  docodin-check  docodin-lsp
-
 Check a document
 ================
 
 .. code-block:: console
 
-   $ bin/docodin-check README.rst docs/**/*.rst
+   $ docodin-check README.rst docs/**/*.rst
 
 Problems are explained with the source line and a hint:
 
@@ -113,12 +103,37 @@ Publish without Python
 
 .. code-block:: console
 
-   $ bin/docodin guide.rst guide.html
-   $ bin/docodin latex guide.rst guide.tex
-   $ bin/docodin pdf guide.rst
+   $ docodin guide.rst guide.html
+   $ docodin latex guide.rst guide.tex
+   $ docodin pdf guide.rst                   # needs a TeX engine
 
 ``docodin`` takes docutils' command-line options and writes what ``python -m docutils``
 writes.  :doc:`../guide/command-line` covers it in full.
+
+Build a book without Python
+===========================
+
+.. code-block:: console
+
+   $ docodin book build docs --html -o /tmp/site
+
+``docodin book build`` reads the project's ``conf.py`` (without running it) and builds an
+HTML site, and a PDF book when a TeX engine is installed.  It supports a documented
+subset of Sphinx's configuration and markup, and no extensions
+(:doc:`../development/documentation`, :doc:`../reference/limits`).
+
+Build from source
+=================
+
+The programs can also be built from a source checkout, with the Odin compiler
+(``dev-2026-09`` or newer) and a C toolchain:
+
+.. code-block:: console
+
+   $ git clone <docodin repository> docodin && cd docodin
+   $ scripts/build_odin.sh
+   $ ls bin
+   docodin  docodin-check  docodin-lsp
 
 Next steps
 ==========

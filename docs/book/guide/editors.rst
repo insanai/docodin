@@ -6,8 +6,11 @@ Editor support
 
 ``docodin-lsp`` is a language server for reStructuredText.  Editors start it and talk to
 it over standard input and output, using the Language Server Protocol (LSP).  It runs no
-Python, parses each change once, and answers in about 6 ms for a 124 KB document.
-``scripts/build_odin.sh`` builds it into ``bin/``.
+Python, parses each change once, and answers in about 6 ms for a 124 KB document.  The
+wheel installs it into the environment's ``bin`` directory, and ``scripts/build_odin.sh``
+builds it into a checkout's ``bin/``.  The examples below write ``/path/to/docodin-lsp``
+for the program's full path, which ``command -v docodin-lsp`` prints in the environment;
+editors that do not start in that environment need the full path.
 
 What it provides
 ================
@@ -79,7 +82,7 @@ Neovim 0.11 or later:
 .. code-block:: lua
 
    vim.lsp.config("docodin", {
-     cmd = { "/path/to/docodin/bin/docodin-lsp" },
+     cmd = { "/path/to/docodin-lsp" },
      filetypes = { "rst" },
      root_markers = { "conf.py", "docutils.conf", ".git" },
      init_options = { reportLevel = "warning", sphinx = true },
@@ -95,7 +98,7 @@ With nvim-lspconfig on older versions:
    if not configs.docodin then
      configs.docodin = {
        default_config = {
-         cmd = { "/path/to/docodin/bin/docodin-lsp" },
+         cmd = { "/path/to/docodin-lsp" },
          filetypes = { "rst" },
          root_dir = lspconfig.util.root_pattern("conf.py", "docutils.conf", ".git"),
          init_options = { reportLevel = "warning" },
@@ -125,7 +128,7 @@ activated ``onLanguage:restructuredtext``:
    export function activate() {
      const client = new LanguageClient(
        "docodin", "docodin",
-       { command: "/path/to/docodin/bin/docodin-lsp" },
+       { command: "/path/to/docodin-lsp" },
        {
          documentSelector: [{ language: "restructuredtext" }],
          initializationOptions: { reportLevel: "warning", sphinx: true },
@@ -152,7 +155,7 @@ install dev extension``) declares the server in ``extension.toml``:
    languages = ["reStructuredText"]
 
 and returns the command from its ``language_server_command``
-(``zed::Command { command: "/path/to/docodin/bin/docodin-lsp".into(), args: vec![], env:
+(``zed::Command { command: "/path/to/docodin-lsp".into(), args: vec![], env:
 vec![] }``).  The server is then configured in ``settings.json``:
 
 .. code-block:: json
@@ -174,7 +177,7 @@ reStructuredText extension such as zed-rst.
 Other editors
 =============
 
-Any editor with an LSP client can run ``docodin-lsp``: start ``/path/to/docodin/bin/docodin-lsp``
+Any editor with an LSP client can run ``docodin-lsp``: start ``/path/to/docodin-lsp``
 (``--stdio`` is the default and may be given), for files of the reStructuredText
 language, with the settings above as initialisation options.
 

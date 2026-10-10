@@ -19,8 +19,9 @@ Both are Sphinx projects that docodin also builds natively.
 Building natively
 =================
 
-Build the native tools first (``scripts/build_odin.sh``, see the book's chapter "Building
-from source"), then:
+Use the ``docodin`` program that the wheel installs, or build the native tools in the
+checkout (``scripts/build_odin.sh``, see the book's chapter "Building from source").  In
+the checkout:
 
 .. code-block:: console
 

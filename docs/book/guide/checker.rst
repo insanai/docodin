@@ -181,11 +181,12 @@ Other messages are shown with their level as the title (INFO, WARNING, ERROR, SE
 Using the checker in CI and hooks
 =================================
 
-A CI step that fails on warnings:
+A CI step that fails on warnings, with the programs from the wheel:
 
 .. code-block:: console
 
-   $ bin/docodin-check --exit-status=warning --color=never $(git ls-files '*.rst')
+   $ pip install docodin
+   $ docodin-check --exit-status=warning --color=never $(git ls-files '*.rst')
 
 A local pre-commit hook:
 
@@ -196,6 +197,6 @@ A local pre-commit hook:
        hooks:
          - id: docodin-check
            name: docodin-check
-           entry: bin/docodin-check --exit-status=warning
+           entry: docodin-check --exit-status=warning
            language: system
            types: [rst]

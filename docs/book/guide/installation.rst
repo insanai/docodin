@@ -14,8 +14,10 @@ Installing docodin
 docodin needs Python 3.12 or later and has no dependencies.  Its wheels are built per
 platform, not per Python version: the native library is loaded with ``ctypes`` and
 exchanges data in CPython's ``marshal`` format, so one wheel (tagged
-``py3-none-<platform>``) serves every supported Python.  On macOS the wheel targets macOS
-11.0 or later.
+``py3-none-<platform>``) serves every supported Python.  On Linux the platform is
+``manylinux_<x>_<y>_<arch>``, from the newest glibc symbol version that the library and
+the programs need: ``manylinux_2_34_x86_64`` for 1.0.0b1, so glibc 2.34 or later (Ubuntu
+22.04, Debian 12, RHEL 9 or newer).  On macOS the wheel targets macOS 11.0 or later.
 
 The extras add optional tools:
 
@@ -33,14 +35,37 @@ What the wheel installs
 ``docodin.pth`` and ``docodin_autoload.py``
    A start-up hook in ``site-packages``.  It serves ``docutils`` from docodin when
    ``DOCODIN_DOCUTILS=1`` is set, and otherwise only when no docutils is installed.
-``docodin`` (command)
-   docutils' command-line front end with docodin's parser, the Python counterpart of
-   the native ``docodin`` command (:doc:`command-line`).
+``docodin``, ``docodin-check``, ``docodin-lsp`` (programs)
+   The native programs, installed into the environment's ``bin`` directory
+   (``Scripts`` on Windows): the publisher and book builder (:doc:`command-line`), the
+   checker (:doc:`checker`) and the language server (:doc:`editors`).  They run without
+   Python and without docodin's source checkout: the docutils data they need
+   (stylesheets, templates, ``docutils.sty`` and the standard include files) is embedded.
 ``docodin-sphinx-build`` (command)
-   ``sphinx-build`` running on docodin (:doc:`sphinx`).
+   ``sphinx-build`` running on docodin (:doc:`sphinx`), a Python console script.
+``LICENSE``, ``NOTICE.rst``, ``LICENSES/``
+   docodin's MIT license, the third-party notices and their license texts, in the
+   wheel's ``dist-info/licenses`` directory.
 
-The native commands ``docodin``, ``docodin-check`` and ``docodin-lsp`` are built from a
-source checkout with ``scripts/build_odin.sh`` (:doc:`../development/building`).
+Until 0.2.0 the wheel installed a Python console script named ``docodin`` (docutils'
+front end with docodin's parser) and the native programs had to be built from a source
+checkout.  Since 1.0.0b1 ``docodin`` is the native program; the Python front end is
+``python -m docodin``, which the native program runs for what needs Python.
+
+Which Python the native programs use
+------------------------------------
+
+``docodin`` runs ``python -m docodin`` for documents that need a Python library, for
+``--config``, ``--record-dependencies`` and the ``--dump-*`` options, and for ``docodin
+sphinx``.  It uses the first of these that can import docodin:
+
+1. ``$DOCODIN_PYTHON``;
+2. ``python3``, then ``python``, in the directory of the ``docodin`` program, which is
+   the environment the wheel installed it into;
+3. ``python3`` on the ``PATH``.
+
+A program installed by the wheel therefore finds the Python of its own environment
+without any setting.  ``docodin-check`` and ``docodin-lsp`` never run Python.
 
 Choosing what runs on docodin
 =============================
@@ -107,7 +132,9 @@ Switching back
 Platforms
 =========
 
-docodin is developed and tested on macOS (Apple Silicon) and Linux (x86-64).  The build
-script produces ``libdocodin.dylib`` on macOS, ``libdocodin.so`` on Linux and
-``docodin.dll`` elsewhere.  ``DOCODIN_LIB_PATH`` points the package at a library in
-another place (:doc:`../reference/environment`).
+The release gate (:doc:`../development/releasing`) has verified 1.0.0b1 on macOS arm64
+(with the PDF books) and on Linux x86-64 with glibc 2.34 or later, under CPython 3.12.
+Windows, other architectures and musl-based Linux are not verified; the build script
+produces ``docodin.dll`` on Windows, but no one has run the tests there.  On macOS the
+library and the programs target macOS 11.0 or later.  ``DOCODIN_LIB_PATH`` points the
+package at a library in another place (:doc:`../reference/environment`).

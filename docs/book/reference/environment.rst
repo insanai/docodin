@@ -22,14 +22,18 @@ Using docodin
    :doc:`../guide/sphinx`.
 
 ``DOCODIN_NATIVE``
-   ``0``: the docutils package parses every document with its pure-Python parser instead
-   of the native engine.  For debugging, and for comparing the two parsers.
+   ``0``: every document is parsed with the pure-Python parser instead of the native
+   engine, by docodin's docutils package and, on an installed docutils, by
+   ``docodin.Parser``, ``patch_docutils`` and the ``docodin.sphinx`` extension.  For
+   debugging, and for comparing the two parsers.  The native tools do not read it.
 
 ``DOCODIN_PYTHON``
    The Python interpreter that the native ``docodin`` command runs (``python -m
-   docodin``) for documents that need a Python library, and for ``--config``,
-   ``--record-dependencies`` and the ``--dump-*`` options.  Without it, ``python3`` from
-   the ``PATH`` is tried.  The interpreter must be able to import docodin.
+   docodin``) for documents that need a Python library, for ``--config``,
+   ``--record-dependencies`` and the ``--dump-*`` options, and for ``docodin sphinx``.
+   The interpreter must be able to import docodin.  Without it, or when it cannot, the
+   command tries ``python3`` and then ``python`` in its own directory (the environment the
+   wheel installed it into), and then ``python3`` on the ``PATH``.
 
 ``DOCODIN_LIB_PATH``
    The path of the native library (``libdocodin.dylib``, ``libdocodin.so`` or

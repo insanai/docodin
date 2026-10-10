@@ -20,14 +20,18 @@ docodin (native)
    docodin pdf [--engine=NAME] [options] SOURCE [OUTPUT.pdf]
    docodin book build [DIR] [options]
    docodin dod new|list|index|check [options]
+   docodin sphinx [sphinx-build arguments]
 
+The native program, installed by the wheel into the environment's ``bin`` directory.
 Converts reStructuredText into HTML5, LaTeX, XeLaTeX, Docutils XML or pseudo-XML exactly
 as docutils 0.22 does, without Python.  Reads ``SOURCE`` (default: standard input, also
 ``-``) and writes ``DESTINATION`` (default: standard output).  ``WRITER`` is one of
 ``html``, ``html5``, ``xhtml``, ``latex``, ``latex2e``, ``xetex``, ``xml`` and
 ``pseudoxml``.  When the program is called ``rst2html``, ``rst2html5``, ``rst2latex``,
 ``rst2xetex``, ``rst2xml`` or ``rst2pseudoxml`` (a link to ``docodin``), the name selects
-the writer.  Configuration files are not read.
+the writer.  ``WRITER`` may also be an ``rst2*`` name of the Python front end: ``rst2man``,
+``rst2odt`` and ``rst2s5`` select writers that ``python -m docodin`` runs.  Configuration
+files are not read.
 
 ``docodin --help`` lists the general options and those of the html5 writer; ``docodin
 --help --writer=NAME`` those of another writer.  Exit status: see
@@ -601,6 +605,11 @@ HTML site in the docodin theme (``OUTDIR/html``) and a PDF book (``OUTDIR/latex`
 ``-h``, ``--help``
    Print the help and exit.
 
+Sources are read as UTF-8 (with or without a byte-order mark).  A source that cannot be
+read (UNREADABLE SOURCE) or decoded (SOURCE IS NOT UTF-8) is a SEVERE problem: the build
+reports every such source, writes nothing and exits with status 1.  A project that is not
+a Sphinx project, or a usage error, exits with status 2.
+
 docodin dod
 ===========
 
@@ -630,6 +639,22 @@ Manages the DocOdin Discussions in ``DIR`` (default: ``docs/dod``;
    Checks the file names, titles, fields, states, labels, dates, numbers and the index.
 ``--dir=DIR``
    The directory of the records.
+
+``new`` exits with status 2 (NO AUTHOR) when it finds no author.
+
+docodin sphinx
+==============
+
+.. code-block:: text
+
+   docodin sphinx [sphinx-build arguments]
+
+Runs ``python -m docodin sphinx`` with the arguments, the standard streams and the exit
+status of ``sphinx-build`` (see `python -m docodin`_).  The Python is the first that can
+import docodin among ``$DOCODIN_PYTHON``, the ``python3`` or ``python`` in the directory
+of the ``docodin`` program, and ``python3`` on the ``PATH``.  Without one, the command
+stops with NO PYTHON (status 2).  Sphinx must be installed in that Python's environment
+(``pip install docodin[sphinx]``).
 
 docodin-check
 =============
@@ -704,18 +729,22 @@ docodin-sphinx-build
 ``sphinx-build``.  With ``DOCODIN_GC=tuned`` in the environment, the garbage collector is
 tuned for the build (:doc:`../guide/sphinx`).
 
-docodin (Python) and python -m docodin
-======================================
+python -m docodin
+=================
 
 .. code-block:: text
 
-   docodin [--writer=NAME] [docutils options] [SOURCE [DESTINATION]]
-   docodin WRITER [docutils options] [SOURCE [DESTINATION]]
-   docodin sphinx [sphinx-build arguments]
+   python -m docodin [--writer=NAME] [docutils options] [SOURCE [DESTINATION]]
+   python -m docodin WRITER [docutils options] [SOURCE [DESTINATION]]
+   python -m docodin sphinx [sphinx-build arguments]
+
+The Python front end.  Until 0.2.0 the wheel also installed it as a ``docodin``
+command; since 1.0.0b1 that name belongs to the native program, which runs this front
+end for what needs Python.
 
 docutils' ``publish_cmdline`` with ``docodin.Parser``: every docutils option, writer and
 configuration file.  The default writer is ``html5``.  ``WRITER`` is a writer name or an
 alias: ``html`` (html5), ``rst2html``, ``rst2html5``, ``rst2latex``, ``rst2xetex``,
 ``rst2xml``, ``rst2pseudoxml``, ``rst2man`` (manpage), ``rst2odt`` (odt) and ``rst2s5``
-(s5).  ``docodin sphinx`` patches docutils' parser with docodin's and runs
+(s5).  ``python -m docodin sphinx`` patches docutils' parser with docodin's and runs
 ``sphinx-build`` with the remaining arguments.
