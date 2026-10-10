@@ -1,9 +1,11 @@
 """Hatch build hook: build the native engine and tag platform wheels.
 
 ``scripts/build_odin.sh`` compiles the Odin library into ``python/docodin``
-(it needs the Odin compiler).  Set ``DOCODIN_SKIP_NATIVE_BUILD=1`` to package
-an already built library.  Editable installs never build: run the script
-yourself during development.
+and the native programs into ``bin`` (it needs the Odin compiler).  The wheel
+installs the programs (``docodin``, ``docodin-check``, ``docodin-lsp``) into
+the environment's scripts directory.  Set ``DOCODIN_SKIP_NATIVE_BUILD=1`` to
+package an already built engine.  Editable installs never build: run the
+script yourself during development.
 
 The library is loaded with ctypes (no CPython ABI), so a wheel is specific
 to the platform only: ``py3-none-<platform>``.
@@ -22,6 +24,7 @@ from hatchling.builders.hooks.plugin.interface import BuildHookInterface
 from packaging.tags import sys_tags
 
 LIBRARIES = ("libdocodin.dylib", "libdocodin.so", "docodin.dll")
+PROGRAMS = ("docodin", "docodin-check", "docodin-lsp")
 
 
 class NativeBuildHook(BuildHookInterface):
@@ -40,8 +43,21 @@ class NativeBuildHook(BuildHookInterface):
                                "build it with scripts/build_odin.sh")
         for name in libraries:
             build_data["force_include"][str(package / name)] = f"docodin/{name}"
+        for name in native_programs(root / "bin"):
+            build_data["shared_scripts"][str(root / "bin" / name)] = name
         build_data["pure_python"] = False
         build_data["tag"] = f"py3-none-{platform_tag()}"
+
+
+def native_programs(bin_dir: Path) -> list[str]:
+    """The file names of the native programs (``.exe`` on Windows)."""
+    suffix = ".exe" if sys.platform == "win32" else ""
+    names = [name + suffix for name in PROGRAMS]
+    missing = [name for name in names if not (bin_dir / name).is_file()]
+    if missing:
+        raise RuntimeError(f"docodin: {', '.join(missing)} missing in {bin_dir}; "
+                           "build them with scripts/build_odin.sh")
+    return names
 
 
 def platform_tag() -> str:

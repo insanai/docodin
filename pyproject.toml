@@ -19,8 +19,9 @@ test = ["pytest>=8.0", "sphinx>=8.0", "docutils>=0.22"]
 # the documentation (docs/book, docs/dod) with Sphinx: uv run --group docs sphinx-build ...
 docs = ["sphinx>=8.0", "furo>=2024.8.6"]
 
+# The wheel also installs the native programs docodin, docodin-check and docodin-lsp
+# (hatch_build.py); docodin runs ``python -m docodin`` for what needs Python.
 [project.scripts]
-docodin = "docodin.__main__:main"
 docodin-sphinx-build = "docodin.sphinx_build:main"
 
 [tool.hatch.build.targets.wheel]
