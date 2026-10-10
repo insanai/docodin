@@ -335,7 +335,7 @@ page_footer :: proc(sb: ^strings.Builder, b: ^Build) {
 		w(sb, html_escape(s.conf.copyright))
 		w(sb, "</span>\n")
 	}
-	w(sb, "<span>Built natively with <a href=\"https://github.com/insan-ai/docodin\">docodin</a> ")
+	w(sb, "<span>Built natively with <a href=\"https://github.com/insanai/docodin\">docodin</a> ")
 	w(sb, VERSION)
 	w(sb, " — no Python in sight.</span>\n</footer>\n")
 }
