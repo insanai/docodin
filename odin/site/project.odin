@@ -63,7 +63,8 @@ open_site :: proc(dir, outdir: string) -> (s: ^Site, err: string) {
 	s.conf = parse_conf(string(data))
 	find_documents(s)
 	s.root = s.by_name[s.conf.root_doc]
-	if s.root == NO_DOC {
+	// a root document that cannot be read is reported as such (SEVERE)
+	if s.root == NO_DOC && max_level(s) < 4 {
 		return s, strings.concatenate({"The root document ", s.conf.root_doc, SOURCE_SUFFIX,
 			" is missing from ", s.srcdir, "."})
 	}

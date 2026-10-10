@@ -257,6 +257,16 @@ def test_invalid_utf8_source_stops_the_build(tmp_path: Path) -> None:
     assert not (tmp_path / "out" / "html").exists()
 
 
+def test_root_document_that_is_not_utf8(tmp_path: Path) -> None:
+    project = tmp_path / "project"
+    project.mkdir()
+    (project / "conf.py").write_text("project = 'P'\n", encoding="utf-8")
+    (project / "index.rst").write_bytes(b"Root\n====\n\n\xff\n")
+    result = docodin("book", "build", project, "--html", "--error-format=docutils")
+    assert result.returncode == 1
+    assert "index.rst:4: (SEVERE/4) Cannot decode the document" in result.stderr
+
+
 def test_dod_new_without_an_author(tmp_path: Path) -> None:
     dod_dir = tmp_path / "dod"
     dod_dir.mkdir()
