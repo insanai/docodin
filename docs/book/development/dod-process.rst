@@ -143,7 +143,10 @@ The records so far
      - ideation
    * - 18
      - The Documentation System
-     - published
+     - committed
+   * - 19
+     - Beta Release Scope and Distribution
+     - committed
 
 ``docs/dod/index.rst`` is the authoritative list; update this table when a record is
 added or changes state.

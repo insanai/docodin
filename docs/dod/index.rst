@@ -48,6 +48,7 @@ Committed
 - :doc:`DOD 15: Lower Peak Memory <0015-lower-peak-memory>`
 - :doc:`DOD 16: Garbage-Collector Tuning Is Opt-In <0016-garbage-collector-tuning>`
 - :doc:`DOD 18: The Documentation System <0018-documentation-system>`
+- :doc:`DOD 19: Beta Release Scope and Distribution <0019-beta-release-scope-and-distribution>`
 
 Ideation
 --------
