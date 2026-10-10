@@ -245,6 +245,18 @@ def test_warnings_in_elm_style(tmp_path: Path) -> None:
     assert "8| See :ref:`nowhere`." in result.stderr
 
 
+def test_invalid_utf8_source_stops_the_build(tmp_path: Path) -> None:
+    project = tmp_path / "project"
+    shutil.copytree(FIXTURE, project)
+    (project / "bad.rst").write_bytes(b"Bad\n===\n\ncaf\xff\n")
+    result = docodin("book", "build", project, "--html", "-W", "--error-format=docutils",
+                     "-o", tmp_path / "out")
+    assert result.returncode == 1
+    assert "bad.rst:4: (SEVERE/4) Cannot decode the document: 'utf-8' codec can't decode " \
+        "byte 0xff in position 12: invalid start byte." in result.stderr
+    assert not (tmp_path / "out" / "html").exists()
+
+
 def test_usage_errors(tmp_path: Path) -> None:
     result = docodin("book", "build", tmp_path / "nothere")
     assert result.returncode == 2

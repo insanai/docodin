@@ -132,6 +132,11 @@ DIAGNOSTICS := [?]Diagnostic {
 	 "Reduce the nesting depth of lists, block quotes and directives.", .None},
 	{"exceeds the line-length-limit.", .Contains, "LINE TOO LONG",
 	 "Shorten the line, or raise the limit with `--line-length-limit`.", .None},
+	// sources
+	{"Cannot decode the document", .Prefix, "SOURCE IS NOT UTF-8",
+	 "Save the file as UTF-8: reStructuredText sources are read as UTF-8.", .None},
+	{"Cannot read the document", .Prefix, "UNREADABLE SOURCE",
+	 "Check that the file exists and that you may read it.", .None},
 }
 
 lookup_diagnostic :: proc(text: string) -> Diagnostic {

@@ -7,6 +7,7 @@ import "core:path/filepath"
 import "core:slice"
 import "core:strings"
 
+import "../check"
 import pb "../publish"
 
 // A Sphinx project: its configuration and its source documents, found
@@ -81,11 +82,8 @@ find_documents :: proc(s: ^Site) {
 	slice.sort(names[:])
 	for name in names {
 		path := join(s.srcdir, strings.concatenate({name, SOURCE_SUFFIX}))
-		data, err := os.read_entire_file_from_path(path, s.allocator)
-		if err != nil do continue
-		text, derr := pb.decode(data, "utf-8-sig", "strict")
-		if derr != "" do text = string(data)
-		text = pb.universal_newlines(text)
+		text, ok := read_source(s, path)
+		if !ok do continue
 		doc := Source_Doc {
 			name   = name,
 			path   = path,
@@ -95,6 +93,28 @@ find_documents :: proc(s: ^Site) {
 		append(&s.docs, doc)
 		s.by_name[name] = Doc_Id(len(s.docs) - 1)
 	}
+}
+
+// The decoded text of a source document.  A document that cannot be read
+// or is not UTF-8 is a SEVERE problem, which stops the build: publishing
+// its bytes as they are would write invalid pages.
+@(private = "file")
+read_source :: proc(s: ^Site, path: string) -> (text: string, ok: bool) {
+	data, err := os.read_entire_file_from_path(path, s.allocator)
+	if err != nil {
+		warn_at(s, NO_DOC, path, 0, strings.concatenate({"Cannot read the document: ",
+			os.error_string(err), "."}), 4)
+		return "", false
+	}
+	decoded, derr := pb.decode(data, "utf-8-sig", "strict")
+	if derr != "" {
+		bad := check.invalid_utf8_offset(data)
+		line := 1 + strings.count(string(data[:max(bad, 0)]), "\n")
+		warn_at(s, NO_DOC, path, line, strings.concatenate({"Cannot decode the document: ",
+			strings.trim_prefix(derr, "UnicodeDecodeError: "), "."}), 4)
+		return "", false
+	}
+	return pb.universal_newlines(decoded), true
 }
 
 // The docnames under ``rel`` (a directory relative to the source).
