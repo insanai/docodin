@@ -7,6 +7,7 @@ import "core:strings"
 import publish "../publish"
 import rst "../rst"
 import text "../text"
+import "../version"
 
 // C ABI of the shared library.
 //
@@ -19,7 +20,7 @@ import text "../text"
 //   ``docodin_free``.
 
 ABI_VERSION :: 6
-VERSION :: "0.2.0"
+VERSION :: version.VERSION
 
 @(thread_local, private = "file")
 tl_arena: Bump_Arena

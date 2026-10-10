@@ -17,8 +17,9 @@ import "core:sync"
 import "core:thread"
 
 import "../../odin/check"
+import "../../odin/version"
 
-VERSION :: "0.2.0"
+VERSION :: version.VERSION
 
 USAGE :: `Usage: docodin-check [options] [FILE ...]
 

@@ -23,8 +23,9 @@ import "core:strings"
 
 import "../../odin/check"
 import pb "../../odin/publish"
+import "../../odin/version"
 
-VERSION :: "0.2.0"
+VERSION :: version.VERSION
 
 // The publisher's options: the docutils data (stylesheets, templates and
 // standard include files) are embedded, see ``pb.tools_docutils_dir``.

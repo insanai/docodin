@@ -6,6 +6,7 @@ import "core:strings"
 
 import dt "../doctree"
 import wr "../writers"
+import "../version"
 
 // The HTML site: one page per document (the html5 writer's body in the
 // docodin theme's page), the theme's stylesheet and script, the project's
@@ -15,7 +16,7 @@ import wr "../writers"
 THEME_CSS :: #load("../../docs/theme/docodin.css", string)
 THEME_JS :: #load("../../docs/theme/docodin.js", string)
 
-VERSION :: "0.2.0"
+VERSION :: version.VERSION
 
 Html_Options :: struct {
 	pdf: string, // the PDF book to offer for download ("" for none)
