@@ -196,7 +196,7 @@ wheels = [
 
 [[package]]
 name = "docodin"
-version = "0.2.0"
+version = "1.0.0b1"
 source = { editable = "." }
 
 [package.optional-dependencies]

@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "docodin"
-version = "0.2.0"
+version = "1.0.0b1"
 description = "Fast reStructuredText parser written in Odin: a drop-in parser for docutils and Sphinx"
 readme = "README.rst"
 requires-python = ">=3.12"
