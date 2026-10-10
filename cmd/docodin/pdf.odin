@@ -100,7 +100,7 @@ write_latex :: proc(cli: ^Cli, writer, tex: string) -> int {
 	if n, needed := need.?; needed do return python_latex(cli, writer, tex, {n})
 	if !ok do return 1
 	output, _, messages, status, err, needs := pb.publish(text, cli.source, cli.writer_name,
-		cli.overrides[:], NATIVE_OPTIONS)
+		cli.overrides[:], native_options())
 	if len(needs) > 0 do return python_latex(cli, writer, tex, needs, text)
 	for m in messages do os.write_string(os.stderr, m.text)
 	if err != nil {

@@ -19,8 +19,6 @@ Warning :: struct {
 	text:   string, // the message; further paragraphs after a blank line
 }
 
-DOCUTILS_DIR :: #directory + "/../../python/docodin/shim/docutils"
-
 // A warning about document ``doc`` (at ``line``, 0 for none).
 warn :: proc(s: ^Site, doc: Doc_Id, text: string, line: int, level := 2) {
 	source := s.docs[doc].path if doc != NO_DOC else s.srcdir

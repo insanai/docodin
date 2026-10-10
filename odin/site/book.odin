@@ -93,7 +93,7 @@ subtree_has_toctree :: proc(b: ^Build, first: Toc_Id) -> bool {
 // The xetex writer's settings for the book.
 @(private = "file")
 book_settings :: proc(parts: bool) -> dt.Settings {
-	settings := pb.default_settings(.Xetex, DOCUTILS_DIR)
+	settings := pb.default_settings(.Xetex, pb.tools_docutils_dir())
 	overrides := []pb.Override {
 		{"documentclass", "book"},
 		{"documentoptions", "11pt,a4paper,openany"},

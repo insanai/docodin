@@ -25,12 +25,10 @@ import pb "../../odin/publish"
 
 VERSION :: "0.2.0"
 
-// The docutils directory of the native tools: the shim's copy of the
-// package data (stylesheets, templates and standard include files).
-SHIM_DOCUTILS :: #directory + "/../../python/docodin/shim/docutils"
-
-NATIVE_OPTIONS :: pb.Options {
-	docutils_dir = SHIM_DOCUTILS,
+// The publisher's options: the docutils data (stylesheets, templates and
+// standard include files) are embedded, see ``pb.tools_docutils_dir``.
+native_options :: proc() -> pb.Options {
+	return {docutils_dir = pb.tools_docutils_dir()}
 }
 
 Command :: enum u8 {
@@ -107,7 +105,7 @@ run_publish :: proc(args: []string, default_writer: string) -> int {
 	if !ok do return 1
 	source_path := "<stdin>" if source == "-" else source
 	output, _, messages, status, err, needs := pb.publish(text, source_path, cli.writer_name,
-		cli.overrides[:], NATIVE_OPTIONS)
+		cli.overrides[:], native_options())
 	if len(needs) > 0 {
 		return python_fallback(args, default_writer, needs, input, text, source_path)
 	}

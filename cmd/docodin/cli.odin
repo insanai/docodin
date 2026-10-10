@@ -59,7 +59,7 @@ parse_command_line :: proc(args: []string, default_writer: string) -> Cli {
 		return cli
 	}
 	cli.writer = w
-	cli.settings = pb.default_settings(w, SHIM_DOCUTILS)
+	cli.settings = pb.default_settings(w, pb.tools_docutils_dir())
 	positional := make([dynamic]string)
 	parse_options(&cli, args, &positional)
 	set_positional(&cli, positional[:])
@@ -264,7 +264,7 @@ set_positional :: proc(cli: ^Cli, args: []string) {
 
 // The settings that differ from the writer's defaults, as overrides.
 changed_settings :: proc(cli: ^Cli) -> [dynamic]pb.Override {
-	defaults := pb.default_settings(cli.writer, SHIM_DOCUTILS)
+	defaults := pb.default_settings(cli.writer, pb.tools_docutils_dir())
 	out := make([dynamic]pb.Override)
 	for name, v in cli.settings {
 		if d, ok := defaults[name]; ok && same_value(d, v) do continue

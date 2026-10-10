@@ -1,6 +1,7 @@
 package publish
 
 import "core:encoding/json"
+import "core:os"
 import "core:reflect"
 import "core:strconv"
 import "core:strings"
@@ -386,4 +387,16 @@ as_list :: proc(v: Value, allocator := context.allocator) -> []string {
 int_text :: proc(n: int, allocator := context.allocator) -> string {
 	buf: [32]u8
 	return strings.clone(strconv.write_int(buf[:], i64(n), 10), allocator)
+}
+
+// The shim's copy of the docutils package in the source checkout.
+@(private = "file")
+SHIM_DOCUTILS_DIR :: #directory + "/../../python/docodin/shim/docutils"
+
+// The ``docutils_dir`` of the native tools: the shim's package directory
+// when the source checkout is present (paths in messages are then those of
+// the docodin Python package), else ``DEFAULT_DOCUTILS_DIR``, whose data
+// files are embedded in the tools.
+tools_docutils_dir :: proc() -> string {
+	return SHIM_DOCUTILS_DIR if os.is_dir(SHIM_DOCUTILS_DIR) else DEFAULT_DOCUTILS_DIR
 }
