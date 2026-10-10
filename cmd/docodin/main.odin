@@ -7,6 +7,7 @@ package main
 //     docodin pdf [options] SOURCE [OUTPUT.pdf]
 //     docodin book build [DIR] [options]
 //     docodin dod new|list|index|check [options]
+//     docodin sphinx [sphinx-build options] SOURCEDIR OUTPUTDIR
 //
 // Publishing works as ``docutils`` (``python -m docutils``) does, with the
 // same output, messages and exit status: the standalone reader and the rST
@@ -37,6 +38,7 @@ Command :: enum u8 {
 	Pdf,
 	Book,
 	Dod,
+	Sphinx,
 }
 
 main :: proc() {
@@ -53,6 +55,8 @@ main :: proc() {
 			cmd, args = .Book, args[1:]
 		case "dod":
 			cmd, args = .Dod, args[1:]
+		case "sphinx":
+			cmd, args = .Sphinx, args[1:]
 		case:
 			if w, ok := command_writer(args[0]); ok do writer, args = w, args[1:]
 		}
@@ -66,6 +70,8 @@ main :: proc() {
 		os.exit(run_book(args))
 	case .Dod:
 		os.exit(run_dod(args))
+	case .Sphinx:
+		os.exit(run_sphinx(args))
 	case .Publish:
 		os.exit(run_publish(args, writer))
 	}
