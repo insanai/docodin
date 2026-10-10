@@ -279,6 +279,25 @@ def test_dod_new_without_an_author(tmp_path: Path) -> None:
     assert not list(dod_dir.glob("*.rst"))
 
 
+def test_dod_new_uses_git_name_without_email(tmp_path: Path) -> None:
+    if not shutil.which("git"):
+        pytest.skip("git not installed")
+    env = dict(os.environ, GIT_CONFIG_GLOBAL=os.devnull, GIT_CONFIG_NOSYSTEM="1")
+    for args in (("init", "-q"), ("config", "user.name", "Example Author"),
+                 ("config", "user.email", "private@example.invalid")):
+        subprocess.run(["git", "-C", str(tmp_path), *args], env=env, check=True,
+                       capture_output=True)
+    dod_dir = tmp_path / "dod"
+    dod_dir.mkdir()
+    result = subprocess.run([str(BINARY), "dod", "new", "Private author",
+                             f"--dir={dod_dir}"], env=env, capture_output=True, text=True,
+                            check=False)
+    assert result.returncode == 0, result.stderr
+    text = next(dod_dir.glob("*.rst")).read_text(encoding="utf-8")
+    assert ":Authors: Example Author\n" in text
+    assert "private@example.invalid" not in text
+
+
 def test_usage_errors(tmp_path: Path) -> None:
     result = docodin("book", "build", tmp_path / "nothere")
     assert result.returncode == 2

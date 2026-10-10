@@ -22,7 +22,7 @@ Manage the DocOdin Discussions (DOD) in DIR (default: docs/dod).
 
   new     create NNNN-slug.rst from the template: the next free number (the
           records' and the dod/NNNN git branches'), the author from
-          --author="Name <email>" or git's configuration, today's date, the
+          --author="Name" or git's configuration (name only), today's date, the
           state "prediscussion"
   list    a table of the records
   index   rewrite the records by state in index.rst (between the comments
@@ -86,8 +86,8 @@ dod_new :: proc(opts: ^Dod_Options, records: []dod.Record) -> int {
 	author := opts.author if opts.author != "" else dod.git_author(opts.dir)
 	if author == "" {
 		usage_error("NO AUTHOR", "I cannot find your name in git's configuration.",
-			"Name the author with `--author=\"Name <email>\"`, or set it for git: " +
-			"`git config user.name \"Name\"` and `git config user.email you@example.com`.")
+			"Name the author with `--author=\"Name\"`, or set it for git: " +
+			"`git config user.name \"Name\"`.")
 	}
 	slug := dod.make_slug(opts.title)
 	name := fmt.tprintf("%s-%s.rst", dod.pad4(number), slug)

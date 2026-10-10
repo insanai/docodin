@@ -5,7 +5,7 @@ Documents that need Python
 ==========================
 
 docutils uses Python libraries for a few features.  Pygments, PIL and the other libraries
-stay Python: the native pipeline does not reimplement them (DOD 9).  Instead, each stage
+stay Python (DOD 9), except that native raster headers supply image dimensions.  Each stage
 records a **Python need** (``doctree.Python_Need``: feature, detail, source and line)
 wherever docutils would use a library, and the hosts publish such documents with
 docutils.
@@ -24,9 +24,10 @@ Where docutils uses Python
        other than ``text``, when ``syntax_highlight`` is not ``none``
        (``utils.code_analyzer.Lexer``).
    * - PIL
-     - HTML5 writer: an image with ``:scale:`` but without both ``:width:`` and
-       ``:height:`` (``read_size_with_PIL``), or a figure with ``:figwidth: image``, when
-       file insertion is on and the image file exists.
+     - Image dimensions that the native header reader cannot supply: an unsupported or
+       invalid format, metadata beyond its 64 KiB prefix, or an image exceeding
+       89,478,485 pixels.  PNG, JPEG, GIF, BMP, TIFF and WebP headers are native, for
+       HTML5 ``:scale:`` and figures' ``:figwidth: image``.  No pixels are decoded.
    * - ``urllib``
      - ``raw`` and ``csv-table`` with a ``:url:`` other than a local ``file:`` URL.
    * - codecs
@@ -50,7 +51,9 @@ Until the first need, the native run is exactly docutils' run.  After it, the pi
 goes on as docutils does without the library: code without highlighting (as with
 ``syntax_highlight: none``), no image sizes from PIL, with docutils' warnings.  The
 differential tests use this to compare the native output with docutils in an
-environment without Pygments and PIL.  But the result is not used:
+environment without Pygments, with PIL cases requiring fallback counted separately.
+Native image-size cases must match the reference with Pillow installed.  The result
+after a Python need is not used:
 
 - ``publish.publish`` returns the needs with its results, and ``docodin_publish`` adds
   them to its result.
@@ -75,7 +78,8 @@ A document that should be published natively can avoid most needs:
 
 - ``--syntax-highlight=none`` (``syntax_highlight: "none"``) publishes code without
   Pygments;
-- images scaled with ``:scale:`` can give both ``:width:`` and ``:height:``;
+- PNG, JPEG, GIF, BMP, TIFF and WebP images normally supply dimensions natively;
+  other formats can give both ``:width:`` and ``:height:``;
 - figures can give an explicit ``:figwidth:``;
 - files can be read as UTF-8.
 

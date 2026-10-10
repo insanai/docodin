@@ -104,7 +104,6 @@ reports_python_needs :: proc(t: ^testing.T) {
 		 {.Pygments, "python", "doc.rst", 3}},
 		{".. role:: py(code)\n   :language: c\n\n:py:`x`\n", "pseudoxml", nil,
 		 {.Pygments, "c", "doc.rst", 4}},
-		{".. image:: a.png\n   :scale: 50\n", "html5", nil, {.Pil, "a.png", "doc.rst", 1}},
 		{".. raw:: html\n   :url: https://example.org/x\n", "xml", nil,
 		 {.Url, "https://example.org/x", "doc.rst", 1}},
 		{".. include:: x.md\n   :parser: markdown\n", "xml", nil,
@@ -121,6 +120,7 @@ reports_python_needs :: proc(t: ^testing.T) {
 		testing.expectf(t, len(needs) == 1 && needs[0] == c.need, "%q: %v", c.text, needs)
 	}
 	plain := []Case {
+		{".. image:: a.png\n   :scale: 50\n", "html5", nil, {}}, // missing file: native warning
 		{".. code::\n\n   x = 1\n", "pseudoxml", nil, {}},
 		{".. code:: python\n\n   x\n", "pseudoxml", {{"syntax_highlight", "none"}}, {}},
 		{".. image:: a.png\n   :scale: 50\n", "latex", nil, {}},

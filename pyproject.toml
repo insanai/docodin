@@ -8,13 +8,25 @@ version = "1.0.0b1"
 description = "Fast reStructuredText parser written in Odin: a drop-in parser for docutils and Sphinx"
 readme = "README.rst"
 requires-python = ">=3.12"
+authors = [
+    {name = "Vikrant Rathore"},
+    {name = "Ronak Rathore"},
+    {name = "Kanak Rathore"},
+]
 license = "MIT"
 license-files = ["LICENSE", "NOTICE.rst", "LICENSES/*"]
 dependencies = []
 
+[project.urls]
+Homepage = "https://insanai.github.io/docodin/"
+Documentation = "https://insanai.github.io/docodin/book/"
+Source = "https://github.com/insanai/docodin"
+Issues = "https://github.com/insanai/docodin/issues"
+Changelog = "https://github.com/insanai/docodin/blob/main/CHANGELOG.rst"
+
 [project.optional-dependencies]
 sphinx = ["sphinx>=8.0"]
-test = ["pytest>=8.0", "sphinx>=8.0", "docutils>=0.22"]
+test = ["pytest>=8.0", "sphinx>=8.0", "docutils>=0.22", "pillow>=10.0"]
 
 [dependency-groups]
 # the documentation (docs/book, docs/dod) with Sphinx: uv run --group docs sphinx-build ...
@@ -37,7 +49,7 @@ packages = ["python/docodin"]
 
 [tool.hatch.build.targets.sdist]
 include = ["/python", "/odin", "/cmd", "/scripts", "/tests", "/docs", "/hatch_build.py",
-           "/README.rst", "/CHANGELOG.rst", "/LICENSE", "/NOTICE.rst", "/LICENSES"]
+           "/README.rst", "/AUTHORS.rst", "/CHANGELOG.rst", "/LICENSE", "/NOTICE.rst", "/LICENSES"]
 exclude = ["*.dylib", "*.so", "*.dll", "__pycache__"]
 
 [tool.pytest.ini_options]

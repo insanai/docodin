@@ -76,7 +76,8 @@ Documents that need Python
 --------------------------
 
 When a document needs a Python library (Pygments for ``code`` with a language, PIL for
-scaled images, and the other cases in :doc:`../internals/python-needs`), or when you use
+image formats whose dimensions cannot be read natively, and the other cases in
+:doc:`../internals/python-needs`), or when you use
 ``--config``, ``--record-dependencies`` or a ``--dump-*`` option, the native command runs
 ``python -m docodin`` with the same arguments, the same standard streams and the same
 exit status.  It uses the first Python that can import docodin among
@@ -113,8 +114,10 @@ PDF
 ``docodin pdf [--engine=NAME] [options] SOURCE [OUTPUT.pdf]`` writes the LaTeX next to the
 PDF and runs the TeX engine twice, so that cross-references and the table of contents
 resolve.  The engine is ``pdflatex`` when it is installed, otherwise ``xelatex``;
-``--engine`` also accepts ``lualatex``.  With ``pdflatex`` the ``latex`` writer is used,
-with ``xelatex`` and ``lualatex`` the ``xetex`` writer.  The other options are those of the
+``--engine`` also accepts ``lualatex`` or a full executable path, such as
+``--engine=/usr/bin/lualatex``. The executable's basename selects the writer, so full
+paths keep the same Unicode support as engine names. With ``pdflatex`` the ``latex``
+writer is used, with ``xelatex`` and ``lualatex`` the ``xetex`` writer. The other options are those of the
 LaTeX writers.  The engine is looked up in ``/Library/TeX/texbin``,
 ``/usr/local/texlive/bin``, ``/usr/bin`` and the ``PATH``.  docodin does not include a TeX
 engine: install TeX Live or MacTeX for PDFs.

@@ -63,14 +63,10 @@ compile_tex :: proc(engine, tex: string) -> (pdf: string, err: Maybe(Tex_Error))
 		bin, "-interaction=nonstopmode", "-halt-on-error", "-file-line-error",
 		strings.concatenate({"-output-directory=", dir}), tex,
 	}
-	// long log lines, so that messages are not wrapped
-	env := make([dynamic]string)
-	if current, err := os.environ(context.allocator); err == nil do append(&env, ..current)
-	append(&env, "max_print_line=100000", "error_line=254", "half_error_line=238")
+	// Inherit TeX's environment, including the caller's font and search paths.
 	for pass in 1 ..= 3 {
 		desc := os.Process_Desc {
 			command = command,
-			env     = env[:],
 		}
 		state, stdout, _, exec_err := os.process_exec(desc, context.allocator)
 		if exec_err != nil || !state.success {

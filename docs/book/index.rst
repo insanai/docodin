@@ -9,6 +9,11 @@ diagnostics.  It also contains a docutils package for Python, on which Sphinx an
 docutils users parse with the native engine.  This edition describes 1.0.0b1, the first
 beta; :doc:`reference/limits` states what the beta supports.
 
+.. image:: _static/docodin_logo.png
+   :alt: Sphinx's single-eye symbol with a minimal pencil outline of Odin's beard.
+   :width: 140px
+   :align: center
+
 This book is written for four kinds of readers, in five parts.  Part I explains what
 docodin is and gets you to a first result.  Part II shows how to use it: with Sphinx,
 from Python, on the command line, as a checker and in an editor.  Part III is the
@@ -19,6 +24,9 @@ the checklist for maintaining this book.
 
 The design decisions behind docodin are recorded separately, as numbered DocOdin
 Discussions (``docs/dod``).  The book refers to them by number, for example "DOD 8".
+
+docodin is authored by Vikrant Rathore, with algorithm assistance from Ronak Rathore
+and logo design by Kanak Rathore.
 
 Orientation
 ===========

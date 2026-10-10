@@ -17,6 +17,24 @@ fixes the findings of an external release review of revision ``82fb438``.
 Fixes
 -----
 
+- **PDF engine paths preserve Unicode.** Full paths to ``xelatex`` and ``lualatex``
+  now select the Unicode-capable writer, just like bare engine names, on both native
+  and Python-fallback publications.
+- **Book chapter contents stay aligned.** An unnumbered opening chapter now advances
+  minitoc's counter when its entry is added to the global contents. Each chapter's
+  local contents lists its own sections instead of the preceding chapter's.
+- **Book PDF subprocesses inherit TeX settings.** The book compiler keeps the caller's
+  environment, including font and search paths, instead of overriding TeX log limits.
+- **Documentation presentation.** The README has a shorter introduction, practical
+  examples and explicit beta limits. A pencil-drawn Sphinx/Odin logo appears in the
+  README and both documentation projects, including their native PDF introductions.
+- **Native image dimensions.**  PNG, JPEG, GIF, BMP, TIFF and WebP headers supply HTML5
+  image scaling and ``:figwidth: image`` without Pillow or pixel decoding.  The reader
+  uses at most 64 KiB; other formats, longer or invalid headers and very large images
+  retain the Pillow fallback.  Missing images, video images, non-file URIs and disabled
+  file insertion now give Docutils-with-Pillow diagnostics directly.  The differential
+  suite requires natively handled image cases to match rather than excluding every PIL
+  case from its failure count.
 - **Shared-library arenas no longer outlive their threads.**  After each outermost call,
   a thread's arena block goes to a process-wide cache of at most 8 blocks of at most
   4 MiB (``bump_park`` and ``bump_unpark`` in ``odin/lib/bump.odin``).  A thread that
@@ -42,6 +60,13 @@ Fixes
 
 Distribution
 ------------
+
+- **GitHub project workflows.** Verification on Linux and macOS, a native GitHub Pages
+  site, qualified wheels/source/native archives, draft tagged releases and a separate
+  PyPI publishing workflow. Odin and PDF font downloads are checksum verified.
+- **Public author credits.** Vikrant Rathore, with algorithm assistance from Ronak
+  Rathore and logo design by Kanak Rathore. Documentation author fields contain names
+  only; ``docodin dod new`` no longer copies Git email addresses into records.
 
 - **The wheel installs the native programs** ``docodin``, ``docodin-check`` and
   ``docodin-lsp`` into the environment's ``bin`` (``Scripts``) directory.  The Python

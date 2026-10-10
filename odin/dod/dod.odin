@@ -14,7 +14,7 @@ import "core:strings"
 //     DOD 7: Title Words
 //     ==============================================================================
 //
-//     :Authors: Name <email>
+//     :Authors: Name
 //     :State: discussion
 //     :Created: 2026-09-27
 //     :Discussion: https://...

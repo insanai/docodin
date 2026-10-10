@@ -522,7 +522,7 @@ file_url_path :: proc(c: ^Context, url: string) -> (string, bool) {
 	return percent_decode(c, rest), true
 }
 
-@(private = "file")
+@(private)
 percent_decode :: proc(c: ^Context, s: string) -> string {
 	if strings.index_byte(s, '%') < 0 do return s
 	b := strings.builder_make(0, len(s), c.allocator)

@@ -23,6 +23,12 @@ package; ``-vet -strict-style`` matches the build flags.  Before a release, run 
 release gate, which runs both and then tests the installed artifacts
 (:doc:`releasing`).
 
+PDF tests require a TeX engine. The content regressions in ``test_pdf.py`` additionally
+require Poppler's ``pdftotext``; they check Unicode text with bare and full engine paths
+and verify that each chapter's local contents lists its own sections. Install
+``poppler-utils`` on Debian/Ubuntu or ``poppler`` with Homebrew. Without these tools,
+the relevant tests are skipped.
+
 The Odin tests
 ==============
 
@@ -93,6 +99,9 @@ The Python tests
    * - ``test_book.py``
      - ``docodin book build`` and ``docodin dod``: pages, links, the search index, the
        PDF book, warnings, sources that are not UTF-8, and both documentation projects
+   * - ``test_pdf.py``
+     - PDF text: Unicode with LuaLaTeX/XeLaTeX names and paths, native and Python-fallback
+       publication, and chapter contents with and without an opening chapter
    * - ``test_release.py``
      - one version in ``pyproject.toml``, ``docodin.__version__``, the Odin constant, the
        loaded library, the programs and both ``conf.py`` files; the license files

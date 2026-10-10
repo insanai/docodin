@@ -95,7 +95,9 @@ Where docutils uses a Python library (Pygments, PIL, ``urllib``, codecs, parser 
 writer modules, external MathML converters), docodin uses the same library: the docutils
 package calls it as docutils does, and the native tools hand such documents to docutils.
 So a document's result depends on the installed libraries exactly as it does with
-docutils (DOD 9).
+docutils (DOD 9).  The native image-size reader is an exception: it reads common raster
+headers without Pillow (:doc:`../internals/python-needs`), and reports unavailable files
+as Docutils with Pillow would.  Docodin's Python docutils package still uses Pillow.
 
 Extensions that change the grammar
 ==================================

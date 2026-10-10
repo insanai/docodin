@@ -182,6 +182,7 @@ html.docodin {
 }
 .docodin .brand .logo { width: 2.35rem; height: 2.35rem; flex: none; border-radius: 9px;
   box-shadow: 0 6px 16px rgba(47, 91, 234, .28); }
+.docodin .brand img.logo { object-fit: contain; background: white; box-shadow: none; }
 .docodin .brand-text { display: flex; flex-direction: column; line-height: 1.2; min-width: 0; }
 .docodin .brand-title {
   font-family: var(--dod-font-display);
@@ -852,6 +853,7 @@ html.docodin {
 .docodin .dod-article .line-block .line-block { margin-left: 1.5rem; }
 
 /* figures and tables */
+.docodin .dod-article img.align-center { display: block; margin: 1.8rem auto; }
 .docodin .dod-article figure { margin: 1.8rem 0; text-align: center; }
 .docodin .dod-article figure img { border-radius: var(--dod-radius-sm); }
 .docodin .dod-article figcaption { margin-top: .6rem; color: var(--dod-muted); font-size: .88rem; }

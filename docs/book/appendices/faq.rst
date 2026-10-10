@@ -55,7 +55,8 @@ Does the wheel include the native programs?
 
 Does the native ``docodin`` command need Python?
    Not for documents that use only what the native pipeline implements.  A document that
-   needs a Python library (Pygments for highlighted code, PIL for scaled images, ...) is
+   needs a Python library (Pygments for highlighted code, PIL for unsupported image
+   headers, ...) is
    handed to ``python -m docodin``, run by ``$DOCODIN_PYTHON`` or else the Python of the
    environment the program is installed in.  ``--syntax-highlight=none`` avoids the most
    common need.

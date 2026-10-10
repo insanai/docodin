@@ -29,6 +29,15 @@ are released under the 2-Clause BSD license (``LICENSES/BSD-2-Clause.rst``):
 
 Docutils' own statement of its terms is ``LICENSES/docutils-COPYING.rst``.
 
+Sphinx logo
+===========
+
+The docodin pencil mark in ``docs/book/_static/docodin_logo.png`` and
+``docs/dod/_static/docodin_logo.png`` adapts Sphinx's single-eye symbol, adding a minimal
+Odin beard. Source: https://www.sphinx-doc.org/en/master/_static/sphinx-logo.svg.
+Copyright (c) 2007-2026 by the Sphinx team. Sphinx's 2-Clause BSD license is reproduced
+in ``LICENSES/Sphinx.rst``.
+
 Unicode Character Database
 ==========================
 

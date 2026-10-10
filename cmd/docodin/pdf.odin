@@ -32,7 +32,8 @@ run_pdf :: proc(args: []string) -> int {
 		return 0
 	}
 	if engine == "" do engine = default_engine()
-	writer := "xetex" if engine == "xelatex" || engine == "lualatex" else "latex"
+	name := strings.trim_suffix(filepath.base(engine), ".exe")
+	writer := "xetex" if name == "xelatex" || name == "lualatex" else "latex"
 	cli := parse_command_line(rest, writer)
 	if cli.source == "" || cli.source == "-" {
 		usage_error("MISSING SOURCE", "`docodin pdf` needs a source file.",

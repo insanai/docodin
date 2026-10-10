@@ -8,6 +8,11 @@ and how it was verified.  A record has a state, from ``prediscussion`` to ``comm
 so it is always clear which records describe docodin as it is and which are proposals.
 DOD 1 describes the process.
 
+.. image:: _static/docodin_logo.png
+   :alt: Sphinx's single-eye symbol with a minimal pencil outline of Odin's beard.
+   :width: 140px
+   :align: center
+
 .. rubric:: Quick start
 
 1. Create a record: ``docodin dod new "Title" --labels parser,performance``.

@@ -103,7 +103,7 @@ Verified platforms
      - passed, with the PDF books
    * - Linux x86-64, glibc (``manylinux_2_34_x86_64``)
      - CPython 3.12
-     - passed (276 Python tests passed, 8 skipped); PDFs skipped, no TeX engine
+     - passed, including PDF content regressions and both PDF books
    * - Windows, other architectures, musl
      - not run
      - not verified
@@ -119,12 +119,42 @@ says.  Uploading the artifacts is not part of the gate.
 Making a release
 ================
 
-1. Follow the :doc:`../appendices/maintenance-checklist`: the changelog, the numbers, the
-   version, the design records and the documentation.
-2. Commit, then run the release gate on every platform to be released, on the same
-   revision.
-3. Publish the sdist and the wheels from ``build/release-gate/<revision>/dist``, and tag
-   the revision (``v1.0.0b1``).
+GitHub Actions builds and tests the release artifacts, then prepares a draft GitHub
+release. Publishing that draft triggers a separate PyPI workflow, which uploads the
+same qualified files without rebuilding them.
+
+1. Follow the :doc:`../appendices/maintenance-checklist`: update the version, changelog,
+   design records and documentation. Commit on the working branch, merge into ``main``
+   and wait for Verify to pass.
+2. For a rehearsal, dispatch the Release workflow on ``main``. It builds both supported
+   platforms and uploads ``release-assets`` without creating a tag, a GitHub release
+   or a PyPI upload.
+3. Configure the repository's ``PYPI_API_TOKEN`` secret with a PyPI token scoped to
+   docodin. The token belongs in GitHub Actions secrets, never in the checkout or docs.
+4. Tag the verified commit and push the tag:
+
+   .. code-block:: console
+
+      $ git switch main
+      $ git tag -a v1.0.0b1 -m "docodin 1.0.0b1"
+      $ git push origin v1.0.0b1
+
+5. Release runs Verify, then the full gate for Linux x86-64 and macOS arm64. Linux also
+   runs the PDF regressions and compiles both documentation books. The Odin compiler,
+   Source fonts and action revisions are pinned; downloads are checked against SHA256.
+6. The workflow checks metadata and versions, produces native archives from the tested
+   wheels, and adds ``RELEASE.json`` and ``SHA256SUMS``. A tag creates a **draft** GitHub
+   release; beta tags are marked as prereleases. Inspect its assets and notes, then
+   publish it when the token is configured.
+7. Publish to PyPI downloads the published assets, verifies hashes and the tag's commit,
+   checks the wheel and source metadata, and uploads only the two wheels and sdist.
+   Native archives and PDF books remain GitHub release downloads. A failed publishing
+   run can be retried with the workflow's ``tag`` input after correcting the failure.
+
+The repository workflows are ``ci.yml``, ``pages.yml``, ``release.yml`` and ``publish.yml``
+under ``.github/workflows``. PyPI publishing happens only for a published release,
+not a normal push to ``main``. The Website workflow deploys the docodin-built site to
+GitHub Pages after main's Verify workflow succeeds.
 
 The license files
 =================

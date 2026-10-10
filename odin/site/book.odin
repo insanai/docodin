@@ -129,7 +129,10 @@ assemble_book :: proc(bk: ^Book) {
 	if opening {
 		title := tex_escape(b.pages[root].title)
 		add_raw(bk.doc, bk.doc.root, strings.concatenate({"\\chapter*{", title,
-			"}\\addcontentsline{toc}{chapter}{", title, "}\\markboth{", title, "}{", title, "}",
+			"}\\addcontentsline{toc}{chapter}{", title, "}",
+			// minitoc counts the ToC entry even though chapter* does not
+			// increment its chapter counter.  Keep the local ToCs aligned.
+			"\\ifdefined\\adjustmtc\\adjustmtc\\fi\\markboth{", title, "}{", title, "}",
 			strings.to_string(labels)}))
 		for n in nodes[:k] do import_node(bk, root, n, bk.doc.root)
 		add_raw(bk.doc, bk.doc.root, "\\mainmatter")

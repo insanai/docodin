@@ -45,9 +45,10 @@ from docutils.utils._roman_numerals import (
     RomanNumeral,
 )
 
+from docodin._grammar import Snapshot, python_forced
+
 from ._body import FIELD_MARKER, BodyHelpers, MarkupError, ParserError
 from ._explicit import ExplicitHelpers
-from docodin._grammar import Snapshot, python_forced
 from ._inliner import Inliner, MarkupMismatch, build_regexp
 
 __docformat__ = "reStructuredText"

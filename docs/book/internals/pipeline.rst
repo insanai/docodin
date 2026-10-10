@@ -31,8 +31,9 @@ a ``StringList`` port.
   (body elements, images, include, meta, miscellaneous, parts, tables) and the roles in
   ``roles.odin``.
 - **Files.**  ``csv-table`` and ``raw`` read files and local ``file:`` URLs natively.
-  Figures get no width from ``:figwidth: image``, as with docutils without PIL, and the
-  stage records a Python need (:doc:`python-needs`).
+  ``odin/imageinfo`` reads bounded raster headers for ``:figwidth: image`` and the HTML5
+  writer's ``:scale:`` without decoding pixels.  Unsupported headers record a Python
+  need (:doc:`python-needs`).
 - **include.**  The parser's include hook (``rst.Parser.include_hook``) lets the reader
   run the directive dry when the parser meets it; the parser inserts the lines after the
   directive block and parses them in the same state machine (``rst.insert_input``).  The

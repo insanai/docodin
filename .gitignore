@@ -1,3 +1,15 @@
+# Local credentials, agent state and private configuration
+.env
+.env.*
+!.env.example
+!.env.sample
+.aws/
+.agents/
+.codex/
+.ssh/
+*.pem
+*.key
+
 # Virtual Environments & Package Managers
 .venv/
 venv/
@@ -17,7 +29,13 @@ __pycache__/
 .ruff_cache/
 .mypy_cache/
 .coverage
+.coverage.*
+coverage.xml
 htmlcov/
+*.prof
+*.profraw
+*.profdata
+*.trace
 
 # Native Odin Build Artifacts & Binaries
 bin/
@@ -30,6 +48,8 @@ python/docodin/*.dylib
 python/docodin/*.so
 python/docodin/*.dll
 odin/tests/test_runner
+odin/*/tests/test_runner
+odin/**/tests/test_runner
 *.dSYM/
 
 # Downloaded Sphinx Packages & Test Documentation
@@ -44,9 +64,10 @@ tests/fixtures/downloads/
 docs/_build/
 docs/build/
 _build/
-*flask*
-test_docs/
-downloaded_docs/
+/site/
+/public/
+/test_docs/
+/downloaded_docs/
 *.pxml
 *.pseudoxml
 
@@ -56,6 +77,13 @@ downloaded_docs/
 *.toc
 *.out
 *.pdf
+*.mtc
+*.mtc[0-9]*
+*.maf
+*.ptc
+*.ptc[0-9]*
+*.stc
+*.stc[0-9]*
 *.idx
 *.ilg
 *.ind
@@ -75,3 +103,5 @@ Thumbs.db
 *~
 .idea/
 .vscode/
+*.tmp
+*.bak

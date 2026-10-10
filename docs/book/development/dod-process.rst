@@ -50,7 +50,7 @@ The format
    DOD 19: Title Words
    ==============================================================================
 
-   :Authors: Name <email>
+   :Authors: Name
    :State: prediscussion
    :Created: 2026-10-01
    :Discussion:

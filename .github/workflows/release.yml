@@ -1,0 +1,122 @@
+name: Release
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  verify:
+    uses: ./.github/workflows/ci.yml
+  build:
+    needs: verify
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - {runner: ubuntu-24.04, platform: linux-x86_64}
+          - {runner: macos-15, platform: macos-arm64}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7
+        with:
+          python-version: '3.12'
+      - uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
+        with:
+          version: '0.12.19'
+          enable-cache: true
+      - name: Verify the release tag
+        if: startsWith(github.ref, 'refs/tags/')
+        env:
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: uv run --no-project python scripts/package_release.py --print-version --tag "$RELEASE_TAG"
+      - name: Install checksum-verified Odin
+        run: |
+          uv run --no-project python scripts/install_odin.py "$RUNNER_TEMP/odin" > "$RUNNER_TEMP/odin-path"
+          cat "$RUNNER_TEMP/odin-path" >> "$GITHUB_PATH"
+      - name: Install PDF dependencies
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends texlive-luatex texlive-xetex \
+            texlive-latex-extra texlive-fonts-recommended fonts-linuxlibertine \
+            librsvg2-bin poppler-utils
+          echo "TEXMFHOME=$RUNNER_TEMP/texmf" >> "$GITHUB_ENV"
+          uv run --no-project python scripts/install_pdf_fonts.py "$RUNNER_TEMP/texmf"
+      - name: Qualify the source and installed platform wheel
+        run: scripts/release_gate.sh
+      - name: Check package metadata
+        run: uvx twine check build/release-gate/${{ github.sha }}/dist/*
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        with:
+          name: ${{ matrix.platform }}
+          path: build/release-gate/${{ github.sha }}/
+          if-no-files-found: error
+          retention-days: 14
+  assemble:
+    needs: build
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7
+        with:
+          python-version: '3.12'
+      - uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
+        with:
+          version: '0.12.19'
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8
+        with:
+          pattern: '*'
+          path: input
+      - name: Assemble tested distributions and native archives
+        env:
+          REVISION: ${{ github.sha }}
+        run: |
+          uv run --no-project python scripts/package_release.py --inputs input --output dist --revision "$REVISION"
+          VERSION=$(uv run --no-project python scripts/package_release.py --print-version)
+          uv run --no-project python scripts/package_release.py --verify dist --tag "v$VERSION"
+          uvx twine check dist/*.whl "dist/docodin-$VERSION.tar.gz"
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        with:
+          name: release-assets
+          path: dist/
+          if-no-files-found: error
+          retention-days: 14
+  github-release:
+    if: startsWith(github.ref, 'refs/tags/')
+    needs: assemble
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8
+        with:
+          name: release-assets
+          path: dist
+      - name: Prepare draft release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_REPOSITORY: ${{ github.repository }}
+          RELEASE_TAG: ${{ github.ref_name }}
+        shell: bash
+        run: |
+          FLAGS=()
+          if [[ "$RELEASE_TAG" =~ (a|b|rc)[0-9]+$ ]]; then FLAGS+=(--prerelease); fi
+          if gh release view "$RELEASE_TAG" --repo "$RELEASE_REPOSITORY" --json isDraft > release.json; then
+            python -c 'import json; assert json.load(open("release.json"))["isDraft"], "Refusing to modify a published release"'
+            gh release upload "$RELEASE_TAG" dist/* --clobber --repo "$RELEASE_REPOSITORY"
+          else
+            gh release create "$RELEASE_TAG" dist/* --repo "$RELEASE_REPOSITORY" --verify-tag \
+              --draft --generate-notes --title "docodin $RELEASE_TAG" "${FLAGS[@]}"
+          fi

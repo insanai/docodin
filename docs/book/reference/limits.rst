@@ -49,6 +49,13 @@ Platforms
 Differences from docutils
 =========================
 
+Stock-parser import order
+   When integrating with an installed stock docutils, import ``docodin.parser`` before
+   an extension patches docutils' parser states. The snapshot used to detect grammar
+   changes is taken at that import; earlier patches may otherwise look like the stock
+   grammar. ``DOCODIN_NATIVE=0`` explicitly selects Python parsing. This caveat concerns
+   the stock-parser integration rather than the shim's startup path.
+
 Two nested-include cases
    In about 20,000 generated documents, two differ in line numbers.  Both have an
    ``include`` directive two directive levels deep, with more content after it in the
@@ -88,6 +95,13 @@ Python libraries
    published by docutils automatically (:doc:`../internals/python-needs`).  Without a
    Python that has docodin, the native command reports what needs Python and exits with
    status 1.
+
+Image dimensions
+   ``odin/imageinfo`` reads PNG, JPEG, GIF, BMP, TIFF and WebP headers natively for image
+   scaling and figure widths.  It reads at most 64 KiB and allocates no pixels.  Other
+   formats, longer metadata, invalid headers and images larger than 89,478,485 pixels
+   keep the Pillow fallback.  Missing files, non-file URIs, video images and disabled
+   file insertion are diagnosed natively, with the messages of Docutils with Pillow.
 
 Writers
    The native writers are pseudo-XML, XML, HTML5, LaTeX and XeLaTeX.  The manual page,
