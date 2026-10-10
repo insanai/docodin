@@ -20,7 +20,8 @@ import pytest
 ROOT = Path(__file__).resolve().parent.parent
 BINARY = ROOT / "bin" / "docodin"
 UV = shutil.which("uv")
-REFERENCE = [UV or "uv", "run", "--no-project", "--python", "3.14", "--with", "docutils==0.22.4",
+REFERENCE = [UV or "uv", "run", "--quiet", "--no-project", "--python", "3.14",
+             "--with", "docutils==0.22.4",
              "python", "-m", "docutils"]
 
 pytestmark = [
