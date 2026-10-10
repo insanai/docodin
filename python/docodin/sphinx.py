@@ -36,7 +36,7 @@ class OdinSphinxRSTParser(RSTParser):
             inputstring: Source markup text or pre-split StringList.
             document: Target docutils document tree.
         """
-        if not _supported(self.state_classes, self.inliner):
+        if not _supported(self.state_classes, self.inliner, self.initial_state):
             return super().parse(inputstring, document)
         self.setup_parse(inputstring, document)  # type: ignore[arg-type]
         if isinstance(inputstring, str) and not self._has_decoration():

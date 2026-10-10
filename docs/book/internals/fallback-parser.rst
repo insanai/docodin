@@ -12,8 +12,10 @@ which behaves exactly like docutils' (DOD 7).
 When it is used
 ===============
 
-``docutils/parsers/rst/_fallback.py`` decides, for each parse in ``Parser.parse`` and
-``RSTStateMachine.run``.  The Python parser runs when:
+``docodin/_grammar.py`` decides, for each parse in ``Parser.parse`` and
+``RSTStateMachine.run``.  docodin's docutils and ``docodin.Parser``, ``patch_docutils``
+and the ``docodin.sphinx`` extension on an installed docutils use the same rules.  The
+Python parser runs when:
 
 - the state classes are not the stock ones: a custom ``state_classes`` list, a subclass
   of a stock state, or an initial state other than ``Body`` or ``RFC2822Body``;
@@ -26,8 +28,9 @@ Detecting patches
 =================
 
 ``Snapshot`` records the attributes of the stock state classes and of ``Inliner`` when
-the module is loaded.  Before a parse, the current attributes are compared with the
-snapshot:
+the module is loaded: docodin's ``states`` module, or ``docodin.parser`` on an installed
+docutils (patches made before ``docodin.parser`` is imported are not seen there).
+Before a parse, the current attributes are compared with the snapshot:
 
 - methods are compared by identity, so a replaced or wrapped method is detected;
 - patterns are compared by their source text, since patterns compile lazily;
@@ -40,7 +43,7 @@ Replayed transitions
 
 Some popular extensions patch the grammar in ways the native path can reproduce.
 sphinx-autodoc-typehints replaces ``Body.doctest`` and wraps ``Text.indent``.  These two
-transitions (``REPLAYED`` in ``_fallback.py``) do not trigger the fallback: the builder
+transitions (``REPLAYED`` in ``_grammar.py``) do not trigger the fallback: the builder
 runs the extension's replacement on the constructs the native parser built
 (``docodin._machine.replay_transition``), so projects that use the extension keep the
 native parser.

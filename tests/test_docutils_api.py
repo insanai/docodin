@@ -77,3 +77,25 @@ def test_custom_state_classes_fall_back_to_docutils():
 
     doc = docodin.publish_doctree("text", parser=CustomParser(), settings_overrides=OVERRIDES)
     assert doc.astext() == "text"
+
+
+def test_python_forced_and_patched_states_leave_the_native_engine(monkeypatch):
+    from docodin.parser import _supported
+    from docutils.parsers.rst import states
+
+    assert _supported(None, None)
+    monkeypatch.setenv("DOCODIN_NATIVE", "0")
+    assert not _supported(None, None)
+    monkeypatch.delenv("DOCODIN_NATIVE")
+    assert not _supported(None, None, "Line")
+
+    def bullet(self, match, context, next_state):  # an extension's replacement
+        return original(self, match, context, next_state)
+
+    original = states.Body.bullet
+    monkeypatch.setattr(states.Body, "bullet", bullet)
+    assert not _supported(None, None)
+    doc = docodin.publish_doctree("- item\n", settings_overrides=OVERRIDES)
+    assert doc.astext() == "item"
+    monkeypatch.undo()
+    assert _supported(None, None)

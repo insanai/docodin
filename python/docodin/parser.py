@@ -5,25 +5,42 @@ from __future__ import annotations
 from typing import Any
 
 import docutils.parsers.rst
+import docutils.statemachine
 from docutils.parsers.rst import roles, states
 from docutils.statemachine import StringList
 
+from docodin._grammar import Snapshot, python_forced
 from docodin.builder import OdinInliner, parse_string, parse_string_list
 
 _ORIGINAL_PARSE = docutils.parsers.rst.Parser.parse
 _ORIGINAL_RUN = states.RSTStateMachine.run
 
 
-def _supported(state_classes: Any, inliner: Any) -> bool:
+# The stock states of an installed docutils as they were when docodin.parser was
+# imported (docodin's own docutils keeps its snapshot in ``states``).
+_STOCK_SNAPSHOT = None if hasattr(states, "python_parser_needed") else Snapshot([
+    *states.state_classes, states.SpecializedBody, states.SpecializedText,
+    states.QuotedLiteralBlock, states.RSTState, docutils.statemachine.StateWS,
+    docutils.statemachine.State, states.Inliner])
+
+
+def _supported(state_classes: Any, inliner: Any, initial_state: str = "Body") -> bool:
     """Whether the native engine can stand in for this parser configuration.
 
-    Custom state classes or a custom ``Inliner`` subclass (extra inline
-    patterns) change what the grammar recognizes; those keep the pure-Python
-    docutils parser.
+    Custom state classes, a custom ``Inliner`` subclass (extra inline
+    patterns), patched stock states and ``DOCODIN_NATIVE=0`` keep the
+    pure-Python docutils parser, as in docodin's own docutils (`docodin._grammar`).
     """
+    if _STOCK_SNAPSHOT is None:
+        classes = states.state_classes if state_classes is None else state_classes
+        return not states.python_parser_needed(classes, initial_state, inliner)
+    if python_forced() or initial_state not in ("Body", "RFC2822Body"):
+        return False
     if state_classes is not None and tuple(state_classes) != tuple(states.state_classes):
         return False
-    return inliner is None or type(inliner) in (states.Inliner, OdinInliner)
+    if inliner is not None and type(inliner) not in (states.Inliner, OdinInliner):
+        return False
+    return not _STOCK_SNAPSHOT.grammar_changed()
 
 
 class Parser(docutils.parsers.rst.Parser):
@@ -41,7 +58,7 @@ class Parser(docutils.parsers.rst.Parser):
             inputstring: Source markup text or pre-split StringList.
             document: Target docutils document tree.
         """
-        if not _supported(self.state_classes, self.inliner):
+        if not _supported(self.state_classes, self.inliner, self.initial_state):
             return _ORIGINAL_PARSE(self, inputstring, document)
         self.setup_parse(inputstring, document)
         document.settings.setdefault("tab_width", 8)
@@ -68,7 +85,7 @@ def _patched_run(self: Any, input_lines: Any, document: Any, input_offset: int =
     """Replacement for ``RSTStateMachine.run`` (used e.g. by Sphinx's parser)."""
     state_classes = [type(s) for s in self.states.values()] if getattr(self, "states", None) else None
     if (state_classes is not None and set(state_classes) != set(states.state_classes)) \
-            or not _supported(None, inliner):
+            or not _supported(None, inliner, getattr(self, "initial_state", "Body")):
         return _ORIGINAL_RUN(self, input_lines, document, input_offset, match_titles, inliner)
     if not isinstance(input_lines, StringList):
         input_lines = StringList(list(input_lines), document.get("source", ""))
